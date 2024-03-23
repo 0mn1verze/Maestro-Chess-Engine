@@ -1,0 +1,3 @@
+D:/Maestro V2/build/CMakeFiles/Maestro.dir
+D:/Maestro V2/build/CMakeFiles/edit_cache.dir
+D:/Maestro V2/build/CMakeFiles/rebuild_cache.dir
