@@ -269,7 +269,7 @@ CMakeFiles/Maestro.dir/src/uci.cpp.obj: D:\Maestro\ V2\src\uci.cpp \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/ranges_algobase.h \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/glue_memory_defs.h \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/execution_defs.h \
- D:\Maestro\ V2\src\movegen.hpp D:\Maestro\ V2\src\nnue.hpp \
+ D:\Maestro\ V2\src\nnue.hpp D:\Maestro\ V2\src\movegen.hpp \
  D:\Maestro\ V2\src\perft.hpp D:\Maestro\ V2\src\polyglot.hpp \
  D:\Maestro\ V2\src\uci.hpp C:/msys64/ucrt64/include/c++/13.2.0/thread \
  C:/msys64/ucrt64/include/c++/13.2.0/stop_token \

@@ -297,7 +297,7 @@ CMakeFiles/Maestro.dir/src/search.cpp.obj: D:\Maestro\ V2\src\search.cpp \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/prfchwintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/keylockerintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
- D:\Maestro\ V2\src\hashtable.hpp \
+ D:\Maestro\ V2\src\nnue.hpp D:\Maestro\ V2\src\hashtable.hpp \
  C:/msys64/ucrt64/include/c++/13.2.0/vector \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_vector.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_bvector.h \

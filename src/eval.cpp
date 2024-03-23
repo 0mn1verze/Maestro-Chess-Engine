@@ -13,6 +13,8 @@ int nnuePieces[PIECE_N] = {blank, wpawn,  wknight, wbishop, wrook,   wqueen,
                            wking, blank,  blank,   bpawn,   bknight, bbishop,
                            brook, bqueen, bking,   blank};
 
+int toNNUEPiece(Piece piece) { return nnuePieces[piece]; }
+
 inline int evaluate_nnue(const Position &pos) {
   Bitboard bitboard;
   Square square;
@@ -48,7 +50,17 @@ inline int evaluate_nnue(const Position &pos) {
   pieces[index] = 0;
   squares[index] = 0;
 
-  return nnue_evaluate(pos.getSideToMove(), pieces, squares);
+  if (pos.getPliesFromStart() > 2) {
+    // Get previous nnue accumulator data
+    NNUEdata *data[3];
+    data[0] = &(pos.state()->nnueData);
+    data[1] = &(pos.state()->previous->nnueData);
+    data[2] = &(pos.state()->previous->previous->nnueData);
+
+    return nnue_evaluate_incremental(pos.getSideToMove(), pieces, squares,
+                                     data);
+  } else
+    return nnue_evaluate(pos.getSideToMove(), pieces, squares);
 }
 
 // Evaluate the position

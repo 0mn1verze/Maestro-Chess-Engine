@@ -257,7 +257,7 @@ CMakeFiles/Maestro.dir/src/position.cpp.obj: \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
  D:\Maestro\ V2\src\defs.hpp C:/msys64/ucrt64/include/c++/13.2.0/cstdint \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdint.h \
- C:/msys64/ucrt64/include/stdint.h D:\Maestro\ V2\src\movegen.hpp \
+ C:/msys64/ucrt64/include/stdint.h D:\Maestro\ V2\src\eval.hpp \
  D:\Maestro\ V2\src\position.hpp \
  C:/msys64/ucrt64/include/c++/13.2.0/deque \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_uninitialized.h \
@@ -280,6 +280,7 @@ CMakeFiles/Maestro.dir/src/position.cpp.obj: \
  C:/msys64/ucrt64/include/c++/13.2.0/backward/auto_ptr.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/ranges_uninitialized.h \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/glue_memory_defs.h \
+ D:\Maestro\ V2\src\nnue.hpp D:\Maestro\ V2\src\movegen.hpp \
  D:\Maestro\ V2\src\utils.hpp C:/msys64/ucrt64/include/c++/13.2.0/chrono \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/chrono.h \
  C:/msys64/ucrt64/include/c++/13.2.0/ratio \

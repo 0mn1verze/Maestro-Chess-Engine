@@ -297,8 +297,8 @@ CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/prfchwintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/keylockerintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
- D:\Maestro\ V2\src\polyglot.hpp D:\Maestro\ V2\src\utils.hpp \
- C:/msys64/ucrt64/include/c++/13.2.0/chrono \
+ D:\Maestro\ V2\src\nnue.hpp D:\Maestro\ V2\src\polyglot.hpp \
+ D:\Maestro\ V2\src\utils.hpp C:/msys64/ucrt64/include/c++/13.2.0/chrono \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_algo.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/algorithmfwd.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_heap.h \

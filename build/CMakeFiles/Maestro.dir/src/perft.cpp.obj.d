@@ -262,7 +262,7 @@ CMakeFiles/Maestro.dir/src/perft.cpp.obj: D:\Maestro\ V2\src\perft.cpp \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/prfchwintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/keylockerintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
- C:/msys64/ucrt64/include/c++/13.2.0/fstream \
+ D:\Maestro\ V2\src\nnue.hpp C:/msys64/ucrt64/include/c++/13.2.0/fstream \
  C:/msys64/ucrt64/include/c++/13.2.0/istream \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/istream.tcc \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/codecvt.h \

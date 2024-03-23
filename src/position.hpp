@@ -7,6 +7,7 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "nnue.hpp"
 
 /******************************************\
 |==========================================|
@@ -69,6 +70,9 @@ struct BoardState {
   Bitboard rookPin, bishopPin, kingBan, kingAttacks, available, attacked,
       blockersForKing[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
+
+  // Used by NNUE
+  NNUEdata nnueData;
 
   // Previous pieceList state
   BoardState *previous;
@@ -176,6 +180,7 @@ template <bool doMove>
 void Position::castleRook(Square from, Square to, Square &rookFrom,
                           Square &rookTo) {
   bool kingSide = to > from;
+  Colour us = sideToMove;
   // Define the square that the rook is from
   rookFrom = kingSide ? H1 : A1;
   // Flip the rank if the side to move is black
@@ -187,10 +192,10 @@ void Position::castleRook(Square from, Square to, Square &rookFrom,
   rookTo = (sideToMove == BLACK) ? flipRank(rookTo) : rookTo;
 
   // Move the rook
-  if constexpr (doMove)
+  if constexpr (doMove) {
     // Move the rook
     movePiece(rookFrom, rookTo);
-  else
+  } else
     // Move the rook back
     movePiece(rookTo, rookFrom);
 }

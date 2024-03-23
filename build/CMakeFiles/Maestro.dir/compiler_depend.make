@@ -878,6 +878,7 @@ CMakeFiles/Maestro.dir/src/hashtable.cpp.obj: D:/Maestro\ V2/src/hashtable.cpp \
   D:/Maestro\ V2/src/bitboard.hpp \
   D:/Maestro\ V2/src/defs.hpp \
   D:/Maestro\ V2/src/hashtable.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/position.hpp
 
 CMakeFiles/Maestro.dir/src/main.cpp.obj: D:/Maestro\ V2/src/main.cpp \
@@ -1203,6 +1204,7 @@ CMakeFiles/Maestro.dir/src/main.cpp.obj: D:/Maestro\ V2/src/main.cpp \
   D:/Maestro\ V2/src/eval.hpp \
   D:/Maestro\ V2/src/hashtable.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/polyglot.hpp \
   D:/Maestro\ V2/src/position.hpp \
   D:/Maestro\ V2/src/search.hpp \
@@ -1800,6 +1802,7 @@ CMakeFiles/Maestro.dir/src/movegen.cpp.obj: D:/Maestro\ V2/src/movegen.cpp \
   D:/Maestro\ V2/src/bitboard.hpp \
   D:/Maestro\ V2/src/defs.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/position.hpp \
   D:/Maestro\ V2/src/utils.hpp
 
@@ -2121,6 +2124,7 @@ CMakeFiles/Maestro.dir/src/movepicker.cpp.obj: D:/Maestro\ V2/src/movepicker.cpp
   D:/Maestro\ V2/src/defs.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
   D:/Maestro\ V2/src/movepicker.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/position.hpp \
   D:/Maestro\ V2/src/search.hpp \
   D:/Maestro\ V2/src/utils.hpp
@@ -2717,6 +2721,7 @@ CMakeFiles/Maestro.dir/src/perft.cpp.obj: D:/Maestro\ V2/src/perft.cpp \
   D:/Maestro\ V2/src/bitboard.hpp \
   D:/Maestro\ V2/src/defs.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/perft.hpp \
   D:/Maestro\ V2/src/position.hpp \
   D:/Maestro\ V2/src/utils.hpp
@@ -3038,6 +3043,7 @@ CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: D:/Maestro\ V2/src/polyglot.cpp \
   D:/Maestro\ V2/src/bitboard.hpp \
   D:/Maestro\ V2/src/defs.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/polyglot.hpp \
   D:/Maestro\ V2/src/position.hpp \
   D:/Maestro\ V2/src/utils.hpp
@@ -3355,6 +3361,7 @@ CMakeFiles/Maestro.dir/src/position.cpp.obj: D:/Maestro\ V2/src/position.cpp \
   D:/Maestro\ V2/src/bitboard.hpp \
   D:/Maestro\ V2/src/defs.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/position.hpp \
   D:/Maestro\ V2/src/utils.hpp
 
@@ -3701,6 +3708,7 @@ CMakeFiles/Maestro.dir/src/search.cpp.obj: D:/Maestro\ V2/src/search.cpp \
   D:/Maestro\ V2/src/hashtable.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
   D:/Maestro\ V2/src/movepicker.hpp \
+  D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/perft.hpp \
   D:/Maestro\ V2/src/position.hpp \
   D:/Maestro\ V2/src/search.hpp \

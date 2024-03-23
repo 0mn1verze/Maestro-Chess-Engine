@@ -6,4 +6,6 @@
 
 Value eval(const Position &pos);
 
+int toNNUEPiece(Piece piece);
+
 #endif // EVAL_HPP

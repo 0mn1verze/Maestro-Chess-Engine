@@ -126,11 +126,13 @@ void UCI::parseGo(std::stringstream &command, Position &pos,
     limits.timeLimit = movetime;
   }
 
-  Move bookMove = getPolyBookMove(pos);
+  if (limits.selfControl) {
+    Move bookMove = getPolyBookMove(pos);
 
-  if (bookMove != Move::none()) {
-    std::cout << "bestmove " << move2Str(bookMove) << std::endl;
-    return;
+    if (bookMove != Move::none()) {
+      std::cout << "bestmove " << move2Str(bookMove) << std::endl;
+      return;
+    }
   }
 
   TimeControl time{};

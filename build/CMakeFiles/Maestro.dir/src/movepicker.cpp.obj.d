@@ -264,8 +264,8 @@ CMakeFiles/Maestro.dir/src/movepicker.cpp.obj: \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/prfchwintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/keylockerintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
- D:\Maestro\ V2\src\movepicker.hpp D:\Maestro\ V2\src\search.hpp \
- C:/msys64/ucrt64/include/c++/13.2.0/atomic \
+ D:\Maestro\ V2\src\nnue.hpp D:\Maestro\ V2\src\movepicker.hpp \
+ D:\Maestro\ V2\src\search.hpp C:/msys64/ucrt64/include/c++/13.2.0/atomic \
  C:/msys64/ucrt64/include/c++/13.2.0/condition_variable \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/chrono.h \
  C:/msys64/ucrt64/include/c++/13.2.0/ratio \
