@@ -3360,6 +3360,7 @@ CMakeFiles/Maestro.dir/src/position.cpp.obj: D:/Maestro\ V2/src/position.cpp \
   C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/xtestintrin.h \
   D:/Maestro\ V2/src/bitboard.hpp \
   D:/Maestro\ V2/src/defs.hpp \
+  D:/Maestro\ V2/src/eval.hpp \
   D:/Maestro\ V2/src/movegen.hpp \
   D:/Maestro\ V2/src/nnue.hpp \
   D:/Maestro\ V2/src/position.hpp \

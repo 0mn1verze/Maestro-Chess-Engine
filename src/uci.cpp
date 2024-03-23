@@ -126,7 +126,7 @@ void UCI::parseGo(std::stringstream &command, Position &pos,
     limits.timeLimit = movetime;
   }
 
-  if (limits.selfControl) {
+  if (!limits.infinite) {
     Move bookMove = getPolyBookMove(pos);
 
     if (bookMove != Move::none()) {
