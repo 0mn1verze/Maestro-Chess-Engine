@@ -66,10 +66,14 @@ inline int evaluate_nnue(const Position &pos) {
 // Evaluate the position
 Value eval(const Position &pos) {
   BoardState *st = pos.state();
-  Value mat =
-      pos.getNonPawnMaterial() + PawnValue * countBits(pos.getPiecesBB(PAWN));
+  Value mat = pos.getNonPawnMaterial() +
+              4 * PawnValue * countBits(pos.getPiecesBB(PAWN));
   // Evaluate the position using the NNUE
-  Value evaluation = evaluate_nnue(pos) * 5 / 4 + 28;
+  Value evaluation =
+      evaluate_nnue(pos) * (580 + mat / 32 - 4 * st->fiftyMove) / 1024 + 28;
+  // Reduce score if the it takes more moves to reach a position
+  evaluation = evaluation * (100 - st->fiftyMove) / 100;
+  // Do not allow the evaluation to go beyond the mate bounds
   evaluation = std::clamp(evaluation, -VAL_MATE_BOUND, VAL_MATE_BOUND);
-  return evaluation * (100 - st->fiftyMove) / 100;
+  return evaluation;
 }

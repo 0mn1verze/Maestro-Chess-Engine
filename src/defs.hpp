@@ -126,7 +126,7 @@ enum ScaleFactor {
 \******************************************/
 
 constexpr Value VAL_ZERO = 0;
-constexpr Value PawnValue = 208;
+constexpr Value PawnValue = 126;
 constexpr Value KnightValue = 781;
 constexpr Value BishopValue = 825;
 constexpr Value RookValue = 1276;

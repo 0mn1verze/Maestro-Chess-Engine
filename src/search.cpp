@@ -133,11 +133,11 @@ static void initLMR() {
   // Init Late Move Reductions Table (From Ethreal Chess Engine)
   for (int depth = 1; depth < 64; depth++)
     for (int played = 1; played < 64; played++)
-      LMRTable[depth][played] = 0.7844 + log(depth) * log(played) / 2.4696;
+      LMRTable[depth][played] = 1 + log(depth) * log(played) / 3;
 
   for (int depth = 1; depth <= 10; depth++) {
-    LateMovePruningCounts[0][depth] = 2.0767 + 0.3743 * depth * depth;
-    LateMovePruningCounts[1][depth] = 3.8733 + 0.7124 * depth * depth;
+    LateMovePruningCounts[0][depth] = 4 + depth * depth;
+    LateMovePruningCounts[1][depth] = 6 + 2 * depth * depth;
   }
 }
 
@@ -160,23 +160,8 @@ void SearchWorker::iterativeDeepening() {
 
   std::fill(bestValue, bestValue + MAX_DEPTH + 1, -VAL_INFINITE);
 
-  // Value alpha = -VAL_INFINITE, beta = -VAL_INFINITE;
-
   for (currentDepth = 1; currentDepth <= maxDepth; currentDepth++) {
-    // bestValue[currentDepth] =
-    //     search(rootPos, pvLine[currentDepth], -VAL_INFINITE, VAL_INFINITE,
-    //            currentDepth, false);
     aspirationWindow();
-
-    // if ((bestValue[currentDepth] <= alpha) ||
-    //     (bestValue[currentDepth] >= beta)) {
-    //   alpha = -VAL_INFINITE;
-    //   beta = VAL_INFINITE;
-    //   continue;
-    // }
-
-    // alpha = bestValue[currentDepth] - 50;
-    // beta = bestValue[currentDepth] + 50;
 
     if (stop) {
       break;
@@ -260,7 +245,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
                                           oldAlpha = alpha;
   Value ttHit = 0, ttValue = 0, ttEval = VAL_NONE;
   HashFlag ttFlag = HashNone;
-  Depth R, ttDepth = 0;
+  Depth R, ttDepth = 0, extension, newDepth;
   Count moveCount = 0;
   Move bestMove = Move::none(), move, ttMove = Move::none();
   BoardState st{};
@@ -304,20 +289,28 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
     // Only cut with a greater depth search, and do not return
     // when in a PvNode, unless we would otherwise hit a qsearch
-    if (ttDepth >= depth && (depth == 0 || !pvNode) &&
-        (cutNode || ttValue <= alpha)) {
+    if (ttDepth >= depth and (depth == 0 || !pvNode) and
+        (cutNode || ttValue <= alpha) and ttValue != VAL_NONE) {
+
+      if (ttMove and ttValue >= beta and (ttFlag == HashBeta)) {
+        if (!pos.isCapture(ttMove)) {
+          updateHistory(pos, ttMove, depth);
+          updateKiller(ttMove, depth);
+        }
+      }
 
       // Table is exact or produces a cutoff
-      if (ttFlag == HashExact || (ttFlag == HashBeta && ttValue >= beta) ||
-          (ttFlag == HashAlpha && ttValue <= alpha))
+      if (ttFlag == HashExact || (ttFlag == HashBeta and ttValue >= beta) ||
+          (ttFlag == HashAlpha and ttValue <= alpha) and
+              pos.state()->fiftyMove < 90)
         return ttValue;
     }
 
     // An entry coming from one depth lower than we would accept for a cutoff
     // will still be accepted if it appears that failing low will trigger a
     // research.
-    if (!pvNode && ttDepth >= depth - 1 && (ttFlag & HashAlpha) &&
-        (cutNode || ttValue <= alpha) && ttValue + 141 <= alpha)
+    if (!pvNode and ttDepth >= depth - 1 and (ttFlag == HashAlpha) and
+        (cutNode || ttValue <= alpha) and ttValue + 141 <= alpha)
       return alpha;
   }
 
@@ -325,7 +318,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   evaluation = inCheck ? VAL_NONE : ttEval != VAL_NONE ? ttEval : eval(pos);
 
   // Improving
-  improving = !inCheck && evaluation > bestValue[currentDepth - 2];
+  improving = !inCheck and evaluation > bestValue[currentDepth - 2];
 
   rBeta = std::min(beta + 100, VAL_MATE_BOUND - 1);
 
@@ -407,10 +400,16 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     depth -= 1;
   }
 
+  // Simple in check depth extension
+  if (inCheck)
+    depth++;
+
   // Sort moves
   MovePicker mp(pos, ss, ply, depth, ttMove);
 
   while ((move = mp.pickNextMove(skipQuiets)) != Move::none()) {
+    if (!pos.isLegal(move))
+      continue;
 
     bool isCapture = pos.isCapture(move);
     // Late move pruning
@@ -418,9 +417,6 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
         !pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
         moveCount >= LateMovePruningCounts[improving][depth] and depth <= 8)
       skipQuiets = true;
-
-    if (!pos.isLegal(move))
-      continue;
 
     // Make move
     pos.makeMove(move, st);
@@ -431,10 +427,12 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     // Increment legal move counter
     moveCount++;
 
+    newDepth = depth - 1;
+
     if (moveCount == 1) {
-      value = -search(pos, childPV, -beta, -alpha, depth - 1, false);
+      value = -search(pos, childPV, -beta, -alpha, newDepth, false);
     } else {
-      if (depth >= 2 and !inCheck and moveCount >= 2 + rootNode and !pvNode and
+      if (depth >= 2 and !inCheck and moveCount >= 4 + rootNode and !pvNode and
           !isCapture and !move.isPromotion()) {
 
         R = LMRTable[std::min(63, int(depth))][std::min(63, int(moveCount))];
@@ -445,15 +443,16 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
         R = std::min(depth - 1, std::max(int(R), 1));
 
-        value = -search(pos, childPV, -alpha - 1, -alpha, depth - R, true);
+        value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - R, true);
       } else
         value = alpha + 1;
 
       if (value > alpha) {
-        value = -search(pos, childPV, -alpha - 1, -alpha, depth - 1, !cutNode);
+        value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - (R > 3),
+                        !cutNode);
 
         if (value > alpha and value < beta) {
-          value = -search(pos, childPV, -beta, -alpha, depth - 1, false);
+          value = -search(pos, childPV, -beta, -alpha, newDepth, false);
         }
       }
     }
