@@ -52,10 +52,10 @@ RM = "C:\Program Files\CMake\bin\cmake.exe" -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "D:\Maestro V2"
+CMAKE_SOURCE_DIR = "D:\Programming\Maestro Chess Engine"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "D:\Maestro V2\build"
+CMAKE_BINARY_DIR = "D:\Programming\Maestro Chess Engine\build"
 
 # Include any dependencies generated for this target.
 include CMakeFiles/Maestro.dir/depend.make
@@ -69,186 +69,186 @@ include CMakeFiles/Maestro.dir/progress.make
 include CMakeFiles/Maestro.dir/flags.make
 
 CMakeFiles/Maestro.dir/src/bitboard.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/bitboard.cpp.obj: D:/Maestro\ V2/src/bitboard.cpp
+CMakeFiles/Maestro.dir/src/bitboard.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/bitboard.cpp
 CMakeFiles/Maestro.dir/src/bitboard.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/Maestro.dir/src/bitboard.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/bitboard.cpp.obj -MF CMakeFiles\Maestro.dir\src\bitboard.cpp.obj.d -o CMakeFiles\Maestro.dir\src\bitboard.cpp.obj -c "D:\Maestro V2\src\bitboard.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/Maestro.dir/src/bitboard.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/bitboard.cpp.obj -MF CMakeFiles\Maestro.dir\src\bitboard.cpp.obj.d -o CMakeFiles\Maestro.dir\src\bitboard.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\bitboard.cpp"
 
 CMakeFiles/Maestro.dir/src/bitboard.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/bitboard.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\bitboard.cpp" > CMakeFiles\Maestro.dir\src\bitboard.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\bitboard.cpp" > CMakeFiles\Maestro.dir\src\bitboard.cpp.i
 
 CMakeFiles/Maestro.dir/src/bitboard.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/bitboard.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\bitboard.cpp" -o CMakeFiles\Maestro.dir\src\bitboard.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\bitboard.cpp" -o CMakeFiles\Maestro.dir\src\bitboard.cpp.s
 
 CMakeFiles/Maestro.dir/src/position.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/position.cpp.obj: D:/Maestro\ V2/src/position.cpp
+CMakeFiles/Maestro.dir/src/position.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/position.cpp
 CMakeFiles/Maestro.dir/src/position.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/Maestro.dir/src/position.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/position.cpp.obj -MF CMakeFiles\Maestro.dir\src\position.cpp.obj.d -o CMakeFiles\Maestro.dir\src\position.cpp.obj -c "D:\Maestro V2\src\position.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/Maestro.dir/src/position.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/position.cpp.obj -MF CMakeFiles\Maestro.dir\src\position.cpp.obj.d -o CMakeFiles\Maestro.dir\src\position.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\position.cpp"
 
 CMakeFiles/Maestro.dir/src/position.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/position.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\position.cpp" > CMakeFiles\Maestro.dir\src\position.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\position.cpp" > CMakeFiles\Maestro.dir\src\position.cpp.i
 
 CMakeFiles/Maestro.dir/src/position.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/position.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\position.cpp" -o CMakeFiles\Maestro.dir\src\position.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\position.cpp" -o CMakeFiles\Maestro.dir\src\position.cpp.s
 
 CMakeFiles/Maestro.dir/src/movegen.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/movegen.cpp.obj: D:/Maestro\ V2/src/movegen.cpp
+CMakeFiles/Maestro.dir/src/movegen.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/movegen.cpp
 CMakeFiles/Maestro.dir/src/movegen.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/Maestro.dir/src/movegen.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/movegen.cpp.obj -MF CMakeFiles\Maestro.dir\src\movegen.cpp.obj.d -o CMakeFiles\Maestro.dir\src\movegen.cpp.obj -c "D:\Maestro V2\src\movegen.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/Maestro.dir/src/movegen.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/movegen.cpp.obj -MF CMakeFiles\Maestro.dir\src\movegen.cpp.obj.d -o CMakeFiles\Maestro.dir\src\movegen.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\movegen.cpp"
 
 CMakeFiles/Maestro.dir/src/movegen.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/movegen.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\movegen.cpp" > CMakeFiles\Maestro.dir\src\movegen.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\movegen.cpp" > CMakeFiles\Maestro.dir\src\movegen.cpp.i
 
 CMakeFiles/Maestro.dir/src/movegen.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/movegen.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\movegen.cpp" -o CMakeFiles\Maestro.dir\src\movegen.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\movegen.cpp" -o CMakeFiles\Maestro.dir\src\movegen.cpp.s
 
 CMakeFiles/Maestro.dir/src/perft.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/perft.cpp.obj: D:/Maestro\ V2/src/perft.cpp
+CMakeFiles/Maestro.dir/src/perft.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/perft.cpp
 CMakeFiles/Maestro.dir/src/perft.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/Maestro.dir/src/perft.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/perft.cpp.obj -MF CMakeFiles\Maestro.dir\src\perft.cpp.obj.d -o CMakeFiles\Maestro.dir\src\perft.cpp.obj -c "D:\Maestro V2\src\perft.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/Maestro.dir/src/perft.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/perft.cpp.obj -MF CMakeFiles\Maestro.dir\src\perft.cpp.obj.d -o CMakeFiles\Maestro.dir\src\perft.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\perft.cpp"
 
 CMakeFiles/Maestro.dir/src/perft.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/perft.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\perft.cpp" > CMakeFiles\Maestro.dir\src\perft.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\perft.cpp" > CMakeFiles\Maestro.dir\src\perft.cpp.i
 
 CMakeFiles/Maestro.dir/src/perft.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/perft.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\perft.cpp" -o CMakeFiles\Maestro.dir\src\perft.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\perft.cpp" -o CMakeFiles\Maestro.dir\src\perft.cpp.s
 
 CMakeFiles/Maestro.dir/src/uci.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/uci.cpp.obj: D:/Maestro\ V2/src/uci.cpp
+CMakeFiles/Maestro.dir/src/uci.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/uci.cpp
 CMakeFiles/Maestro.dir/src/uci.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/Maestro.dir/src/uci.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/uci.cpp.obj -MF CMakeFiles\Maestro.dir\src\uci.cpp.obj.d -o CMakeFiles\Maestro.dir\src\uci.cpp.obj -c "D:\Maestro V2\src\uci.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/Maestro.dir/src/uci.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/uci.cpp.obj -MF CMakeFiles\Maestro.dir\src\uci.cpp.obj.d -o CMakeFiles\Maestro.dir\src\uci.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\uci.cpp"
 
 CMakeFiles/Maestro.dir/src/uci.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/uci.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\uci.cpp" > CMakeFiles\Maestro.dir\src\uci.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\uci.cpp" > CMakeFiles\Maestro.dir\src\uci.cpp.i
 
 CMakeFiles/Maestro.dir/src/uci.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/uci.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\uci.cpp" -o CMakeFiles\Maestro.dir\src\uci.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\uci.cpp" -o CMakeFiles\Maestro.dir\src\uci.cpp.s
 
 CMakeFiles/Maestro.dir/src/eval.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/eval.cpp.obj: D:/Maestro\ V2/src/eval.cpp
+CMakeFiles/Maestro.dir/src/eval.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/eval.cpp
 CMakeFiles/Maestro.dir/src/eval.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/Maestro.dir/src/eval.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/eval.cpp.obj -MF CMakeFiles\Maestro.dir\src\eval.cpp.obj.d -o CMakeFiles\Maestro.dir\src\eval.cpp.obj -c "D:\Maestro V2\src\eval.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/Maestro.dir/src/eval.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/eval.cpp.obj -MF CMakeFiles\Maestro.dir\src\eval.cpp.obj.d -o CMakeFiles\Maestro.dir\src\eval.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\eval.cpp"
 
 CMakeFiles/Maestro.dir/src/eval.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/eval.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\eval.cpp" > CMakeFiles\Maestro.dir\src\eval.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\eval.cpp" > CMakeFiles\Maestro.dir\src\eval.cpp.i
 
 CMakeFiles/Maestro.dir/src/eval.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/eval.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\eval.cpp" -o CMakeFiles\Maestro.dir\src\eval.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\eval.cpp" -o CMakeFiles\Maestro.dir\src\eval.cpp.s
 
 CMakeFiles/Maestro.dir/src/hashtable.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/hashtable.cpp.obj: D:/Maestro\ V2/src/hashtable.cpp
+CMakeFiles/Maestro.dir/src/hashtable.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/hashtable.cpp
 CMakeFiles/Maestro.dir/src/hashtable.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/Maestro.dir/src/hashtable.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/hashtable.cpp.obj -MF CMakeFiles\Maestro.dir\src\hashtable.cpp.obj.d -o CMakeFiles\Maestro.dir\src\hashtable.cpp.obj -c "D:\Maestro V2\src\hashtable.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/Maestro.dir/src/hashtable.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/hashtable.cpp.obj -MF CMakeFiles\Maestro.dir\src\hashtable.cpp.obj.d -o CMakeFiles\Maestro.dir\src\hashtable.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\hashtable.cpp"
 
 CMakeFiles/Maestro.dir/src/hashtable.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/hashtable.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\hashtable.cpp" > CMakeFiles\Maestro.dir\src\hashtable.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\hashtable.cpp" > CMakeFiles\Maestro.dir\src\hashtable.cpp.i
 
 CMakeFiles/Maestro.dir/src/hashtable.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/hashtable.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\hashtable.cpp" -o CMakeFiles\Maestro.dir\src\hashtable.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\hashtable.cpp" -o CMakeFiles\Maestro.dir\src\hashtable.cpp.s
 
 CMakeFiles/Maestro.dir/src/misc.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/misc.cpp.obj: D:/Maestro\ V2/src/misc.cpp
+CMakeFiles/Maestro.dir/src/misc.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/misc.cpp
 CMakeFiles/Maestro.dir/src/misc.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/Maestro.dir/src/misc.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/misc.cpp.obj -MF CMakeFiles\Maestro.dir\src\misc.cpp.obj.d -o CMakeFiles\Maestro.dir\src\misc.cpp.obj -c "D:\Maestro V2\src\misc.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/Maestro.dir/src/misc.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/misc.cpp.obj -MF CMakeFiles\Maestro.dir\src\misc.cpp.obj.d -o CMakeFiles\Maestro.dir\src\misc.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\misc.cpp"
 
 CMakeFiles/Maestro.dir/src/misc.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/misc.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\misc.cpp" > CMakeFiles\Maestro.dir\src\misc.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\misc.cpp" > CMakeFiles\Maestro.dir\src\misc.cpp.i
 
 CMakeFiles/Maestro.dir/src/misc.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/misc.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\misc.cpp" -o CMakeFiles\Maestro.dir\src\misc.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\misc.cpp" -o CMakeFiles\Maestro.dir\src\misc.cpp.s
 
 CMakeFiles/Maestro.dir/src/movepicker.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/movepicker.cpp.obj: D:/Maestro\ V2/src/movepicker.cpp
+CMakeFiles/Maestro.dir/src/movepicker.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/movepicker.cpp
 CMakeFiles/Maestro.dir/src/movepicker.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/Maestro.dir/src/movepicker.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/movepicker.cpp.obj -MF CMakeFiles\Maestro.dir\src\movepicker.cpp.obj.d -o CMakeFiles\Maestro.dir\src\movepicker.cpp.obj -c "D:\Maestro V2\src\movepicker.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/Maestro.dir/src/movepicker.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/movepicker.cpp.obj -MF CMakeFiles\Maestro.dir\src\movepicker.cpp.obj.d -o CMakeFiles\Maestro.dir\src\movepicker.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\movepicker.cpp"
 
 CMakeFiles/Maestro.dir/src/movepicker.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/movepicker.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\movepicker.cpp" > CMakeFiles\Maestro.dir\src\movepicker.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\movepicker.cpp" > CMakeFiles\Maestro.dir\src\movepicker.cpp.i
 
 CMakeFiles/Maestro.dir/src/movepicker.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/movepicker.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\movepicker.cpp" -o CMakeFiles\Maestro.dir\src\movepicker.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\movepicker.cpp" -o CMakeFiles\Maestro.dir\src\movepicker.cpp.s
 
 CMakeFiles/Maestro.dir/src/nnue.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/nnue.cpp.obj: D:/Maestro\ V2/src/nnue.cpp
+CMakeFiles/Maestro.dir/src/nnue.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/nnue.cpp
 CMakeFiles/Maestro.dir/src/nnue.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/Maestro.dir/src/nnue.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/nnue.cpp.obj -MF CMakeFiles\Maestro.dir\src\nnue.cpp.obj.d -o CMakeFiles\Maestro.dir\src\nnue.cpp.obj -c "D:\Maestro V2\src\nnue.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/Maestro.dir/src/nnue.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/nnue.cpp.obj -MF CMakeFiles\Maestro.dir\src\nnue.cpp.obj.d -o CMakeFiles\Maestro.dir\src\nnue.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\nnue.cpp"
 
 CMakeFiles/Maestro.dir/src/nnue.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/nnue.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\nnue.cpp" > CMakeFiles\Maestro.dir\src\nnue.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\nnue.cpp" > CMakeFiles\Maestro.dir\src\nnue.cpp.i
 
 CMakeFiles/Maestro.dir/src/nnue.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/nnue.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\nnue.cpp" -o CMakeFiles\Maestro.dir\src\nnue.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\nnue.cpp" -o CMakeFiles\Maestro.dir\src\nnue.cpp.s
 
 CMakeFiles/Maestro.dir/src/search.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/search.cpp.obj: D:/Maestro\ V2/src/search.cpp
+CMakeFiles/Maestro.dir/src/search.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/search.cpp
 CMakeFiles/Maestro.dir/src/search.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/Maestro.dir/src/search.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/search.cpp.obj -MF CMakeFiles\Maestro.dir\src\search.cpp.obj.d -o CMakeFiles\Maestro.dir\src\search.cpp.obj -c "D:\Maestro V2\src\search.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/Maestro.dir/src/search.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/search.cpp.obj -MF CMakeFiles\Maestro.dir\src\search.cpp.obj.d -o CMakeFiles\Maestro.dir\src\search.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\search.cpp"
 
 CMakeFiles/Maestro.dir/src/search.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/search.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\search.cpp" > CMakeFiles\Maestro.dir\src\search.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\search.cpp" > CMakeFiles\Maestro.dir\src\search.cpp.i
 
 CMakeFiles/Maestro.dir/src/search.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/search.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\search.cpp" -o CMakeFiles\Maestro.dir\src\search.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\search.cpp" -o CMakeFiles\Maestro.dir\src\search.cpp.s
 
 CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: D:/Maestro\ V2/src/polyglot.cpp
+CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/polyglot.cpp
 CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/Maestro.dir/src/polyglot.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/polyglot.cpp.obj -MF CMakeFiles\Maestro.dir\src\polyglot.cpp.obj.d -o CMakeFiles\Maestro.dir\src\polyglot.cpp.obj -c "D:\Maestro V2\src\polyglot.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/Maestro.dir/src/polyglot.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/polyglot.cpp.obj -MF CMakeFiles\Maestro.dir\src\polyglot.cpp.obj.d -o CMakeFiles\Maestro.dir\src\polyglot.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\polyglot.cpp"
 
 CMakeFiles/Maestro.dir/src/polyglot.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/polyglot.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\polyglot.cpp" > CMakeFiles\Maestro.dir\src\polyglot.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\polyglot.cpp" > CMakeFiles\Maestro.dir\src\polyglot.cpp.i
 
 CMakeFiles/Maestro.dir/src/polyglot.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/polyglot.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\polyglot.cpp" -o CMakeFiles\Maestro.dir\src\polyglot.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\polyglot.cpp" -o CMakeFiles\Maestro.dir\src\polyglot.cpp.s
 
 CMakeFiles/Maestro.dir/src/main.cpp.obj: CMakeFiles/Maestro.dir/flags.make
-CMakeFiles/Maestro.dir/src/main.cpp.obj: D:/Maestro\ V2/src/main.cpp
+CMakeFiles/Maestro.dir/src/main.cpp.obj: D:/Programming/Maestro\ Chess\ Engine/src/main.cpp
 CMakeFiles/Maestro.dir/src/main.cpp.obj: CMakeFiles/Maestro.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/Maestro.dir/src/main.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/main.cpp.obj -MF CMakeFiles\Maestro.dir\src\main.cpp.obj.d -o CMakeFiles\Maestro.dir\src\main.cpp.obj -c "D:\Maestro V2\src\main.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/Maestro.dir/src/main.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Maestro.dir/src/main.cpp.obj -MF CMakeFiles\Maestro.dir\src\main.cpp.obj.d -o CMakeFiles\Maestro.dir\src\main.cpp.obj -c "D:\Programming\Maestro Chess Engine\src\main.cpp"
 
 CMakeFiles/Maestro.dir/src/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Maestro.dir/src/main.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Maestro V2\src\main.cpp" > CMakeFiles\Maestro.dir\src\main.cpp.i
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "D:\Programming\Maestro Chess Engine\src\main.cpp" > CMakeFiles\Maestro.dir\src\main.cpp.i
 
 CMakeFiles/Maestro.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Maestro.dir/src/main.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Maestro V2\src\main.cpp" -o CMakeFiles\Maestro.dir\src\main.cpp.s
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "D:\Programming\Maestro Chess Engine\src\main.cpp" -o CMakeFiles\Maestro.dir\src\main.cpp.s
 
 # Object files for target Maestro
 Maestro_OBJECTS = \
@@ -286,7 +286,7 @@ Maestro.exe: CMakeFiles/Maestro.dir/build.make
 Maestro.exe: CMakeFiles/Maestro.dir/linkLibs.rsp
 Maestro.exe: CMakeFiles/Maestro.dir/objects1.rsp
 Maestro.exe: CMakeFiles/Maestro.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="D:\Maestro V2\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX executable Maestro.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="D:\Programming\Maestro Chess Engine\build\CMakeFiles" --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX executable Maestro.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\Maestro.dir\link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -298,6 +298,6 @@ CMakeFiles/Maestro.dir/clean:
 .PHONY : CMakeFiles/Maestro.dir/clean
 
 CMakeFiles/Maestro.dir/depend:
-	$(CMAKE_COMMAND) -E cmake_depends "MinGW Makefiles" "D:\Maestro V2" "D:\Maestro V2" "D:\Maestro V2\build" "D:\Maestro V2\build" "D:\Maestro V2\build\CMakeFiles\Maestro.dir\DependInfo.cmake" "--color=$(COLOR)"
+	$(CMAKE_COMMAND) -E cmake_depends "MinGW Makefiles" "D:\Programming\Maestro Chess Engine" "D:\Programming\Maestro Chess Engine" "D:\Programming\Maestro Chess Engine\build" "D:\Programming\Maestro Chess Engine\build" "D:\Programming\Maestro Chess Engine\build\CMakeFiles\Maestro.dir\DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : CMakeFiles/Maestro.dir/depend
 

@@ -1,5 +1,5 @@
 CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: \
- D:\Maestro\ V2\src\polyglot.cpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\polyglot.cpp \
  C:/msys64/ucrt64/include/c++/13.2.0/cstdlib \
  C:/msys64/ucrt64/include/c++/13.2.0/x86_64-w64-mingw32/bits/c++config.h \
  C:/msys64/ucrt64/include/c++/13.2.0/x86_64-w64-mingw32/bits/os_defines.h \
@@ -185,8 +185,9 @@ CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_vector.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_bvector.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/vector.tcc \
- D:\Maestro\ V2\src\defs.hpp D:\Maestro\ V2\src\movegen.hpp \
- D:\Maestro\ V2\src\position.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\defs.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\movegen.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\position.hpp \
  C:/msys64/ucrt64/include/c++/13.2.0/deque \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_deque.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/deque.tcc \
@@ -203,7 +204,7 @@ CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/ranges_algobase.h \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/glue_memory_defs.h \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/execution_defs.h \
- D:\Maestro\ V2\src\bitboard.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\bitboard.hpp \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/immintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/x86gprintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/ia32intrin.h \
@@ -297,8 +298,10 @@ CMakeFiles/Maestro.dir/src/polyglot.cpp.obj: \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/prfchwintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/keylockerintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
- D:\Maestro\ V2\src\nnue.hpp D:\Maestro\ V2\src\polyglot.hpp \
- D:\Maestro\ V2\src\utils.hpp C:/msys64/ucrt64/include/c++/13.2.0/chrono \
+ D:\Programming\Maestro\ Chess\ Engine\src\nnue.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\polyglot.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\utils.hpp \
+ C:/msys64/ucrt64/include/c++/13.2.0/chrono \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_algo.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/algorithmfwd.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_heap.h \

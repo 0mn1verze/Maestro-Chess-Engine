@@ -1323,7 +1323,7 @@ int nnue_evaluate(int player, int *pieces, int *squares) {
 
 int nnue_evaluate_incremental(int player, int *pieces, int *squares,
                               NNUEdata *data[]) {
-  assert(nnue[0] && (uint64_t)(&nnue[0]->accumulator) % 64 == 0);
+  assert(data[0] && (uint64_t)(&data[0]->accumulator) % 64 == 0);
 
   Board pos;
   pos.nnue[0] = data[0];

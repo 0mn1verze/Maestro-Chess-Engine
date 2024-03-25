@@ -1,4 +1,5 @@
-CMakeFiles/Maestro.dir/src/nnue.cpp.obj: D:\Maestro\ V2\src\nnue.cpp \
+CMakeFiles/Maestro.dir/src/nnue.cpp.obj: \
+ D:\Programming\Maestro\ Chess\ Engine\src\nnue.cpp \
  C:/msys64/ucrt64/include/assert.h C:/msys64/ucrt64/include/crtdefs.h \
  C:/msys64/ucrt64/include/corecrt.h C:/msys64/ucrt64/include/_mingw.h \
  C:/msys64/ucrt64/include/_mingw_mac.h \
@@ -37,9 +38,9 @@ CMakeFiles/Maestro.dir/src/nnue.cpp.obj: D:\Maestro\ V2\src\nnue.cpp \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/xmmintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/mmintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/mwaitintrin.h \
- D:\Maestro\ V2\src\misc.hpp C:/msys64/ucrt64/include/inttypes.h \
- C:/msys64/ucrt64/include/windows.h C:/msys64/ucrt64/include/sdkddkver.h \
- C:/msys64/ucrt64/include/excpt.h \
+ D:\Programming\Maestro\ Chess\ Engine\src\misc.hpp \
+ C:/msys64/ucrt64/include/inttypes.h C:/msys64/ucrt64/include/windows.h \
+ C:/msys64/ucrt64/include/sdkddkver.h C:/msys64/ucrt64/include/excpt.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdarg.h \
  C:/msys64/ucrt64/include/stdarg.h \
  C:/msys64/ucrt64/include/_mingw_stdarg.h \
@@ -229,4 +230,5 @@ CMakeFiles/Maestro.dir/src/nnue.cpp.obj: D:\Maestro\ V2\src\nnue.cpp \
  C:/msys64/ucrt64/include/stralign.h \
  C:/msys64/ucrt64/include/sec_api/stralign_s.h \
  C:/msys64/ucrt64/include/winsvc.h C:/msys64/ucrt64/include/mcx.h \
- C:/msys64/ucrt64/include/imm.h D:\Maestro\ V2\src\nnue.hpp
+ C:/msys64/ucrt64/include/imm.h \
+ D:\Programming\Maestro\ Chess\ Engine\src\nnue.hpp

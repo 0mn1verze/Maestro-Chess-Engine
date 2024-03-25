@@ -1,4 +1,5 @@
-CMakeFiles/Maestro.dir/src/misc.cpp.obj: D:\Maestro\ V2\src\misc.cpp \
+CMakeFiles/Maestro.dir/src/misc.cpp.obj: \
+ D:\Programming\Maestro\ Chess\ Engine\src\misc.cpp \
  C:/msys64/ucrt64/include/fcntl.h C:/msys64/ucrt64/include/crtdefs.h \
  C:/msys64/ucrt64/include/corecrt.h C:/msys64/ucrt64/include/_mingw.h \
  C:/msys64/ucrt64/include/_mingw_mac.h \
@@ -14,7 +15,8 @@ CMakeFiles/Maestro.dir/src/misc.cpp.obj: D:\Maestro\ V2\src\misc.cpp \
  C:/msys64/ucrt64/include/corecrt_stdio_config.h \
  C:/msys64/ucrt64/include/swprintf.inl \
  C:/msys64/ucrt64/include/sec_api/stdio_s.h \
- C:/msys64/ucrt64/include/ctype.h D:\Maestro\ V2\src\misc.hpp \
+ C:/msys64/ucrt64/include/ctype.h \
+ D:\Programming\Maestro\ Chess\ Engine\src\misc.hpp \
  C:/msys64/ucrt64/include/inttypes.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdint.h \
  C:/msys64/ucrt64/include/stdint.h \

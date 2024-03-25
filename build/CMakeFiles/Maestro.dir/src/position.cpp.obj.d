@@ -1,5 +1,5 @@
 CMakeFiles/Maestro.dir/src/position.cpp.obj: \
- D:\Maestro\ V2\src\position.cpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\position.cpp \
  C:/msys64/ucrt64/include/c++/13.2.0/algorithm \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_algobase.h \
  C:/msys64/ucrt64/include/c++/13.2.0/x86_64-w64-mingw32/bits/c++config.h \
@@ -161,7 +161,7 @@ CMakeFiles/Maestro.dir/src/position.cpp.obj: \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/istream.tcc \
  C:/msys64/ucrt64/include/c++/13.2.0/sstream \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/sstream.tcc \
- D:\Maestro\ V2\src\bitboard.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\bitboard.hpp \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/immintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/x86gprintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/ia32intrin.h \
@@ -255,10 +255,12 @@ CMakeFiles/Maestro.dir/src/position.cpp.obj: \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/prfchwintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/keylockerintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
- D:\Maestro\ V2\src\defs.hpp C:/msys64/ucrt64/include/c++/13.2.0/cstdint \
+ D:\Programming\Maestro\ Chess\ Engine\src\defs.hpp \
+ C:/msys64/ucrt64/include/c++/13.2.0/cstdint \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdint.h \
- C:/msys64/ucrt64/include/stdint.h D:\Maestro\ V2\src\eval.hpp \
- D:\Maestro\ V2\src\position.hpp \
+ C:/msys64/ucrt64/include/stdint.h \
+ D:\Programming\Maestro\ Chess\ Engine\src\eval.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\position.hpp \
  C:/msys64/ucrt64/include/c++/13.2.0/deque \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_uninitialized.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_deque.h \
@@ -280,8 +282,10 @@ CMakeFiles/Maestro.dir/src/position.cpp.obj: \
  C:/msys64/ucrt64/include/c++/13.2.0/backward/auto_ptr.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/ranges_uninitialized.h \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/glue_memory_defs.h \
- D:\Maestro\ V2\src\nnue.hpp D:\Maestro\ V2\src\movegen.hpp \
- D:\Maestro\ V2\src\utils.hpp C:/msys64/ucrt64/include/c++/13.2.0/chrono \
+ D:\Programming\Maestro\ Chess\ Engine\src\nnue.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\movegen.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\utils.hpp \
+ C:/msys64/ucrt64/include/c++/13.2.0/chrono \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/chrono.h \
  C:/msys64/ucrt64/include/c++/13.2.0/ratio \
  C:/msys64/ucrt64/include/c++/13.2.0/limits \

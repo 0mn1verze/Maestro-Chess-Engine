@@ -130,14 +130,14 @@ std::string SearchWorker::pv(PVLine pvLine) {
 }
 
 static void initLMR() {
-  // Init Late Move Reductions Table (From Ethreal Chess Engine)
+  // Init Late Move Reductions Table
   for (int depth = 1; depth < 64; depth++)
     for (int played = 1; played < 64; played++)
-      LMRTable[depth][played] = 1 + log(depth) * log(played) / 3;
+      LMRTable[depth][played] = 0.5 + log(depth) * log(played) / 3;
 
   for (int depth = 1; depth <= 10; depth++) {
-    LateMovePruningCounts[0][depth] = 4 + depth * depth;
-    LateMovePruningCounts[1][depth] = 6 + 2 * depth * depth;
+    LateMovePruningCounts[0][depth] = 4 + (depth * depth) / 2;
+    LateMovePruningCounts[1][depth] = 8 + depth * depth;
   }
 }
 
@@ -300,9 +300,10 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       }
 
       // Table is exact or produces a cutoff
-      if (ttFlag == HashExact || (ttFlag == HashBeta and ttValue >= beta) ||
-          (ttFlag == HashAlpha and ttValue <= alpha) and
-              pos.state()->fiftyMove < 90)
+      if (!pvNode and
+          (ttFlag == HashExact || (ttFlag == HashBeta and ttValue >= beta) ||
+           (ttFlag == HashAlpha and ttValue <= alpha)) and
+          pos.state()->fiftyMove < 90)
         return ttValue;
     }
 
@@ -353,7 +354,8 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     R = 4 + depth / 5 + std::min(3, (evaluation - beta) / 191);
 
     pos.makeNullMove(st);
-    Value nullValue = -search(pos, childPV, -beta, -beta + 1, depth - R, true);
+    Value nullValue =
+        -search(pos, childPV, -beta, -beta + 1, depth - R, !cutNode);
     pos.unmakeNullMove();
 
     if (stop) {
@@ -412,11 +414,15 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       continue;
 
     bool isCapture = pos.isCapture(move);
-    // Late move pruning
-    if (bestScore > -VAL_MATE_BOUND and !rootNode and
-        !pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
-        moveCount >= LateMovePruningCounts[improving][depth] and depth <= 8)
+
+    // Increment legal move counter
+    moveCount++;
+
+    if (!rootNode and bestScore > -VAL_MATE_BOUND and depth <= 8 and
+        moveCount >= LateMovePruningCounts[improving][depth])
       skipQuiets = true;
+
+    newDepth = depth;
 
     // Make move
     pos.makeMove(move, st);
@@ -424,38 +430,27 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     // Increment ply
     ply++;
 
-    // Increment legal move counter
-    moveCount++;
+    if (depth >= 2 and moveCount >= 1 + rootNode) {
 
-    newDepth = depth - 1;
+      R = LMRTable[std::min(63, int(depth))][std::min(63, int(moveCount))];
 
-    if (moveCount == 1) {
-      value = -search(pos, childPV, -beta, -alpha, newDepth, false);
-    } else {
-      if (depth >= 2 and !inCheck and moveCount >= 4 + rootNode and !pvNode and
-          !isCapture and !move.isPromotion()) {
+      R += !pvNode + !improving;
 
-        R = LMRTable[std::min(63, int(depth))][std::min(63, int(moveCount))];
+      R += inCheck and pos.getPieceType(move.to()) == KING;
 
-        R += !pvNode + !improving;
+      R = std::min(depth - 1, std::max(+R, 1));
 
-        R += inCheck and pos.getPieceType(move.to()) == KING;
+      value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - R, true);
 
-        R = std::min(depth - 1, std::max(int(R), 1));
+      doFullSearch = value > alpha and R != 1;
+    } else
+      doFullSearch = !pvNode || moveCount > 1;
 
-        value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - R, true);
-      } else
-        value = alpha + 1;
+    if (doFullSearch)
+      value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - 1, !cutNode);
 
-      if (value > alpha) {
-        value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - (R > 3),
-                        !cutNode);
-
-        if (value > alpha and value < beta) {
-          value = -search(pos, childPV, -beta, -alpha, newDepth, false);
-        }
-      }
-    }
+    if (pvNode and (moveCount == 1 || value > alpha))
+      value = -search(pos, childPV, -beta, -alpha, newDepth - 1, false);
 
     // Decrement ply
     ply--;
