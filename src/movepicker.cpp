@@ -6,17 +6,40 @@
 #include "position.hpp"
 #include "search.hpp"
 
-MovePicker::MovePicker(Position &pos, SearchStats &ss, const int ply,
-                       const Depth depth, const Move pvMove)
-    : pos(pos), ply(ply), cur(moves), back(cur), ss(ss), depth(depth),
-      ttMove(pvMove) {
-  // Set the generation stage to INIT_CAPTURES
-  genStage = PV;
+// Partial insertion sort
+inline void insertion_sort(Move *begin, Move *end, int limit) {
+  for (Move *sortedEnd = begin, *p = begin + 1; p < end; ++p)
+    if (p->score >= limit) {
+      Move tmp = *p, *q;
+      *p = *++sortedEnd;
+      for (q = sortedEnd; q != begin && *(q - 1) < tmp; --q)
+        *q = *(q - 1);
+      *q = tmp;
+    }
+}
 
-  // If PV move is none, set stage to INIT_CAPTURES
-  if (!pos.isLegal(ttMove))
-    ++genStage;
+MovePicker::MovePicker(Position &pos, SearchStats &ss, const int ply,
+                       const Depth depth, const Move pvMove,
+                       const bool onlyCaptures, const int threshold)
+    : pos(pos), ply(ply), cur(moves), ss(ss), depth(depth), ttMove(pvMove),
+      threshold(threshold), onlyCaptures(onlyCaptures) {
+  // Set the generation stage to INIT_CAPTURES
+  genStage = GenStage(onlyCaptures ? Q_TT : TT + !pos.isLegal(ttMove));
+
+  if (!onlyCaptures) {
+    killer1 = ss.killer[depth][0];
+    killer2 = ss.killer[depth][1];
+  }
 };
+
+MovePicker::MovePicker(Position &pos, SearchStats &ss, const int threshold,
+                       const Move pvMove)
+    : pos(pos), ply(ply), cur(moves), ss(ss), depth(depth), ttMove(pvMove),
+      threshold(0), onlyCaptures(onlyCaptures) {
+  genStage =
+      GenStage(PROBCUT_TT + !(pos.isLegal(ttMove) and pos.isCapture(ttMove) and
+                              pos.SEE(ttMove, threshold)));
+}
 
 template <GenType gt> void MovePicker::scoreMoves() {
   // Loop through all the moves
@@ -40,66 +63,117 @@ template <GenType gt> void MovePicker::scoreMoves() {
     }
 
     if constexpr (gt == QUIETS) {
-      if (m == ss.killer[depth][0])
-        m.score = 9000;
-      else if (m == ss.killer[depth][1])
-        m.score = 8000;
-      else {
-        Piece piece = pos.getPiece(from);
-        m.score = ss.history[piece][to];
-      }
+      // if (m == ss.killer[depth][0])
+      //   m.score = 9000;
+      // else if (m == ss.killer[depth][1])
+      //   m.score = 8000;
+      // else {
+      Piece piece = pos.getPiece(from);
+      m.score = ss.history[piece][to];
+      // }
     }
   }
 }
 
+template <MovePicker::PickType T, typename Pred>
+Move MovePicker::select(Pred filter) {
+  while (cur < endMoves) {
+    if constexpr (T == Best)
+      std::swap(*cur, *std::max_element(cur, endMoves));
+
+    if (*cur != ttMove and filter())
+      return *cur++;
+
+    cur++;
+  }
+
+  return Move::none();
+}
+
 Move MovePicker::pickNextMove(bool quiescence) {
+
+  auto quietThreshold = [](Depth d) { return -200 * d; };
+
   switch (genStage) {
-  case PV:
+  case TT:
+  case Q_TT:
+  case PROBCUT_TT:
     // Increment stage and return pv move
     ++genStage;
     return ttMove;
-  case INIT_CAPTURES:
+  case INIT_CAPTURE:
+  case Q_INIT_CAPTURE:
+  case PROBCUT_INIT:
     // Set cur pointer
-    cur = moves;
+    cur = endBadCaptures = moves;
     // Generate moves
-    back = generateMoves<CAPTURES>(cur, pos);
+    endMoves = generateMoves<CAPTURES>(cur, pos);
     // Score moves
     scoreMoves<CAPTURES>();
     // Sort moves
-    insertion_sort(cur, back, 0);
+    insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
     // Increment stage
     ++genStage;
-  case G_CAPTURES:
-    while (cur < back) {
-      if (*cur != ttMove)
-        return *cur++;
-      cur++;
-    }
+  case GOOD_CAPTURE:
+    if (select<Next>([&]() {
+          return pos.SEE(*cur, -threshold) ? true
+                                           : (*endBadCaptures++ = *cur, false);
+        }))
+      return *(cur - 1);
     // Increment stage
     ++genStage;
-  case INIT_QUIETS:
+  case KILLER1:
+    ++genStage;
+    if (killer1 != ttMove and pos.isLegal(killer1) and !pos.isCapture(killer1))
+      return killer1;
+  case KILLER2:
+    ++genStage;
+    if (killer2 != ttMove and pos.isLegal(killer2) and !pos.isCapture(killer2))
+      return killer2;
+  case INIT_QUIET:
     if (!quiescence) {
       // Set cur pointer
-      cur = back;
+      cur = endBadCaptures;
       // Generate moves
-      back = generateMoves<QUIETS>(cur, pos);
+      endMoves = beginBadQuiets = endBadQuiets =
+          generateMoves<QUIETS>(cur, pos);
       // Score moves
       scoreMoves<QUIETS>();
       // Sort moves
-      insertion_sort(cur, back, 0);
+      insertion_sort(cur, endMoves, quietThreshold(depth));
     }
     ++genStage;
-  case G_QUIETS:
-    if (!quiescence) {
-      // Return quiet moves if there are still quiet moves left
-      while (cur < back) {
-        if (*cur != ttMove)
-          return *cur++;
-        cur++;
-      }
+  case GOOD_QUIET:
+    if (!quiescence and
+        select<Next>([&]() { return *cur != killer1 and *cur != killer2; })) {
+      if ((cur - 1)->score > -500 || (cur - 1)->score <= quietThreshold(depth))
+        return *(cur - 1);
+
+      beginBadQuiets = cur - 1;
     }
-    // Increment stage
+    cur = moves;
+    endMoves = endBadCaptures;
     ++genStage;
+  case BAD_CAPTURE:
+    if (select<Next>([&]() { return true; }))
+      return *(cur - 1);
+
+    cur = beginBadQuiets;
+    endMoves = endBadQuiets;
+
+    ++genStage;
+  case BAD_QUIET:
+    if (!quiescence)
+      return select<Next>(
+          [&]() { return *cur != killer1 and *cur != killer2; });
+    return Move::none();
+  case Q_CAPTURE:
+    if (select<Next>([]() { return true; }))
+      return *(cur - 1);
+    ++genStage;
+    return Move::none();
+  case PROBCUT:
+    return select<Next>([&]() { return pos.SEE(*cur, threshold); });
   }
   return Move::none();
 }

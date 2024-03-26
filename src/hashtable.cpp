@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <iterator>
 
@@ -11,24 +12,21 @@ TTTable hashTable; // Global hash table
 // Mate scores have to be adjusted relative to the root so we can know if a mate
 // is faster or slower
 static Value TTValueFrom(Value value, int ply) {
-  return value == VAL_NONE         ? VAL_NONE
-         : value > VAL_MATE_BOUND  ? value - ply
-         : value < -VAL_MATE_BOUND ? value + ply
-                                   : value;
+  return value == VAL_NONE          ? VAL_NONE
+         : value >= VAL_MATE_BOUND  ? value - ply
+         : value <= -VAL_MATE_BOUND ? value + ply
+                                    : value;
 }
 
 static Value TTValueTo(Value value, int ply) {
-  return value == VAL_NONE         ? VAL_NONE
-         : value > VAL_MATE_BOUND  ? value + ply
-         : value < -VAL_MATE_BOUND ? value - ply
-                                   : value;
+  return value == VAL_NONE          ? VAL_NONE
+         : value >= VAL_MATE_BOUND  ? value + ply
+         : value <= -VAL_MATE_BOUND ? value - ply
+                                    : value;
 }
 
 // Update table generation
-void TTUpdate() {
-  hashTable.generation += TT_MASK_BOUND + 1;
-  std::cout << hashTable.generation << std::endl;
-}
+void TTUpdate() { hashTable.generation += TT_MASK_BOUND + 1; }
 
 // Prefetch the hash entry to make memory access quicker
 void TTPrefetch(const Key key) {
@@ -120,7 +118,7 @@ void TTStore(const Key key, int ply, Move move, Value value, Value eval,
   replace = (i != TT_BUCKET_NB) ? &slots[i] : replace;
 
   if (flag != HashExact and hash16 == replace->hash16 and
-      depth < replace->depth) {
+      depth < replace->depth - 2) {
     return;
   }
 
@@ -129,7 +127,7 @@ void TTStore(const Key key, int ply, Move move, Value value, Value eval,
   }
 
   replace->depth = depth;
-  replace->generation = (std::uint8_t)flag | hashTable.generation;
+  replace->generation = (std::uint8_t)(flag | hashTable.generation);
   replace->value = TTValueTo(value, ply);
   replace->eval = eval;
   replace->hash16 = hash16;
@@ -137,6 +135,6 @@ void TTStore(const Key key, int ply, Move move, Value value, Value eval,
 
 void TTClear() {
   const uint64_t MB = 1ULL << 20;
-  std::fill(hashTable.buckets, hashTable.buckets + hashTable.hashMask + 1,
-            TTBucket{});
+  std::memset(hashTable.buckets, 0,
+              (hashTable.hashMask + 1) * sizeof(TTBucket));
 }

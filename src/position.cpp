@@ -10,7 +10,6 @@
 #include "position.hpp"
 #include "utils.hpp"
 
-
 /******************************************\
 |==========================================|
 |             Zobrist Hashing              |
@@ -826,7 +825,8 @@ bool Position::isLegal(Move move) const {
         return false;
       break;
     }
-  }
+  } else if (getPieceType(from) != PAWN and getPieceType(from) != KING)
+    return false;
 
   if (getPieceType(from) != KING and isInCheck() and
       !(st->checkMask & (move.isEnPassant() ? to - pawnPush(us) : to)))
@@ -835,4 +835,106 @@ bool Position::isLegal(Move move) const {
   Bitboard pins = st->bishopPin | st->rookPin;
 
   return !(pins & from) || aligned(from, to, square<KING>(us));
+}
+
+Bitboard Position::pinners() const {
+  return st->bishopPin & getPiecesBB(~sideToMove, BISHOP, QUEEN) |
+         st->rookPin & getPiecesBB(~sideToMove, ROOK, QUEEN);
+}
+
+Bitboard Position::blockersForKing() const {
+  return st->bishopPin & getOccupiedBB(sideToMove) |
+         st->rookPin & getOccupiedBB(sideToMove);
+}
+
+// Stockfish SEE function
+bool Position::SEE(Move move, int threshold) const {
+  if (!move.isNormal())
+    return 0 >= threshold;
+
+  Square from = move.from();
+  Square to = move.to();
+
+  int swap = PieceValue[getPiece(to)] - threshold;
+
+  // If capturing enemy piece does not go beyond the threshold, the give up
+  if (swap < 0)
+    return false;
+
+  swap = PieceValue[getPiece(from)] - swap;
+  if (swap <= 0)
+    return true;
+
+  Bitboard occupied = getOccupiedBB() ^ from ^ to;
+  Colour stm = sideToMove;
+  Bitboard attackers = sqAttackedByBB(to, occupied);
+  Bitboard stmAttackers, bb;
+  int res = 1;
+
+  while (true) {
+    stm = ~stm;
+
+    attackers &= occupied; // Remove pieces that are already captured
+
+    if (!(stmAttackers = attackers & getOccupiedBB(stm)))
+      break;
+
+    if (pinners() & occupied) {
+      stmAttackers &= ~blockersForKing();
+
+      if (!stmAttackers)
+        break;
+    }
+
+    res ^= 1;
+
+    // Locate and remove the next least valuable attacker, and add to
+    // the bitboard 'attackers' any X-ray attackers behind it.
+    if ((bb = stmAttackers & getPiecesBB(PAWN))) {
+      if ((swap = PawnValue - swap) < res)
+        break;
+      occupied ^= getLSB(bb);
+
+      attackers |= attacksBB<BISHOP>(to, occupied) & getPiecesBB(BISHOP, QUEEN);
+    }
+
+    else if ((bb = stmAttackers & getPiecesBB(KNIGHT))) {
+      if ((swap = KnightValue - swap) < res)
+        break;
+      occupied ^= getLSB(bb);
+    }
+
+    else if ((bb = stmAttackers & getPiecesBB(BISHOP))) {
+      if ((swap = BishopValue - swap) < res)
+        break;
+      occupied ^= getLSB(bb);
+
+      attackers |= attacksBB<BISHOP>(to, occupied) & getPiecesBB(BISHOP, QUEEN);
+    }
+
+    else if ((bb = stmAttackers & getPiecesBB(ROOK))) {
+      if ((swap = RookValue - swap) < res)
+        break;
+      occupied ^= getLSB(bb);
+
+      attackers |= attacksBB<ROOK>(to, occupied) & getPiecesBB(ROOK, QUEEN);
+    }
+
+    else if ((bb = stmAttackers & getPiecesBB(QUEEN))) {
+      if ((swap = QueenValue - swap) < res)
+        break;
+      occupied ^= getLSB(bb);
+
+      attackers |=
+          (attacksBB<BISHOP>(to, occupied) & getPiecesBB(BISHOP, QUEEN)) |
+          (attacksBB<ROOK>(to, occupied) & getPiecesBB(ROOK, QUEEN));
+    }
+
+    else // KING
+         // If we "capture" with the king but the opponent still has attackers,
+         // reverse the result.
+      return (attackers & ~getOccupiedBB(stm)) ? res ^ 1 : res;
+  }
+
+  return bool(res);
 }

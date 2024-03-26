@@ -179,6 +179,8 @@ public:
   bool isCastle() const { return flag() == CASTLE; }
   bool isNormal() const { return flag() == NORMAL; }
 
+  bool isOk() const { return data != none().raw() and data != null().raw(); }
+
   // Operators
   constexpr bool operator==(const Move &m) const { return data == m.raw(); }
   constexpr bool operator!=(const Move &m) const { return data != m.raw(); }
@@ -198,43 +200,6 @@ private:
   MoveFlag flag() const { return MoveFlag((data >> 12) & CASTLE); }
   std::uint16_t data;
 };
-
-// /******************************************\
-// |==========================================|
-// |         Piece Square Table Scores        |
-// |==========================================|
-// \******************************************/
-
-// struct Score {
-//   Value mg, eg;
-//   constexpr Score() : mg(0), eg(0){};
-//   constexpr Score(const int mg, const int eg) : mg(mg), eg(eg){};
-//   constexpr Score &operator=(const Score &s) = default;
-// };
-
-// constexpr Score _S(Value mg, Value eg) { return Score(mg, eg); }
-
-// constexpr Score SCORE_ZERO = _S(0, 0);
-
-// // Operators for Score
-// constexpr Score operator+(Score s1, Score s2) {
-//   return Score(s1.mg + s2.mg, s1.eg + s2.eg);
-// }
-// constexpr Score operator-(Score s1, Score s2) {
-//   return Score(s1.mg - s2.mg, s1.eg - s2.eg);
-// }
-// constexpr Score operator*(Score s1, int d) {
-//   return Score(s1.mg * d, s1.eg * d);
-// }
-// constexpr Score operator/(Score s1, int d) {
-//   return Score(s1.mg / d, s1.eg / d);
-// }
-// constexpr Score operator-(Score &s1) { return _S(-s1.mg, -s1.eg); }
-// constexpr Score &operator+=(Score &s1, Score s2) { return s1 = s1 + s2; }
-// constexpr Score &operator-=(Score &s1, Score s2) { return s1 = s1 - s2; }
-// constexpr bool operator==(Score s1, Score s2) {
-//   return s1.mg == s2.mg && s1.eg == s2.eg;
-// }
 
 /******************************************\
 |==========================================|

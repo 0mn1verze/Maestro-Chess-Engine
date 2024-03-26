@@ -149,6 +149,9 @@ public:
   Bitboard sqAttackedByBB(Square sq, Bitboard occupied) const;
   bool isLegal(Move move) const;
   bool SEE(Move move, Value threshold) const;
+  Bitboard pinners() const;
+  Bitboard blockersForKing() const;
+  bool givesCheck(Move move) const;
 
 private:
   // Piece list

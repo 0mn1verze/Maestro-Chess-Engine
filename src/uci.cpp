@@ -20,7 +20,7 @@ constexpr std::string_view AUTHOR = "Evan Fung";
 UCI::UCI() {
   initBitboards();
   initZobrist();
-  TTInit(36);
+  TTInit(16);
   nnue_init("nn-eba324f53044.nnue");
   initPolyBook("performance.bin");
 }
