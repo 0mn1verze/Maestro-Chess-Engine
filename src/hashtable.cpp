@@ -120,7 +120,7 @@ void TTStore(const Key key, int ply, Move move, Value value, Value eval,
   replace = (i != TT_BUCKET_NB) ? &slots[i] : replace;
 
   if (flag != HashExact and hash16 == replace->hash16 and
-      depth < (replace->depth - 2)) {
+      depth < replace->depth) {
     return;
   }
 

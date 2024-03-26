@@ -11,9 +11,6 @@
 #include "perft.hpp"
 #include "search.hpp"
 
-int LMRTable[64][64];
-int LateMovePruningCounts[2][11];
-
 // Thread related stuff
 SearchWorker::~SearchWorker() {
   quit = true;
@@ -129,18 +126,6 @@ std::string SearchWorker::pv(PVLine pvLine) {
   return ss.str();
 }
 
-static void initLMR() {
-  // Init Late Move Reductions Table
-  for (int depth = 1; depth < 64; depth++)
-    for (int played = 1; played < 64; played++)
-      LMRTable[depth][played] = 0.5 + log(depth) * log(played) / 3;
-
-  for (int depth = 1; depth <= 10; depth++) {
-    LateMovePruningCounts[0][depth] = 4 + (depth * depth) / 2;
-    LateMovePruningCounts[1][depth] = 8 + depth * depth;
-  }
-}
-
 static void updatePV(PVLine &parentPV, PVLine &childPV, Move &move) {
   parentPV.length = 1 + childPV.length;
   parentPV.line[0] = move;
@@ -150,7 +135,6 @@ static void updatePV(PVLine &parentPV, PVLine &childPV, Move &move) {
 void SearchWorker::searchPosition() {
   // Iterative deepening
   TTUpdate();
-  initLMR();
   iterativeDeepening();
   searching = false;
   waitForSearchFinished();
@@ -166,6 +150,7 @@ void SearchWorker::iterativeDeepening() {
     if (stop) {
       break;
     }
+
     tmUpdate();
     std::cout << pv(pvLine[currentDepth]) << std::endl;
     std::cout << "Best move changes: " << bestMoveChanges << std::endl;
@@ -284,13 +269,13 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       return rAlpha;
   }
 
-  if (!inCheck and (ttHit = TTProbe(pos.state()->key, ply, ttMove, ttValue,
-                                    ttEval, ttDepth, ttFlag))) {
+  if (!rootNode and (ttHit = TTProbe(pos.state()->key, ply, ttMove, ttValue,
+                                     ttEval, ttDepth, ttFlag))) {
 
     // Only cut with a greater depth search, and do not return
     // when in a PvNode, unless we would otherwise hit a qsearch
-    if (ttDepth >= depth and (depth == 0 || !pvNode) and
-        (cutNode || ttValue <= alpha) and ttValue != VAL_NONE) {
+    if (ttDepth >= depth and (cutNode || ttValue <= alpha) and
+        ttValue != VAL_NONE) {
 
       if (ttMove and ttValue >= beta and (ttFlag == HashBeta)) {
         if (!pos.isCapture(ttMove)) {
@@ -306,13 +291,6 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
           pos.state()->fiftyMove < 90)
         return ttValue;
     }
-
-    // An entry coming from one depth lower than we would accept for a cutoff
-    // will still be accepted if it appears that failing low will trigger a
-    // research.
-    if (!pvNode and ttDepth >= depth - 1 and (ttFlag == HashAlpha) and
-        (cutNode || ttValue <= alpha) and ttValue + 141 <= alpha)
-      return alpha;
   }
 
   // Static eval
@@ -351,20 +329,23 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       pos.state()->move != Move::null() and
       (!ttHit || !(ttFlag & HashAlpha) || ttValue >= beta)) {
 
-    R = 4 + depth / 5 + std::min(3, (evaluation - beta) / 191);
-
     pos.makeNullMove(st);
+
+    ply++;
+
     Value nullValue =
-        -search(pos, childPV, -beta, -beta + 1, depth - R, !cutNode);
+        -search(pos, childPV, -beta, -beta + 1, depth - 3, !cutNode);
+
+    ply--;
+
     pos.unmakeNullMove();
 
     if (stop) {
       return 0;
     }
 
-    if (nullValue >= beta) {
+    if (nullValue >= beta)
       return nullValue > VAL_MATE_BOUND ? beta : nullValue;
-    }
   }
 
   // Razoring
@@ -402,10 +383,6 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     depth -= 1;
   }
 
-  // Simple in check depth extension
-  if (inCheck)
-    depth++;
-
   // Sort moves
   MovePicker mp(pos, ss, ply, depth, ttMove);
 
@@ -418,11 +395,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     // Increment legal move counter
     moveCount++;
 
-    if (!rootNode and bestScore > -VAL_MATE_BOUND and depth <= 8 and
-        moveCount >= LateMovePruningCounts[improving][depth])
-      skipQuiets = true;
-
-    newDepth = depth;
+    newDepth = depth + inCheck;
 
     // Make move
     pos.makeMove(move, st);
@@ -430,19 +403,12 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     // Increment ply
     ply++;
 
-    if (depth >= 2 and moveCount >= 1 + rootNode) {
+    if (depth >= 3 and moveCount >= 4 + rootNode and !isCapture and
+        !move.isPromotion() and !inCheck) {
 
-      R = LMRTable[std::min(63, int(depth))][std::min(63, int(moveCount))];
+      value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - 2, true);
 
-      R += !pvNode + !improving;
-
-      R += inCheck and pos.getPieceType(move.to()) == KING;
-
-      R = std::min(depth - 1, std::max(+R, 1));
-
-      value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - R, true);
-
-      doFullSearch = value > alpha and R != 1;
+      doFullSearch = value > alpha;
     } else
       doFullSearch = !pvNode || moveCount > 1;
 
