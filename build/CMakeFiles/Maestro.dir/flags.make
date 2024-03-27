@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = 
 
-CXX_FLAGS =  -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23
+CXX_FLAGS =  -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23
 

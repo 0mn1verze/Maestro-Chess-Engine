@@ -24,11 +24,17 @@ MovePicker::MovePicker(Position &pos, SearchStats &ss, const int ply,
     : pos(pos), ply(ply), cur(moves), ss(ss), depth(depth), ttMove(pvMove),
       threshold(threshold), onlyCaptures(onlyCaptures) {
   // Set the generation stage to INIT_CAPTURES
-  genStage = GenStage(onlyCaptures ? Q_TT : TT + !pos.isLegal(ttMove));
+  if (onlyCaptures)
+    genStage =
+        GenStage(Q_TT + !(pos.isLegal(ttMove) and pos.isCapture(ttMove)));
+  else
+    genStage = GenStage(TT + !pos.isLegal(ttMove));
 
   if (!onlyCaptures) {
-    killer1 = ss.killer[depth][0];
-    killer2 = ss.killer[depth][1];
+    killer1 = ss.killer[ply][0];
+    killer2 = ss.killer[ply][1];
+  } else {
+    killer1 = killer2 = Move::none();
   }
 };
 
@@ -54,12 +60,8 @@ template <GenType gt> void MovePicker::scoreMoves() {
       const PieceType captured = m.isNormal() ? pos.getPieceType(m.to()) : PAWN;
       const PieceType piece = pos.getPieceType(m.from());
 
-      const bool evade = pos.state()->attacked & m.from();
-      const bool threat = pos.state()->attacked & m.to();
-
-      // MVV_LVA (Victims in ascending order and attackers in descending
-      // order)
-      m.score = int(captured) * 100 + PIECE_TYPE_N - int(piece) + 70000;
+      m.score = 7 * int(PieceValue[captured]) +
+                ss.captureHistory[piece][to][captured];
     }
 
     if constexpr (gt == QUIETS) {
@@ -114,6 +116,7 @@ Move MovePicker::pickNextMove(bool quiescence) {
     insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
     // Increment stage
     ++genStage;
+    return pickNextMove(quiescence);
   case GOOD_CAPTURE:
     if (select<Next>([&]() {
           return pos.SEE(*cur, -threshold) ? true
@@ -124,11 +127,13 @@ Move MovePicker::pickNextMove(bool quiescence) {
     ++genStage;
   case KILLER1:
     ++genStage;
-    if (killer1 != ttMove and pos.isLegal(killer1) and !pos.isCapture(killer1))
+    if (!onlyCaptures and killer1 != ttMove and pos.isLegal(killer1) and
+        !pos.isCapture(killer1))
       return killer1;
   case KILLER2:
     ++genStage;
-    if (killer2 != ttMove and pos.isLegal(killer2) and !pos.isCapture(killer2))
+    if (!onlyCaptures and killer2 != ttMove and pos.isLegal(killer2) and
+        !pos.isCapture(killer2))
       return killer2;
   case INIT_QUIET:
     if (!quiescence) {

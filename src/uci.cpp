@@ -22,7 +22,7 @@ UCI::UCI() {
   initZobrist();
   TTInit(16);
   nnue_init("nn-eba324f53044.nnue");
-  initPolyBook("performance.bin");
+  initPolyBook("baron30.bin");
 }
 
 // Main loop of the chess engine

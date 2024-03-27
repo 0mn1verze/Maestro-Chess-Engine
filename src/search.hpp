@@ -20,12 +20,20 @@ struct PVLine {
 struct SearchStats {
   Move killer[MAX_DEPTH][2]{};
   Value history[PIECE_N][SQ_N];
+  Value captureHistory[PIECE_N][SQ_N][PIECE_TYPE_N];
 };
 
 // Time controls
 struct TimeControl {
   Time startTime, idealStopTime, maxStopTime;
   Time elapsed() const { return getTimeMs() - startTime; }
+};
+
+struct NodeState {
+  Value bestValue;
+  PVLine pvLine;
+  Move excluded = Move::none();
+  Count dExtensions = 0;
 };
 
 class SearchWorker {
@@ -44,6 +52,7 @@ public:
   void checkTime();
   bool finishSearch();
   void tmUpdate();
+  void uciReport();
   std::string pv(PVLine pvLine);
 
   TimeControl tm;
@@ -57,22 +66,22 @@ public:
 
   Position rootPos;
   BoardState rootState;
-  Depth maxDepth, currentDepth;
-  Count nodes, bestMoveChanges;
-  Value bestValue[MAX_DEPTH + 1];
-  PVLine pvLine[MAX_DEPTH + 1];
+  Depth maxDepth, currentDepth, selDepth;
+  Count nodes;
+
   int pvStability = 0;
   int ply = 0;
 
-  Count failHigh, failHighFirst;
+  NodeState nodeStates[MAX_DEPTH + 1];
 
   std::thread searchThread;
 
 private:
   void iterativeDeepening();
   void aspirationWindow();
-  void updateKiller(Move killer, Depth depth);
+  void updateKiller(Move killer, int ply);
   void updateHistory(Position &pos, Move history, Depth depth);
+  void updateCaptureHistory(Position &pos, Move history, Depth depth);
   Value search(Position &pos, PVLine &pv, Value alpha, Value beta, Depth depth,
                bool cutNode);
   Value quiescence(Position &pos, PVLine &parentPV, Value alpha, Value beta);

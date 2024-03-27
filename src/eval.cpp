@@ -71,8 +71,7 @@ Value eval(const Position &pos) {
   // Evaluate the position using the NNUE (From CFish - using material score to
   // scale the evaluation keeps the position complex until its absolutely
   // winning)
-  Value evaluation =
-      evaluate_nnue(pos) * (580 + mat / 32 - 4 * st->fiftyMove) / 1024 + 28;
+  Value evaluation = evaluate_nnue(pos) * 5 / 4 + 28;
   // Reduce score if the it takes more moves to reach a position
   evaluation = evaluation * (100 - st->fiftyMove) / 100;
   // Do not allow the evaluation to go beyond the mate bounds

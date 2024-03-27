@@ -66,6 +66,10 @@ inline std::string move2Str(const Move &m) {
   if (m.isPromotion())
     // To print the lowercase of piece type, we turn it into a black piece
     move += pieceToChar.at(toPiece(BLACK, m.promoted()));
+  if (m == Move::none())
+    move = "none";
+  if (m == Move::null())
+    move = "null";
   return move;
 }
 

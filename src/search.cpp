@@ -11,6 +11,9 @@
 #include "perft.hpp"
 #include "search.hpp"
 
+int LMRTable[64][64];
+int LateMovePruningCounts[2][11];
+
 // Thread related stuff
 SearchWorker::~SearchWorker() {
   quit = true;
@@ -52,12 +55,13 @@ void SearchWorker::start(Position &pos, StateList &states, TimeControl &time,
   waitForSearchFinished();
   rootPos = pos;
   rootState = *pos.state();
-  nodes = bestMoveChanges = 0;
+  nodes = 0;
   tm = time;
   maxDepth = depth;
-  pvStability = failHigh = failHighFirst = 0;
+  pvStability = 0;
+  ply = 0;
 
-  std::fill(pvLine, pvLine + MAX_DEPTH + 1, PVLine{});
+  std::fill(nodeStates, nodeStates + MAX_DEPTH + 1, NodeState{});
 
   tm.startTime = getTimeMs();
 
@@ -85,8 +89,8 @@ bool SearchWorker::finishSearch() {
 
   const double pvFactor = 1.20 - 0.04 * pvStability;
 
-  const double scoreChange =
-      bestValue[currentDepth] - bestValue[currentDepth - 3];
+  const double scoreChange = nodeStates[currentDepth].bestValue -
+                             nodeStates[currentDepth - 3].bestValue;
 
   const double scoreFactor = std::max(0.75, std::max(1.25, scoreChange * 0.05));
 
@@ -94,10 +98,10 @@ bool SearchWorker::finishSearch() {
 }
 
 void SearchWorker::tmUpdate() {
-  pvStability =
-      (pvLine[currentDepth].line[0] == pvLine[currentDepth - 1].line[0])
-          ? std::min(10, pvStability + 1)
-          : 0;
+  pvStability = (nodeStates[currentDepth].pvLine.line[0] ==
+                 nodeStates[currentDepth - 1].pvLine.line[0])
+                    ? std::min(10, pvStability + 1)
+                    : 0;
 }
 
 std::string SearchWorker::pv(PVLine pvLine) {
@@ -106,12 +110,13 @@ std::string SearchWorker::pv(PVLine pvLine) {
   Time time = tm.elapsed() + 1;
   int hashFull = TTHashFull();
 
-  Value score = bestValue[currentDepth];
+  Value score = nodeStates[currentDepth].bestValue;
 
   ss << "info"
-     << " depth " << currentDepth << " score " << score2Str(score) << " nodes "
-     << nodes << " nps " << nodes * 1000 / time << " hashfull " << hashFull
-     << " tbhits " << 0 << " time " << time << " pv";
+     << " depth " << currentDepth << " seldepth " << selDepth << " score "
+     << score2Str(score) << " nodes " << nodes << " nps " << nodes * 1000 / time
+     << " hashfull " << hashFull << " tbhits " << 0 << " time " << time
+     << " pv";
 
   if (score > -VAL_MATE and score < -VAL_MATE_BOUND) {
     pvLine.length = score + VAL_MATE;
@@ -132,9 +137,23 @@ static void updatePV(PVLine &parentPV, PVLine &childPV, Move &move) {
   std::copy(childPV.line, childPV.line + childPV.length, parentPV.line + 1);
 }
 
+void initLMR() {
+
+  // Init Late Move Reductions Table
+  for (int depth = 1; depth < 64; depth++)
+    for (int played = 1; played < 64; played++)
+      LMRTable[depth][played] = 0.7844 + log(depth) * log(played) / 2.4696;
+
+  for (int depth = 1; depth <= 10; depth++) {
+    LateMovePruningCounts[0][depth] = 2.0767 + 0.3743 * depth * depth;
+    LateMovePruningCounts[1][depth] = 3.8733 + 0.7124 * depth * depth;
+  }
+}
+
 void SearchWorker::searchPosition() {
   // Iterative deepening
   TTUpdate();
+  initLMR();
   iterativeDeepening();
   searching = false;
   waitForSearchFinished();
@@ -142,23 +161,19 @@ void SearchWorker::searchPosition() {
 
 void SearchWorker::iterativeDeepening() {
 
-  std::fill(bestValue, bestValue + MAX_DEPTH + 1, -VAL_INFINITE);
-
   for (currentDepth = 1; currentDepth <= maxDepth; currentDepth++) {
+
+    NodeState &ns = nodeStates[currentDepth];
     aspirationWindow();
 
     if (stop) {
       break;
     }
-
     tmUpdate();
-    std::cout << pv(pvLine[currentDepth]) << std::endl;
-    std::cout << "Best move changes: " << bestMoveChanges << std::endl;
-    if (failHigh)
-      std::cout << "Move ordering score: " << failHighFirst * 100 / failHigh
-                << std::endl;
+    std::cout << pv(ns.pvLine) << std::endl;
   }
-  std::cout << "bestmove " << move2Str(pvLine[currentDepth - 1].line[0])
+  std::cout << "bestmove "
+            << move2Str(nodeStates[currentDepth - 1].pvLine.line[0])
             << std::endl;
 }
 
@@ -168,10 +183,13 @@ void SearchWorker::aspirationWindow() {
 
   Value best;
   PVLine current{};
+  NodeState &ns = nodeStates[currentDepth];
 
   if (currentDepth >= 4) {
-    alpha = std::max(int(-VAL_INFINITE), bestValue[currentDepth - 1] - delta);
-    beta = std::min(int(VAL_INFINITE), bestValue[currentDepth - 1] + delta);
+    alpha = std::max(int(-VAL_INFINITE),
+                     nodeStates[currentDepth - 1].bestValue - delta);
+    beta = std::min(int(VAL_INFINITE),
+                    nodeStates[currentDepth - 1].bestValue + delta);
   }
 
   while (true) {
@@ -183,9 +201,11 @@ void SearchWorker::aspirationWindow() {
     }
 
     if (best > alpha and best < beta) {
-      pvLine[currentDepth] = current;
-      bestValue[currentDepth] = best;
+      ns.pvLine = current;
+      ns.bestValue = best;
       depth = currentDepth;
+      ns.pvLine = current;
+      ns.bestValue = best;
       break;
     }
 
@@ -198,23 +218,29 @@ void SearchWorker::aspirationWindow() {
     else if (best >= beta) {
       beta = std::min(int(VAL_INFINITE), beta + delta);
       depth -= (std::abs(best) <= VAL_INFINITE / 2);
-      pvLine[currentDepth] = current;
-      bestValue[currentDepth] = best;
+      ns.pvLine = current;
+      ns.bestValue = best;
     }
 
     delta += delta / 2;
   }
 }
 
-void SearchWorker::updateKiller(Move killer, Depth depth) {
-  if (ss.killer[depth][0] != killer) {
-    ss.killer[depth][1] = ss.killer[depth][1];
-    ss.killer[depth][0] = killer;
+void SearchWorker::updateKiller(Move killer, int ply) {
+  if (ss.killer[ply][0] != killer) {
+    ss.killer[ply][1] = ss.killer[ply][1];
+    ss.killer[ply][0] = killer;
   }
 }
 
 void SearchWorker::updateHistory(Position &pos, Move history, Depth depth) {
   ss.history[pos.getPiece(history.from())][history.to()] += depth * depth;
+}
+
+void SearchWorker::updateCaptureHistory(Position &pos, Move history,
+                                        Depth depth) {
+  ss.captureHistory[pos.getPiece(history.from())][history.to()]
+                   [pos.getPieceType(history.to())] += depth * depth;
 }
 
 Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
@@ -225,30 +251,37 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   const bool inCheck = pos.isInCheck();
 
   PVLine childPV{};
-  bool doFullSearch = false, skipQuiets = false, improving = false;
+  bool doFullSearch = false, skipQuiets = false, improving = false,
+       singular = false;
   Value value, rAlpha, rBeta, evaluation, bestScore = -VAL_INFINITE,
-                                          oldAlpha = alpha, probCutBeta;
+                                          oldAlpha = alpha, seeMargin[2];
   Value ttHit = 0, ttValue = 0, ttEval = VAL_NONE;
   HashFlag ttFlag = HashNone;
   Depth R, ttDepth = 0, extension, newDepth;
   Count moveCount = 0;
   Move bestMove = Move::none(), move, ttMove = Move::none();
   BoardState st{};
+  NodeState &ns = nodeStates[ply];
+
+  // Reset killer moves
+  ss.killer[ply + 1][0] = ss.killer[ply + 1][1] = Move::none();
 
   // Generate moves to check for draws
   if ((nodes & 2047) == 0)
     checkTime();
 
   // Check if the depth is 0, if so return the quiescence search
-  if (depth <= 0)
+  if (depth <= 0 and !inCheck)
     return quiescence(pos, parentPV, alpha, beta); // Return quiescence
 
   // Increment nodes
   nodes++;
 
+  selDepth = rootNode ? 0 : std::max(+selDepth, ply + 1);
+
   parentPV.length = 0;
 
-  depth = std::max(depth, Depth(0));
+  depth = std::max(depth, Depth(1));
 
   // Early exit conditions
   if (!rootNode) {
@@ -269,15 +302,17 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       return rAlpha;
   }
 
-  if ((ttHit = TTProbe(pos.state()->key, ply, ttMove, ttValue, ttEval, ttDepth,
+  if (ns.excluded == Move::none() and
+      (ttHit = TTProbe(pos.state()->key, ply, ttMove, ttValue, ttEval, ttDepth,
                        ttFlag))) {
 
     if (ttDepth >= depth and ttValue != VAL_NONE and ttMove and
         ttValue >= beta and (ttFlag == HashBeta)) {
       if (!pos.isCapture(ttMove)) {
         updateHistory(pos, ttMove, depth);
-        updateKiller(ttMove, depth);
-      }
+        updateKiller(ttMove, ply);
+      } else
+        updateCaptureHistory(pos, ttMove, depth);
     }
     // Only cut with a greater depth search, and do not return
     // when in a PvNode, unless we would otherwise hit a qsearch
@@ -298,25 +333,32 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   evaluation = inCheck ? VAL_NONE : ttEval != VAL_NONE ? ttEval : eval(pos);
 
   // Improving
-  improving = !inCheck and evaluation > bestValue[currentDepth - 2];
+  improving = !inCheck and evaluation > nodeStates[currentDepth - 2].bestValue;
+
+  seeMargin[0] = -20 * depth * depth;
+  seeMargin[1] = -64 * depth;
+
+  ss.killer[ply + 1][0] = Move::none();
+  ss.killer[ply + 1][1] = Move::none();
 
   rBeta = std::min(beta + 100, VAL_MATE_BOUND - 1);
 
-  if (!ttHit and !inCheck) {
+  if (!ttHit and !inCheck and ns.excluded == Move::none()) {
     TTStore(pos.state()->key, ply, Move::none(), VAL_NONE, evaluation, Value(0),
             HashNone);
   }
 
-  if (!pvNode and !inCheck and depth <= 8 and
+  if (!pvNode and !inCheck and depth <= 8 and ns.excluded == Move::none() and
       evaluation - 65 * std::max(0, (depth - improving)) >= beta)
     return evaluation;
 
-  if (!pvNode and !inCheck and depth <= 4 and evaluation + 3488 <= alpha)
+  if (!pvNode and !inCheck and ns.excluded == Move::none() and depth <= 4 and
+      evaluation + 3488 <= alpha)
     return evaluation;
 
   // static null move pruning
   if (depth < 3 && !rootNode && !pvNode && !inCheck &&
-      abs(beta - 1) > -VAL_INFINITE + 100) {
+      abs(beta - 1) > -VAL_INFINITE + 100 and ns.excluded == Move::none()) {
     int eval_margin = 120 * depth;
 
     if (evaluation - eval_margin >= beta) {
@@ -327,7 +369,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   // Null move pruning
   if (!rootNode and !inCheck and evaluation >= beta and depth >= 3 and
       pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
-      pos.state()->move != Move::null() and
+      pos.state()->move != Move::null() and ns.excluded == Move::none() and
       (!ttHit || !(ttFlag & HashAlpha) || ttValue >= beta)) {
 
     pos.makeNullMove(st);
@@ -351,30 +393,6 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       return nullValue > VAL_MATE_BOUND ? beta : nullValue;
   }
 
-  // Razoring
-  if (!pvNode && depth < 3 && !inCheck) {
-    value = evaluation + 125;
-
-    Value newValue;
-
-    if (value < beta) {
-      if (depth == 1) {
-        newValue = quiescence(pos, parentPV, alpha, beta);
-
-        return (newValue > value) ? newValue : value;
-      }
-
-      value += 175;
-
-      if (value < beta && depth <= 2) {
-        newValue = quiescence(pos, parentPV, alpha, beta);
-
-        if (newValue < beta)
-          return (newValue > value) ? newValue : value;
-      }
-    }
-  }
-
   // Futility pruning
   if (!pvNode && depth < 11 && !inCheck &&
       evaluation - (120 - 40 * !pvNode) * depth >= beta) {
@@ -386,78 +404,112 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     depth -= 1;
   }
 
-  // Prob cut pruning
-  probCutBeta = beta + 170 - 64 * improving;
-
-  if (!pvNode and depth > 3 and std::abs(beta) < VAL_MATE_BOUND and
-      !(ttDepth >= depth - 3 and ttValue != VAL_NONE and
-        ttValue < probCutBeta)) {
-    MovePicker mp(pos, ss, probCutBeta - evaluation, ttMove);
-
+  if (!pvNode and !inCheck and depth >= 5 and ns.excluded == Move::none() and
+      std::abs(beta) < VAL_MATE_BOUND and
+      (!ttHit || ttValue >= rBeta || ttDepth < depth - 3)) {
+    MovePicker mp(pos, ss, rBeta - evaluation, ttMove);
     while ((move = mp.pickNextMove(true)) != Move::none()) {
-      if (!pos.isLegal(move))
-        continue;
-
       pos.makeMove(move, st);
 
       ply++;
 
-      value = -quiescence(pos, childPV, -probCutBeta, -probCutBeta + 1);
+      if (depth >= 10)
+        value = -quiescence(pos, childPV, -rBeta, -rBeta + 1);
 
-      if (value >= probCutBeta) {
-        value = -search(pos, childPV, -probCutBeta, -probCutBeta + 1, depth - 4,
-                        !cutNode);
-      }
+      if (depth < 10 || value > -rBeta)
+        value = -search(pos, childPV, -rBeta, -rBeta + 1,
+                        std::max(0, depth - 4), !cutNode);
 
       ply--;
 
       pos.unmakeMove();
 
-      if (value >= probCutBeta) {
-        TTStore(pos.state()->key, ply, move, value, evaluation, depth - 3,
-                HashBeta);
-
-        return std::abs(value) < VAL_MATE_BOUND ? value - (probCutBeta - beta)
-                                                : value;
-      }
-
       if (stop)
         return 0;
 
-      if (value >= probCutBeta)
+      if (value >= rBeta and (!ttHit || ttDepth < depth - 3)) {
+        TTStore(pos.state()->key, ply, move, value, evaluation, depth - 3,
+                HashBeta);
+      }
+
+      if (value >= rBeta)
         return value;
     }
   }
+
+  Square prevSq = (pos.state()->move).isOk() ? (pos.state()->move).to() : NO_SQ;
 
   // Sort moves
   MovePicker mp(pos, ss, ply, depth, ttMove);
 
   while ((move = mp.pickNextMove(skipQuiets)) != Move::none()) {
-    if (!pos.isLegal(move))
+
+    if (move == ns.excluded)
       continue;
 
     bool isCapture = pos.isCapture(move);
+    extension = 0;
 
-    R = 0.5 + std::log(depth) * std::log(moveCount) / 2.5;
+    R = LMRTable[std::min(63, int(depth))][std::min(63, int(moveCount))];
 
-    newDepth = depth + inCheck;
+    int hist = isCapture
+                   ? ss.captureHistory[pos.getPiece(move.from())][move.to()]
+                                      [pos.getPieceType(move.to())]
+                   : ss.history[pos.getPiece(move.from())][move.to()];
+
+    if (!rootNode and pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
+        bestScore >= -VAL_MATE_BOUND and depth <= 8 and
+        moveCount >= LateMovePruningCounts[improving][depth])
+      skipQuiets = true;
+
+    if (!isCapture and bestScore > -VAL_MATE_BOUND) {
+
+      int lmrDepth = std::max(0, newDepth - R);
+      Value fmpMargin = 77 + 52 * lmrDepth;
+
+      if (!inCheck and evaluation + fmpMargin <= alpha and lmrDepth <= 8 and
+          hist < (improving ? 900 : 375))
+        skipQuiets = true;
+
+      if (!inCheck and lmrDepth <= 8 and evaluation + fmpMargin + 165 <= alpha)
+        skipQuiets = true;
+    }
+
+    if (bestScore > -VAL_MATE_BOUND and depth <= 10 and
+        mp.genStage > GOOD_CAPTURE and !pos.SEE(move, seeMargin[!isCapture]))
+      continue;
+
+    singular = !rootNode and depth >= 8 and move == ttMove and
+               ttDepth >= depth - 3 and (ttFlag & HashBeta);
+
+    if (singular) {
+      rBeta = std::max(ttValue - depth, -VAL_MATE);
+
+      ns.excluded = ttMove;
+      Value singularValue =
+          -search(pos, childPV, rBeta - 1, rBeta, std::max(0, (depth - 1) / 2), cutNode);
+      ns.excluded = Move::none();
+
+      if (singularValue >= rBeta and rBeta >= beta)
+        return rBeta;
+
+      bool doubleExtend = !pvNode and singularValue < rBeta - 16 and
+                          nodeStates[ply - 1].dExtensions <= 6;
+
+      extension = doubleExtend             ? 2
+                  : singularValue <= rBeta ? 1
+                  : ttValue >= beta        ? -1
+                  : ttValue <= alpha       ? -1
+                                           : 0;
+    } else
+      extension = inCheck;
+
+    newDepth = std::max(1, depth + (!rootNode ? extension : 0));
+    if (extension > 1)
+      ns.dExtensions++;
 
     // Increment legal move counter
     moveCount++;
-
-    if (!rootNode and pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
-        bestScore >= -VAL_MATE_BOUND) {
-
-      if (!skipQuiets)
-        skipQuiets = moveCount >=
-                     (improving ? 8 + depth * depth : (8 + depth * depth) / 2);
-
-      if (isCapture)
-        if (!pos.SEE(move, -203 * depth))
-          continue;
-        else if (!pos.SEE(move, -27 * (newDepth - R) * (newDepth - R)))
-          continue;
-    }
 
     // Make move
     pos.makeMove(move, st);
@@ -465,14 +517,21 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     // Increment ply
     ply++;
 
-    if (!rootNode and depth >= 2 and moveCount >= 4 + rootNode and
-        !isCapture and !move.isPromotion() and !inCheck) {
+    if (depth >= 2 and moveCount > 1 + rootNode) {
 
-      R += !pvNode + !improving;
+      if (!isCapture) {
 
-      R += inCheck and pos.getPieceType(move.to()) == KING;
+        R += !pvNode + !improving;
 
-      R -= ss.history[pos.getPiece(move.from())][move.to()] / 350;
+        R += inCheck and pos.getPieceType(move.to()) == KING;
+
+        R -= ss.history[pos.getPiece(move.from())][move.to()] / 350;
+      } else {
+        R = 3 - (ss.captureHistory[pos.getPiece(move.from())][move.to()]
+                                  [pos.getPieceType(move.to())] /
+                 300);
+        R -= inCheck;
+      }
 
       R = std::min(depth - 1, std::max(+R, 1));
 
@@ -504,33 +563,29 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
         alpha = value;
 
         updatePV(parentPV, childPV, move);
-        if (!pos.isCapture(move))
-          updateHistory(pos, bestMove, depth);
 
-        // Update best move changes
-        if (rootNode and moveCount > 1) {
-          ++bestMoveChanges;
-        }
-
-        if (value >= beta) {
-          if (moveCount == 1)
-            failHighFirst++;
-          failHigh++;
-          if (!pos.isCapture(move))
-            updateKiller(bestMove, depth);
+        if (value >= beta)
           break;
-        }
       }
     }
+  }
+
+  if (bestScore >= beta and !pos.isCapture(bestMove)) {
+    updateKiller(bestMove, ply);
+    updateHistory(pos, bestMove, depth);
+  }
+
+  if (bestScore >= beta) {
+    updateCaptureHistory(pos, bestMove, depth);
   }
 
   // Check if there are no moves, if so return the evaluation
   if (moveCount == 0) {
     // Check if in check
-    return inCheck ? -VAL_MATE + ply : 0;
+    return ns.excluded != Move::none() ? alpha : inCheck ? -VAL_MATE + ply : 0;
   }
 
-  if (!rootNode) {
+  if (ns.excluded == Move::none() and !rootNode) {
     ttFlag = bestScore >= beta      ? HashBeta
              : bestScore > oldAlpha ? HashExact
                                     : HashAlpha;
@@ -562,6 +617,8 @@ Value SearchWorker::quiescence(Position &pos, PVLine &parentPV, Value alpha,
 
   parentPV.length = 0;
 
+  selDepth = std::max(+selDepth, ply + 1);
+
   // Increment nodes
   nodes++;
 
@@ -590,25 +647,6 @@ Value SearchWorker::quiescence(Position &pos, PVLine &parentPV, Value alpha,
         pos.state()->fiftyMove < 90)
       return ttValue;
   }
-
-  // // Get static evaluation
-  // evaluation = bestScore = ttEval != VAL_NONE ? ttEval
-  //                          : inCheck          ? -VAL_MATE + ply
-  //                                             : eval(pos);
-
-  // // Save static evaluation
-  // if (!ttHit and !inCheck) {
-  //   TTStore(pos.state()->key, ply, Move::none(), VAL_NONE, evaluation, 0,
-  //           HashNone);
-  // }
-
-  // if (bestScore >= beta || ply >= MAX_DEPTH - 1) {
-  //   return bestScore;
-  // }
-
-  // if (alpha < bestScore) {
-  //   alpha = bestScore;
-  // }
 
   if (inCheck)
     bestScore = futilityBase = -VAL_INFINITE;
@@ -646,8 +684,6 @@ Value SearchWorker::quiescence(Position &pos, PVLine &parentPV, Value alpha,
                 std::max(1, alpha - evaluation - 123));
 
   while ((move = mp.pickNextMove(true)) != Move::none()) {
-    if (!pos.isLegal(move))
-      continue;
 
     if (bestScore > -VAL_MATE_BOUND and
         pos.getNonPawnMaterial(pos.getSideToMove()) > 0) {
@@ -683,8 +719,6 @@ Value SearchWorker::quiescence(Position &pos, PVLine &parentPV, Value alpha,
     pos.makeMove(move, st);
     // Increment ply
     ply++;
-    // Increment move count
-    moveCount++;
     // Full search
     value = -quiescence(pos, childPV, -beta, -alpha);
     // Decrement ply
@@ -705,7 +739,7 @@ Value SearchWorker::quiescence(Position &pos, PVLine &parentPV, Value alpha,
         updatePV(parentPV, childPV, move);
 
         if (value >= beta) {
-          break;
+          return beta;
         }
       }
     }

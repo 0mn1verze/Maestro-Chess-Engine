@@ -804,12 +804,13 @@ bool Position::isLegal(Move move) const {
         return false;
       break;
     case KING:
-      if ((st->kingBan & to) || (squareDist(from, to) > 1 and !move.isCastle()))
+      if ((st->kingBan & to) ||
+          (squareDist(from, to) > 1 and !move.isCastle()) ||
+          !(attacksBB<KING>(from, getOccupiedBB()) & to))
         return false;
       break;
     case KNIGHT:
       if (!(attacksBB<KNIGHT>(from, getOccupiedBB()) & to))
-
         return false;
       break;
     case BISHOP:

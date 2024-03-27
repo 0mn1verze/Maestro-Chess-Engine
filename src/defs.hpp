@@ -203,6 +203,43 @@ private:
 
 /******************************************\
 |==========================================|
+|            Score representation          |
+|==========================================|
+\******************************************/
+
+// Score representation
+struct Score {
+  Value mg, eg;
+};
+
+constexpr Score operator+(const Score &s1, const Score &s2) {
+  return Score{s1.mg + s2.mg, s1.eg + s2.eg};
+}
+
+constexpr Score operator-(const Score &s1, const Score &s2) {
+  return Score{s1.mg - s2.mg, s1.eg - s2.eg};
+}
+
+constexpr Score operator*(const Score &s, int m) {
+  return Score{s.mg * m, s.eg * m};
+}
+
+constexpr Score operator/(const Score &s, int m) {
+  return Score{s.mg / m, s.eg / m};
+}
+
+constexpr Score &operator+=(Score &s1, const Score &s2) { return s1 = s1 + s2; }
+
+constexpr Score &operator-=(Score &s1, const Score &s2) { return s1 = s1 - s2; }
+
+constexpr Score &operator*=(Score &s, int m) { return s = s * m; }
+
+constexpr Score &operator/=(Score &s, int m) { return s = s / m; }
+
+constexpr Score _S(int mg, int eg) { return Score{mg, eg}; }
+
+/******************************************\
+|==========================================|
 |               Lookup table               |
 |                                          |
 | dist[sq1][sq2] = max(rankDist, fileDist) |

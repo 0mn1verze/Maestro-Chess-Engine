@@ -271,6 +271,7 @@ CMakeFiles/Maestro.dir/src/main.cpp.obj: \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/keylockerintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/amxfp16intrin.h \
  D:\Programming\Maestro\ Chess\ Engine\src\nnue.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\perft.hpp \
  D:\Programming\Maestro\ Chess\ Engine\src\polyglot.hpp \
  C:/msys64/ucrt64/include/c++/13.2.0/vector \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_vector.h \

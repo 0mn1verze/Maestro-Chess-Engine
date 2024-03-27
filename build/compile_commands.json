@@ -1,79 +1,79 @@
 [
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\bitboard.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\bitboard.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\bitboard.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\bitboard.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/bitboard.cpp",
   "output": "CMakeFiles/Maestro.dir/src/bitboard.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\position.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\position.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\position.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\position.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/position.cpp",
   "output": "CMakeFiles/Maestro.dir/src/position.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\movegen.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\movegen.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\movegen.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\movegen.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/movegen.cpp",
   "output": "CMakeFiles/Maestro.dir/src/movegen.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\perft.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\perft.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\perft.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\perft.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/perft.cpp",
   "output": "CMakeFiles/Maestro.dir/src/perft.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\uci.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\uci.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\uci.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\uci.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/uci.cpp",
   "output": "CMakeFiles/Maestro.dir/src/uci.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\eval.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\eval.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\eval.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\eval.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/eval.cpp",
   "output": "CMakeFiles/Maestro.dir/src/eval.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\hashtable.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\hashtable.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\hashtable.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\hashtable.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/hashtable.cpp",
   "output": "CMakeFiles/Maestro.dir/src/hashtable.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\misc.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\misc.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\misc.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\misc.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/misc.cpp",
   "output": "CMakeFiles/Maestro.dir/src/misc.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\movepicker.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\movepicker.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\movepicker.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\movepicker.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/movepicker.cpp",
   "output": "CMakeFiles/Maestro.dir/src/movepicker.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\nnue.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\nnue.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\nnue.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\nnue.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/nnue.cpp",
   "output": "CMakeFiles/Maestro.dir/src/nnue.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\search.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\search.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\search.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\search.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/search.cpp",
   "output": "CMakeFiles/Maestro.dir/src/search.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\polyglot.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\polyglot.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\polyglot.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\polyglot.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/polyglot.cpp",
   "output": "CMakeFiles/Maestro.dir/src/polyglot.cpp.obj"
 },
 {
   "directory": "D:/Programming/Maestro Chess Engine/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -g -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\main.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\main.cpp\"",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe    -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles\\Maestro.dir\\src\\main.cpp.obj -c \"D:\\Programming\\Maestro Chess Engine\\src\\main.cpp\"",
   "file": "D:/Programming/Maestro Chess Engine/src/main.cpp",
   "output": "CMakeFiles/Maestro.dir/src/main.cpp.obj"
 }
