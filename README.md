@@ -1,5 +1,5 @@
 # Maestro Chess Engine
-A chess engine project for learning c++. It has a decent search speed (Average of depth 20 (opening) - 25 (endgame)) and a fast move generator.
+A chess engine project for learning c++. It has a decent search speed (Average of depth 20 - Blitz 1/5) and a fast move generator.
 
 > [!IMPORTANT]
 > This engine uses ideas from different open source chess engines (Stockfish, Ethreal, etc) so it is not fully original
