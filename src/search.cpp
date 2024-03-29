@@ -310,8 +310,8 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   if (ns.excluded == Move::none() and
       (ttHit = TTProbe(pos.state()->key, ply, ttMove, ttValue, ttEval, ttDepth,
                        ttFlag))) {
-    if (ttDepth >= depth and ttValue != VAL_NONE and ttMove and
-        ttValue >= beta and (ttFlag == HashBeta)) {
+    if (ttDepth >= depth and ttMove and ttValue >= beta and
+        (ttFlag == HashBeta)) {
       if (!pos.isCapture(ttMove)) {
         updateHistory(pos, ttMove, depth);
         updateKiller(ttMove, ply);
@@ -372,9 +372,10 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
       pos.state()->move != Move::null() and ns.excluded == Move::none() and
       (!ttHit || !(ttFlag & HashAlpha) || ttValue >= beta)) {
+
     pos.makeNullMove(st);
 
-    R = 4 + depth / 5 + std::min(2, (evaluation - beta) / 200);
+    R = 4 + depth / 5 + std::min(3, (evaluation - beta) / 200);
 
     ply++;
 

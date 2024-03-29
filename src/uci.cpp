@@ -14,9 +14,9 @@
 #include "uci.hpp"
 #include "utils.hpp"
 
-
 constexpr std::string_view NAME = "Maestro";
 constexpr std::string_view AUTHOR = "Evan Fung";
+constexpr bool USE_BOOK = true;
 
 // Constructor
 UCI::UCI() {
@@ -24,7 +24,8 @@ UCI::UCI() {
   initZobrist();
   TTInit(16);
   nnue_init("nn-eba324f53044.nnue");
-  initPolyBook("baron30.bin");
+  if (USE_BOOK)
+    initPolyBook("baron30.bin");
   initEval();
 }
 
@@ -129,7 +130,7 @@ void UCI::parseGo(std::stringstream &command, Position &pos,
     limits.timeLimit = movetime;
   }
 
-  if (!limits.infinite) {
+  if (USE_BOOK and !limits.infinite) {
     Move bookMove = getPolyBookMove(pos);
 
     if (bookMove != Move::none()) {
