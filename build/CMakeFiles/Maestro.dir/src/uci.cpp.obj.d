@@ -242,14 +242,10 @@ CMakeFiles/Maestro.dir/src/uci.cpp.obj: \
  C:/msys64/ucrt64/include/c++/13.2.0/cstdint \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdint.h \
  C:/msys64/ucrt64/include/stdint.h \
- D:\Programming\Maestro\ Chess\ Engine\src\hashtable.hpp \
- C:/msys64/ucrt64/include/c++/13.2.0/vector \
- C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_uninitialized.h \
- C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_vector.h \
- C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_bvector.h \
- C:/msys64/ucrt64/include/c++/13.2.0/bits/vector.tcc \
+ D:\Programming\Maestro\ Chess\ Engine\src\eval.hpp \
  D:\Programming\Maestro\ Chess\ Engine\src\position.hpp \
  C:/msys64/ucrt64/include/c++/13.2.0/deque \
+ C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_uninitialized.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_deque.h \
  C:/msys64/ucrt64/include/c++/13.2.0/bits/deque.tcc \
  C:/msys64/ucrt64/include/c++/13.2.0/memory \
@@ -273,6 +269,11 @@ CMakeFiles/Maestro.dir/src/uci.cpp.obj: \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/glue_memory_defs.h \
  C:/msys64/ucrt64/include/c++/13.2.0/pstl/execution_defs.h \
  D:\Programming\Maestro\ Chess\ Engine\src\nnue.hpp \
+ D:\Programming\Maestro\ Chess\ Engine\src\hashtable.hpp \
+ C:/msys64/ucrt64/include/c++/13.2.0/vector \
+ C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_vector.h \
+ C:/msys64/ucrt64/include/c++/13.2.0/bits/stl_bvector.h \
+ C:/msys64/ucrt64/include/c++/13.2.0/bits/vector.tcc \
  D:\Programming\Maestro\ Chess\ Engine\src\movegen.hpp \
  D:\Programming\Maestro\ Chess\ Engine\src\perft.hpp \
  D:\Programming\Maestro\ Chess\ Engine\src\polyglot.hpp \

@@ -52,9 +52,13 @@ void SearchWorker::waitForSearchFinished() {
 
 void SearchWorker::start(Position &pos, StateList &states, TimeControl &time,
                          Depth depth) {
+
   waitForSearchFinished();
   rootPos = pos;
   rootState = *pos.state();
+
+  Colour us = pos.getSideToMove();
+
   nodes = 0;
   tm = time;
   maxDepth = depth;
@@ -167,13 +171,13 @@ void SearchWorker::iterativeDeepening() {
     aspirationWindow();
 
     if (stop) {
+      currentDepth--;
       break;
     }
     tmUpdate();
     std::cout << pv(ns.pvLine) << std::endl;
   }
-  std::cout << "bestmove "
-            << move2Str(nodeStates[currentDepth - 1].pvLine.line[0])
+  std::cout << "bestmove " << move2Str(nodeStates[currentDepth].pvLine.line[0])
             << std::endl;
 }
 
@@ -204,8 +208,6 @@ void SearchWorker::aspirationWindow() {
       ns.pvLine = current;
       ns.bestValue = best;
       depth = currentDepth;
-      ns.pvLine = current;
-      ns.bestValue = best;
       break;
     }
 
@@ -263,8 +265,11 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   BoardState st{};
   NodeState &ns = nodeStates[ply];
 
+  ns.dExtensions = nodeStates[ply - 1].dExtensions;
+
   // Reset killer moves
   ss.killer[ply + 1][0] = ss.killer[ply + 1][1] = Move::none();
+  nodeStates[ply + 1].excluded = bestMove = Move::none();
 
   // Generate moves to check for draws
   if ((nodes & 2047) == 0)
@@ -281,7 +286,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
   parentPV.length = 0;
 
-  depth = std::max(depth, Depth(1));
+  depth = std::max(depth, Depth(0));
 
   // Early exit conditions
   if (!rootNode) {
@@ -305,7 +310,6 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   if (ns.excluded == Move::none() and
       (ttHit = TTProbe(pos.state()->key, ply, ttMove, ttValue, ttEval, ttDepth,
                        ttFlag))) {
-
     if (ttDepth >= depth and ttValue != VAL_NONE and ttMove and
         ttValue >= beta and (ttFlag == HashBeta)) {
       if (!pos.isCapture(ttMove)) {
@@ -338,9 +342,6 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   seeMargin[0] = -20 * depth * depth;
   seeMargin[1] = -64 * depth;
 
-  ss.killer[ply + 1][0] = Move::none();
-  ss.killer[ply + 1][1] = Move::none();
-
   rBeta = std::min(beta + 100, VAL_MATE_BOUND - 1);
 
   if (!ttHit and !inCheck and ns.excluded == Move::none()) {
@@ -371,7 +372,6 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
       pos.state()->move != Move::null() and ns.excluded == Move::none() and
       (!ttHit || !(ttFlag & HashAlpha) || ttValue >= beta)) {
-
     pos.makeNullMove(st);
 
     R = 4 + depth / 5 + std::min(2, (evaluation - beta) / 200);
@@ -439,16 +439,20 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
   Square prevSq = (pos.state()->move).isOk() ? (pos.state()->move).to() : NO_SQ;
 
+  bool ttCapture = ttMove.isOk() and pos.isCapture(ttMove);
+
   // Sort moves
   MovePicker mp(pos, ss, ply, depth, ttMove);
 
-  while ((move = mp.pickNextMove(skipQuiets)) != Move::none()) {
-
+  while ((move = mp.pickNextMove(false)) != Move::none()) {
     if (move == ns.excluded)
       continue;
 
     bool isCapture = pos.isCapture(move);
-    extension = 0;
+    bool givesCheck = pos.givesCheck(move);
+
+    if (skipQuiets and !(isCapture or givesCheck or inCheck))
+      continue;
 
     R = LMRTable[std::min(63, int(depth))][std::min(63, int(moveCount))];
 
@@ -479,37 +483,43 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
         mp.genStage > GOOD_CAPTURE and !pos.SEE(move, seeMargin[!isCapture]))
       continue;
 
-    singular = !rootNode and depth >= 8 and move == ttMove and
-               ttDepth >= depth - 3 and (ttFlag & HashBeta);
-
-    if (singular) {
-      rBeta = std::max(ttValue - depth, -VAL_MATE);
-
-      ns.excluded = ttMove;
-      Value singularValue =
-          -search(pos, childPV, rBeta - 1, rBeta, std::max(0, (depth - 1) / 2), cutNode);
-      ns.excluded = Move::none();
-
-      if (singularValue >= rBeta and rBeta >= beta)
-        return rBeta;
-
-      bool doubleExtend = !pvNode and singularValue < rBeta - 16 and
-                          nodeStates[ply - 1].dExtensions <= 6;
-
-      extension = doubleExtend             ? 2
-                  : singularValue <= rBeta ? 1
-                  : ttValue >= beta        ? -1
-                  : ttValue <= alpha       ? -1
-                                           : 0;
-    } else
-      extension = inCheck;
-
-    newDepth = std::max(1, depth + (!rootNode ? extension : 0));
-    if (extension > 1)
-      ns.dExtensions++;
-
     // Increment legal move counter
     moveCount++;
+
+    extension = 0;
+
+    if (ply < currentDepth * 2) {
+
+      if (depth >= 4 + pvNode and ns.excluded == Move::none() and
+          move == ttMove and !rootNode and ttDepth >= depth - 3 and
+          std::abs(ttValue) < VAL_MATE_BOUND and (ttFlag & HashBeta)) {
+
+        Value singularBeta = std::max(ttValue - 58 * depth / 64, -VAL_MATE);
+
+        parentPV.length = 0;
+
+        ns.excluded = move;
+        value = -search(pos, parentPV, singularBeta - 1, singularBeta,
+                        (depth - 1) / 2, cutNode);
+        ns.excluded = Move::none();
+
+        bool double_extend = !pvNode and value < singularBeta - 16 <= 6;
+
+        if (singularBeta >= beta)
+          return singularBeta;
+        else
+          extension = double_extend          ? 2
+                      : value < singularBeta ? 1
+                      : ttValue >= beta      ? -1
+                      : ttValue <= alpha     ? -1
+                                             : 0;
+      } else
+        extension = inCheck;
+    }
+
+    newDepth = depth + extension;
+
+    ns.dExtensions = nodeStates[ply - 1].dExtensions + (extension >= 2);
 
     // Make move
     pos.makeMove(move, st);
@@ -524,6 +534,10 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
         R += !pvNode + !improving;
 
         R += inCheck and pos.getPieceType(move.to()) == KING;
+
+        R -= mp.genStage < INIT_QUIET;
+
+        R += std::min(2, std::abs(evaluation - alpha) / 350);
 
         R -= ss.history[pos.getPiece(move.from())][move.to()] / 350;
       } else {
@@ -542,7 +556,8 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       doFullSearch = !pvNode || moveCount > 1;
 
     if (doFullSearch)
-      value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - 1, !cutNode);
+      value = -search(pos, childPV, -alpha - 1, -alpha, newDepth - 1 - (R > 3),
+                      !cutNode);
 
     if (pvNode and (moveCount == 1 || value > alpha))
       value = -search(pos, childPV, -beta, -alpha, newDepth - 1, false);
@@ -557,9 +572,10 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
     if (value > bestScore) {
       bestScore = value;
-      bestMove = move;
+
       if (value > alpha) {
-        // Update alpha
+
+        bestMove = move;
         alpha = value;
 
         updatePV(parentPV, childPV, move);
@@ -685,9 +701,11 @@ Value SearchWorker::quiescence(Position &pos, PVLine &parentPV, Value alpha,
 
   while ((move = mp.pickNextMove(true)) != Move::none()) {
 
+    bool givesCheck = pos.givesCheck(move);
+
     if (bestScore > -VAL_MATE_BOUND and
         pos.getNonPawnMaterial(pos.getSideToMove()) > 0) {
-      if (!move.isPromotion() and move.to() != prevSq and
+      if (!givesCheck and !move.isPromotion() and move.to() != prevSq and
           futilityBase > -VAL_MATE_BOUND) {
         if (moveCount > 2)
           continue;

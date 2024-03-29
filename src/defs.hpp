@@ -26,7 +26,7 @@ using Depth = std::int8_t;
 
 constexpr Depth MAX_DEPTH = 64;
 constexpr int MAX_MOVES = 256;
-constexpr Time MOVE_OVERHEAD = 1000;
+constexpr Time MOVE_OVERHEAD = 300;
 constexpr Value VAL_INFINITE = 50000;
 constexpr Value VAL_MATE = 49000;
 constexpr Value VAL_MATE_BOUND = 48000;
@@ -174,6 +174,7 @@ public:
   int raw() const { return data; }
 
   // Move flags
+  MoveFlag flag() const { return MoveFlag((data >> 12) & CASTLE); }
   bool isEnPassant() const { return flag() == EN_PASSANT; }
   bool isPromotion() const { return flag() == PROMOTION; }
   bool isCastle() const { return flag() == CASTLE; }
@@ -197,7 +198,6 @@ public:
 
   int score; // For move ordering
 private:
-  MoveFlag flag() const { return MoveFlag((data >> 12) & CASTLE); }
   std::uint16_t data;
 };
 
@@ -236,7 +236,19 @@ constexpr Score &operator*=(Score &s, int m) { return s = s * m; }
 
 constexpr Score &operator/=(Score &s, int m) { return s = s / m; }
 
+constexpr Score operator-(const Score &s) { return Score{-s.mg, -s.eg}; }
+
+constexpr bool operator==(const Score &s1, const Score &s2) {
+  return s1.mg == s2.mg and s1.eg == s2.eg;
+}
+
+constexpr bool operator!=(const Score &s1, const Score &s2) {
+  return s1.mg != s2.mg or s1.eg != s2.eg;
+}
+
 constexpr Score _S(int mg, int eg) { return Score{mg, eg}; }
+
+constexpr Score SCORE_ZERO = _S(0, 0);
 
 /******************************************\
 |==========================================|

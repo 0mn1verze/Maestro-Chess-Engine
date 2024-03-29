@@ -100,6 +100,10 @@ bool Position::empty(Square sq) const { return getPiece(sq) == NO_PIECE; }
 
 bool Position::canCastle(Castling cr) const { return st->castling & cr; }
 
+Score Position::psq() const { return st->psq; }
+
+int Position::gamePhase() const { return st->gamePhase; }
+
 /******************************************\
 |==========================================|
 |            Piece Manipulation            |
@@ -118,6 +122,10 @@ void Position::putPiece(Piece piece, Square sq) {
   // Update piece count list
   pieceCount[piece]++;
   pieceCount[toPiece(toColour(piece), ALL_PIECES)]++;
+  // Update game phase
+  st->gamePhase += gamePhaseInc[toPieceType(piece)];
+  // Update psq score
+  st->psq += psqt[piece][sq];
 }
 
 // Remove piece on square
@@ -134,6 +142,10 @@ void Position::popPiece(Square sq) {
   // Update piece count
   pieceCount[piece]--;
   pieceCount[toPiece(toColour(piece), ALL_PIECES)]--;
+  // Update game phase
+  st->gamePhase -= gamePhaseInc[toPieceType(piece)];
+  // Update psq score
+  st->psq -= psqt[piece][sq];
 }
 
 // Move piece between two squares without updating piece counts (Quicker)
@@ -148,6 +160,9 @@ void Position::movePiece(Square from, Square to) {
   // Update piece list
   board[from] = NO_PIECE;
   board[to] = piece;
+
+  // Update psq score
+  st->psq += psqt[piece][to] - psqt[piece][from];
 }
 
 /******************************************\
@@ -221,6 +236,12 @@ void Position::print() const {
 
   // Print hash key
   std::cout << "Hash Key: " << std::hex << st->key << std::dec << std::endl;
+
+  // Print eval
+  std::cout << "Eval: " << eval(*this) << std::endl;
+
+  // Print psq
+  std::cout << "Psq: " << st->psq.mg << " " << st->psq.eg << std::endl;
 }
 
 // Set the position based on fen string
@@ -338,6 +359,25 @@ void Position::setState() const {
         PieceValue[toPiece(WHITE, pt)] * pieceCount[toPiece(WHITE, pt)];
     st->nonPawnMaterial[BLACK] +=
         PieceValue[toPiece(BLACK, pt)] * pieceCount[toPiece(BLACK, pt)];
+  }
+
+  // Initialise piece square value
+  st->psq = SCORE_ZERO;
+  // Loop through all squares
+  for (Square square = A1; square <= H8; ++square) {
+    // Get piece on the square
+    Piece piece = getPiece(square);
+    // If there is a piece on the square, update piece square value
+    if (piece != NO_PIECE) {
+      st->psq += psqt[piece][square];
+    }
+  }
+
+  // Initialise game phase
+  st->gamePhase = 0;
+  for (PieceType pt = PAWN; pt <= KING; ++pt) {
+    st->gamePhase += gamePhaseInc[pt] * getPieceCount(toPiece(WHITE, pt));
+    st->gamePhase += gamePhaseInc[pt] * getPieceCount(toPiece(BLACK, pt));
   }
 
   Bitboard pawns = getPiecesBB(~sideToMove, PAWN);
@@ -938,4 +978,52 @@ bool Position::SEE(Move move, int threshold) const {
   }
 
   return bool(res);
+}
+
+// Check if move gives check
+bool Position::givesCheck(Move move) const {
+  Square from = move.from();
+  Square to = move.to();
+  PieceType pt = getPieceType(from);
+  Colour us = sideToMove;
+  Square enemyKing = square<KING>(~us);
+
+  if (attacksBB(pt, to, getOccupiedBB()) & enemyKing)
+    return true;
+
+  Bitboard attackers =
+      attacksBB<BISHOP>(enemyKing, getPiecesBB(us, BISHOP, QUEEN)) |
+      attacksBB<ROOK>(enemyKing, getPiecesBB(us, ROOK, QUEEN));
+
+  attackers &= lineBB[enemyKing][from];
+
+  while (attackers) {
+    Square sq = popLSB(attackers);
+    Bitboard b = betweenBB[sq][enemyKing] & getOccupiedBB();
+    if (b and !moreThanOne(b)) {
+      return !aligned(from, to, enemyKing) || move.isCastle();
+    }
+  }
+
+  Square capsq, rto;
+  Bitboard b;
+
+  switch (move.flag()) {
+  case NORMAL:
+    return false;
+  case PROMOTION:
+    return attacksBB(move.promoted(), to, getOccupiedBB() ^ from) & enemyKing;
+  case EN_PASSANT:
+    capsq = getEnPassantTarget(us);
+    b = (getOccupiedBB() ^ from ^ capsq) | to;
+
+    return (attacksBB<BISHOP>(enemyKing, b) & getPiecesBB(us, BISHOP, QUEEN)) |
+           (attacksBB<ROOK>(enemyKing, b) & getPiecesBB(us, ROOK, QUEEN));
+  case CASTLE:
+    rto = relativeSquare(us, to > from ? F1 : D1);
+
+    return attacksBB<ROOK>(rto, getOccupiedBB()) & enemyKing;
+  default:
+    return false;
+  }
 }

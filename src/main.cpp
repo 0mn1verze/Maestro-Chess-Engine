@@ -10,6 +10,7 @@
 int main() {
 
   UCI uci;
+
   uci.loop();
 
   // Position pos;

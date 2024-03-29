@@ -15,7 +15,19 @@ int nnuePieces[PIECE_N] = {blank, wpawn,  wknight, wbishop, wrook,   wqueen,
 
 int toNNUEPiece(Piece piece) { return nnuePieces[piece]; }
 
-inline int evaluate_nnue(const Position &pos) {
+Score psqt[PIECE_N][SQ_N];
+
+// Init piece square table
+void initEval() {
+  for (PieceType pt = PAWN; pt <= KING; ++pt) {
+    for (Square sq = A1; sq <= H8; ++sq) {
+      psqt[toPiece(WHITE, pt)][sq] = bonus[pt][sq] + pieceBonus[pt];
+      psqt[toPiece(BLACK, pt)][flipRank(sq)] = -psqt[toPiece(WHITE, pt)][sq];
+    }
+  }
+}
+
+inline Value evaluate_nnue(const Position &pos) {
   Bitboard bitboard;
   Square square;
   int pieces[33];
@@ -66,15 +78,28 @@ inline int evaluate_nnue(const Position &pos) {
 // Evaluate the position
 Value eval(const Position &pos) {
   BoardState *st = pos.state();
-  Value mat = pos.getNonPawnMaterial() +
-              4 * PawnValue * countBits(pos.getPiecesBB(PAWN));
-  // Evaluate the position using the NNUE (From CFish - using material score to
-  // scale the evaluation keeps the position complex until its absolutely
-  // winning)
-  Value evaluation = evaluate_nnue(pos) * 5 / 4 + 28;
-  // Reduce score if the it takes more moves to reach a position
-  evaluation = evaluation * (100 - st->fiftyMove) / 100;
-  // Do not allow the evaluation to go beyond the mate bounds
-  evaluation = std::clamp(evaluation, -VAL_MATE_BOUND, VAL_MATE_BOUND);
-  return evaluation;
+  Score psq = pos.psq();
+
+  Value v;
+
+  int mgPhase = pos.gamePhase();
+  if (mgPhase > 24)
+    mgPhase = 24;
+  int egPhase = 24 - mgPhase;
+
+  v = (psq.mg * mgPhase + psq.eg * egPhase) / 24;
+
+  if (countBits(pos.getOccupiedBB()) > 6 and (std::abs(v) > 2500))
+    return pos.getSideToMove() == WHITE ? v : -v;
+
+  Value nnue = evaluate_nnue(pos);
+  int mat = pos.getNonPawnMaterial() + 4 * PawnValue * pos.count<PAWN>();
+
+  v = nnue * (600 + mat / 32 - 4 * st->fiftyMove) / 1024 + 28;
+
+  v = v * (200 - st->fiftyMove) / 400;
+
+  v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
+
+  return v;
 }

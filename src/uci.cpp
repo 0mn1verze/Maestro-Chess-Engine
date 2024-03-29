@@ -4,6 +4,7 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "eval.hpp"
 #include "hashtable.hpp"
 #include "movegen.hpp"
 #include "nnue.hpp"
@@ -12,6 +13,7 @@
 #include "position.hpp"
 #include "uci.hpp"
 #include "utils.hpp"
+
 
 constexpr std::string_view NAME = "Maestro";
 constexpr std::string_view AUTHOR = "Evan Fung";
@@ -23,6 +25,7 @@ UCI::UCI() {
   TTInit(16);
   nnue_init("nn-eba324f53044.nnue");
   initPolyBook("baron30.bin");
+  initEval();
 }
 
 // Main loop of the chess engine
@@ -137,10 +140,6 @@ void UCI::parseGo(std::stringstream &command, Position &pos,
 
   TimeControl time{};
   parseTime(limits, time);
-
-  std::cout << "Time allocated (Ideal): " << time.idealStopTime << std::endl;
-  std::cout << "Time allocated (Max): " << time.maxStopTime << std::endl;
-  std::cout << "Depth: " << depth << std::endl;
   // Start searching
   worker.start(pos, states, time, depth);
 }

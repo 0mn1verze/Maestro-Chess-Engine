@@ -59,6 +59,8 @@ struct BoardState {
   int plies;
   int fiftyMove;
   Value nonPawnMaterial[COLOUR_N];
+  Score psq;
+  int gamePhase;
   Castling castling = NO_CASTLE;
 
   // Not copied when making new move
@@ -119,6 +121,8 @@ public:
   bool isInCheck() const;
   bool isDraw(int ply) const;
   bool isCapture(Move move) const;
+  Score psq() const;
+  int gamePhase() const;
 
   // Board getters
   Bitboard getPiecesBB(PieceType pt) const;
@@ -126,10 +130,16 @@ public:
   Bitboard getPiecesBB(PieceType pt, PieceTypes... pts) const;
   template <typename... PieceTypes>
   Bitboard getPiecesBB(Colour us, PieceTypes... pts) const;
+
   Piece getPiece(Square sq) const;
   PieceType getPieceType(Square sq) const;
   template <PieceType pt> Square square(Colour us) const;
   int getPieceCount(Piece pce) const;
+
+  template <Piece pce> int count() const;
+
+  template <PieceType pt> int count() const;
+
   Bitboard getOccupiedBB() const;
   Bitboard getOccupiedBB(Colour us) const;
   bool empty(Square sq) const;
@@ -177,6 +187,12 @@ Bitboard Position::getPiecesBB(PieceType pt, PieceTypes... pts) const {
 template <typename... PieceTypes>
 Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
   return occupiedBB[us] & getPiecesBB(pts...);
+}
+
+template <Piece pce> int Position::count() const { return pieceCount[pce]; }
+
+template <PieceType pt> int Position::count() const {
+  return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)];
 }
 
 template <bool doMove>

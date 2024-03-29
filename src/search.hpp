@@ -64,6 +64,8 @@ public:
 
   SearchStats ss;
 
+  Value optimism[COLOUR_N];
+
   Position rootPos;
   BoardState rootState;
   Depth maxDepth, currentDepth, selDepth;
