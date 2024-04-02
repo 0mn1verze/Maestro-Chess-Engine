@@ -95,7 +95,7 @@ Value eval(const Position &pos) {
   Value nnue = evaluate_nnue(pos);
   int mat = pos.getNonPawnMaterial() + 4 * PawnValue * pos.count<PAWN>();
 
-  v = nnue * (600 + mat / 32 - 4 * st->fiftyMove) / 1024 + 28;
+  v = nnue * (580 + mat / 32 - 4 * st->fiftyMove) / 1024 + 28;
 
   v = v * (200 - st->fiftyMove) / 400;
 

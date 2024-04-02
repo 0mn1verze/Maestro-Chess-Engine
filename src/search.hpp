@@ -30,10 +30,14 @@ struct TimeControl {
 };
 
 struct NodeState {
-  Value bestValue;
-  PVLine pvLine;
+  Value staticEval;
   Move excluded = Move::none();
   Count dExtensions = 0;
+};
+
+struct Result {
+  Value best;
+  PVLine pv;
 };
 
 class SearchWorker {
@@ -64,8 +68,6 @@ public:
 
   SearchStats ss;
 
-  Value optimism[COLOUR_N];
-
   Position rootPos;
   BoardState rootState;
   Depth maxDepth, currentDepth, selDepth;
@@ -75,6 +77,7 @@ public:
   int ply = 0;
 
   NodeState nodeStates[MAX_DEPTH + 1];
+  Result results[MAX_DEPTH + 1];
 
   std::thread searchThread;
 
