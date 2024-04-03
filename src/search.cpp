@@ -188,7 +188,7 @@ void SearchWorker::iterativeDeepening() {
     }
     tmUpdate();
   }
-  std::cout << "bestmove " << move2Str(results[currentDepth - 1].pv.line[0])
+  std::cout << "bestmove " << move2Str(results[currentDepth].pv.line[0])
             << std::endl;
 }
 
@@ -217,14 +217,14 @@ void SearchWorker::aspirationWindow() {
 
     else if (r.best <= alpha) {
       beta = (alpha + beta) / 2;
-      alpha = std::max(int(-VAL_INFINITE), r.best - delta);
+      alpha = std::max(int(-VAL_INFINITE), alpha - delta);
       depth = currentDepth;
       r.best = pr.best;
       r.pv = pr.pv;
     }
 
     else if (r.best >= beta) {
-      beta = std::min(int(VAL_INFINITE), r.best + delta);
+      beta = std::min(int(VAL_INFINITE), beta + delta);
       depth -= (std::abs(r.best) <= VAL_INFINITE / 2);
     }
 
@@ -278,7 +278,9 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   // Generate moves to check for draws
   if ((nodes & 2047) == 0)
     checkTime();
-
+  // Check if the depth is 0, if so return the quiescence search
+  if (depth <= 0 and !inCheck)
+    return quiescence(pos, parentPV, alpha, beta); // Return quiescence
   // Increment nodes
   nodes++;
 
@@ -380,7 +382,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
     pos.makeNullMove(st);
 
-    R = 3 + depth / 5 + std::min(3, (evaluation - beta) / 200);
+    R = 4 + depth / 5 + std::min(3, (evaluation - beta) / 200);
 
     ply++;
 
@@ -399,12 +401,8 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       return nullValue > VAL_MATE_BOUND ? beta : nullValue;
   }
 
-  // Check if the depth is 0, if so return the quiescence search
-  if (depth <= 0)
-    return quiescence(pos, parentPV, alpha, beta); // Return quiescence
-
   // Internal iterative deepening
-  if (cutNode and depth >= 8 and ttMove == Move::none())
+  if (cutNode and depth >= 7 and ttMove == Move::none())
     depth -= 1;
 
   rBeta = beta + 170 - 64 * improving;
@@ -485,6 +483,10 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
         skipQuiets = true;
     }
 
+    if (bestScore > -VAL_MATE_BOUND and depth <= 10 and
+        mp.genStage > GOOD_CAPTURE and !pos.SEE(move, seeMargin[isCapture]))
+      continue;
+
     // Increment legal move counter
     moveCount++;
 
@@ -517,10 +519,10 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
                       : ttValue >= beta      ? -1
                       : ttValue <= value     ? -1
                                              : 0;
-      }
+      } else
+        extension = inCheck;
     }
 
-    extension += inCheck;
     newDepth = depth + extension;
 
     ns.dExtensions = nodeStates[ply - 1].dExtensions + (extension >= 2);
@@ -538,6 +540,10 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
         R += !pvNode + !improving;
 
         R += inCheck and pos.getPieceType(move.to()) == KING;
+
+        R -= mp.genStage < INIT_QUIET;
+
+        R += std::min(2, std::abs(evaluation - alpha) / 350);
 
         R -= ss.history[pos.getPiece(move.from())][move.to()] / 350;
       } else {
@@ -601,7 +607,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     return ns.excluded != Move::none() ? alpha : inCheck ? -VAL_MATE + ply : 0;
   }
 
-  if (ns.excluded == Move::none()) {
+  if (ns.excluded == Move::none() and !rootNode) {
     ttFlag = bestScore >= beta      ? HashBeta
              : bestScore > oldAlpha ? HashExact
                                     : HashAlpha;
