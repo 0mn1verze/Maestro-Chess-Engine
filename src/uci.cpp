@@ -163,7 +163,8 @@ void UCI::parsePosition(std::stringstream &command, Position &pos,
     return;
   }
 
-  states = StateList{new std::deque<BoardState>(1)};
+  states->clear();
+  states->emplace_back();
   pos.set(fen.data(), states->back());
 
   Move m;

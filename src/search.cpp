@@ -65,8 +65,8 @@ void SearchWorker::start(Position &pos, StateList &states, TimeControl &time,
                          Depth depth) {
 
   waitForSearchFinished();
-  rootPos = pos;
-  rootState = *pos.state();
+  rootState = states->back();
+  rootPos.set(pos.fen(), rootState);
 
   Colour us = pos.getSideToMove();
 
@@ -182,13 +182,11 @@ void SearchWorker::iterativeDeepening() {
     Result &r = results[currentDepth];
     aspirationWindow();
 
-    if (stop) {
-      currentDepth--;
+    if (stop)
       break;
-    }
     tmUpdate();
   }
-  std::cout << "bestmove " << move2Str(results[currentDepth].pv.line[0])
+  std::cout << "bestmove " << move2Str(results[currentDepth - 1].pv.line[0])
             << std::endl;
 }
 
@@ -253,7 +251,7 @@ void SearchWorker::updateCaptureHistory(Position &pos, Move history,
 Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
                            Value beta, Depth depth, bool cutNode) {
 
-  const bool pvNode = (alpha != beta - 1);
+  const bool pvNode = (alpha != beta - 1) and pos.state()->move != Move::null();
   const bool rootNode = (ply == 0);
   const bool inCheck = pos.isInCheck();
 
@@ -278,9 +276,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   // Generate moves to check for draws
   if ((nodes & 2047) == 0)
     checkTime();
-  // Check if the depth is 0, if so return the quiescence search
-  if (depth <= 0 and !inCheck)
-    return quiescence(pos, parentPV, alpha, beta); // Return quiescence
+
   // Increment nodes
   nodes++;
 
@@ -375,8 +371,8 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   }
 
   // Null move pruning
-  if (!rootNode and !inCheck and evaluation >= beta and depth >= 3 and
-      pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
+  if (!pvNode and !rootNode and !inCheck and evaluation >= beta and
+      depth >= 3 and pos.getNonPawnMaterial(pos.getSideToMove()) > 0 and
       pos.state()->move != Move::null() and ns.excluded == Move::none() and
       (!ttHit || !(ttFlag & HashAlpha) || ttValue >= beta)) {
 
@@ -393,21 +389,30 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
     pos.unmakeNullMove();
 
-    if (stop) {
+    if (stop)
       return 0;
-    }
 
-    if (nullValue >= beta)
-      return nullValue > VAL_MATE_BOUND ? beta : nullValue;
+    if (nullValue >= beta and nullValue < VAL_MATE_BOUND)
+      return nullValue;
   }
 
+  // If we are in a pv node but there is no table move, then the move is
+  // likely bad
+  if (!rootNode and pvNode and !cutNode and ttMove == Move::none() and ttHit)
+    depth -= 1;
+
+  // Check if the depth is 0, if so return the quiescence search
+  if (depth <= 0 and !inCheck)
+    return quiescence(pos, parentPV, alpha, beta); // Return quiescence
+
   // Internal iterative deepening
-  if (cutNode and depth >= 7 and ttMove == Move::none())
+  if (cutNode and depth >= 8 and ttMove == Move::none())
     depth -= 1;
 
   rBeta = beta + 170 - 64 * improving;
   if (!pvNode and depth > 3 and std::abs(beta) < VAL_MATE_BOUND and
       !(ttDepth >= depth - 3 and ttValue != VAL_NONE and ttValue < rBeta)) {
+
     MovePicker mp(pos, ss, rBeta - evaluation, ttMove);
     while ((move = mp.pickNextMove(true)) != Move::none()) {
       if (move == ns.excluded)
@@ -607,7 +612,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     return ns.excluded != Move::none() ? alpha : inCheck ? -VAL_MATE + ply : 0;
   }
 
-  if (ns.excluded == Move::none() and !rootNode) {
+  if (ns.excluded == Move::none()) {
     ttFlag = bestScore >= beta      ? HashBeta
              : bestScore > oldAlpha ? HashExact
                                     : HashAlpha;

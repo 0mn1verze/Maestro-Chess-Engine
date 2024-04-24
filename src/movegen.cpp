@@ -67,15 +67,15 @@ void refreshMasks(const Position &pos) {
   // Define king attacks bitboard
   st->kingAttacks = attacksBB<KING>(kingSquare, EMPTYBB);
 
-  if (kingSquare == NO_SQ) {
-    pos.print();
-    BoardState *st = pos.state();
-    while (st->previous != nullptr) {
-      std::cout << move2Str(st->move) << std::endl;
-      st = st->previous;
-    }
-    throw std::runtime_error("King not found");
-  }
+  // if (kingSquare == NO_SQ) {
+  //   pos.print();
+  //   BoardState *st = pos.state();
+  //   while (st->previous != nullptr) {
+  //     std::cout << move2Str(st->move) << std::endl;
+  //     st = st->previous;
+  //   }
+  //   throw std::runtime_error("King not found");
+  // }
 
   st->rookPin = EMPTYBB;
   st->bishopPin = EMPTYBB;
