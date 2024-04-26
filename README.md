@@ -23,5 +23,6 @@ A chess engine project for learning c++. It has a decent search speed (Average o
 * Transposition table with buckets
 * Polyglot book
 * Stockfish NNUE evaluation (Incremental update)
+* Daniel Shawul's NNUE probe library
 * Time control based on search stability
 * UCI protocol compatible
