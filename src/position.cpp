@@ -55,7 +55,7 @@ BoardState *Position::state() const { return st; }
 bool Position::isInCheck() const { return (st->checkMask != FULLBB); }
 
 bool Position::isDraw(int ply) const {
-  if (st->fiftyMove > 99)
+  if (st->fiftyMove > 99 and !isInCheck())
     return true;
   return st->repetition and st->repetition < ply;
 }
@@ -608,6 +608,8 @@ void Position::makeMove(Move move, BoardState &state) {
 
     // Update board state to undo move
     st->captured = cap;
+
+    st->fiftyMove = 0;
   } else
     st->captured = NO_PIECE;
 

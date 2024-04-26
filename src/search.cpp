@@ -65,8 +65,8 @@ void SearchWorker::start(Position &pos, StateList &states, TimeControl &time,
                          Depth depth) {
 
   waitForSearchFinished();
-  rootState = states->back();
-  rootPos.set(pos.fen(), rootState);
+  rootState = *pos.state();
+  rootPos = pos;
 
   Colour us = pos.getSideToMove();
 
@@ -215,14 +215,14 @@ void SearchWorker::aspirationWindow() {
 
     else if (r.best <= alpha) {
       beta = (alpha + beta) / 2;
-      alpha = std::max(int(-VAL_INFINITE), alpha - delta);
+      alpha = std::max(int(-VAL_INFINITE), r.best - delta);
       depth = currentDepth;
       r.best = pr.best;
       r.pv = pr.pv;
     }
 
     else if (r.best >= beta) {
-      beta = std::min(int(VAL_INFINITE), beta + delta);
+      beta = std::min(int(VAL_INFINITE), r.best + delta);
       depth -= (std::abs(r.best) <= VAL_INFINITE / 2);
     }
 
@@ -268,6 +268,9 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   NodeState &ns = nodeStates[ply];
 
   ns.dExtensions = nodeStates[ply - 1].dExtensions;
+
+  if (depth <= 0)
+    return quiescence(pos, parentPV, alpha, beta); // Return quiescence
 
   // Reset killer moves
   ss.killer[ply + 1][0] = ss.killer[ply + 1][1] = Move::none();
@@ -327,7 +330,8 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     }
 
     if (!pvNode and ttDepth >= depth - 1 and (ttFlag & HashAlpha) and
-        (cutNode || ttValue <= alpha) and ttValue + 200 <= alpha)
+        (cutNode || ttValue <= alpha) and ttValue + 200 <= alpha and
+        alpha <= VAL_MATE_BOUND)
       return alpha;
   }
 
@@ -402,7 +406,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
     depth -= 1;
 
   // Check if the depth is 0, if so return the quiescence search
-  if (depth <= 0 and !inCheck)
+  if (depth <= 0)
     return quiescence(pos, parentPV, alpha, beta); // Return quiescence
 
   // Internal iterative deepening
@@ -522,6 +526,7 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
           extension = double_extend          ? 2
                       : value < singularBeta ? 1
                       : ttValue >= beta      ? -1
+                      : cutNode              ? -1
                       : ttValue <= value     ? -1
                                              : 0;
       } else
@@ -548,9 +553,9 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
 
         R -= mp.genStage < INIT_QUIET;
 
-        R += std::min(2, std::abs(evaluation - alpha) / 350);
+        // R += std::min(2, std::abs(evaluation - alpha) / 350);
 
-        R -= ss.history[pos.getPiece(move.from())][move.to()] / 350;
+        // R -= ss.history[pos.getPiece(move.from())][move.to()] / 350;
       } else {
         R = 3 - (ss.captureHistory[pos.getPiece(move.from())][move.to()]
                                   [pos.getPieceType(move.to())] /

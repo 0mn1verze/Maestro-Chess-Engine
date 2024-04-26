@@ -94,7 +94,7 @@ public:
   // Constructors
   Position() = default;
   Position(const Position &pos) = delete;
-  Position &operator=(const Position &pos) = delete;
+  Position &operator=(const Position &pos) = default;
 
   // Init Position
   void set(const std::string &fen, BoardState &state);

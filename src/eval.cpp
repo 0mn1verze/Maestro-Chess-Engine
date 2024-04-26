@@ -93,11 +93,10 @@ Value eval(const Position &pos) {
     return pos.getSideToMove() == WHITE ? v : -v;
 
   Value nnue = evaluate_nnue(pos);
-  int mat = pos.getNonPawnMaterial() + 4 * PawnValue * pos.count<PAWN>();
 
   v = nnue * 5 / 4 + 28;
 
-  v = v * (200 - st->fiftyMove) / 400;
+  v = v * (100 - st->fiftyMove) / 100;
 
   v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
 
