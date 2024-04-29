@@ -22,10 +22,10 @@ constexpr bool USE_BOOK = true;
 UCI::UCI() {
   initBitboards();
   initZobrist();
-  TTInit(16);
+  TTInit(64);
   nnue_init("nn-eba324f53044.nnue");
   if (USE_BOOK)
-    initPolyBook("baron30.bin");
+    initPolyBook("OPTIMUS2403.bin");
   initEval();
 }
 

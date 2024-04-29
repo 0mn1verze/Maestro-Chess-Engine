@@ -40,8 +40,11 @@ MovePicker::MovePicker(Position &pos, SearchStats &ss, const int ply,
 
 MovePicker::MovePicker(Position &pos, SearchStats &ss, const int threshold,
                        const Move pvMove)
-    : pos(pos), ply(ply), cur(moves), ss(ss), depth(depth), ttMove(pvMove),
-      threshold(0), onlyCaptures(onlyCaptures) {
+    : pos(pos), ply(0), cur(moves), ss(ss), depth(0), ttMove(pvMove),
+      threshold(threshold), onlyCaptures(true) {
+
+  killer1 = killer2 = Move::none();
+
   genStage =
       GenStage(PROBCUT_TT + !(pos.isLegal(ttMove) and pos.isCapture(ttMove) and
                               pos.SEE(ttMove, threshold)));

@@ -60,7 +60,9 @@ bool Position::isDraw(int ply) const {
   return st->repetition and st->repetition < ply;
 }
 
-bool Position::isCapture(Move move) const { return getPiece(move.to()); }
+bool Position::isCapture(Move move) const {
+  return move.isOk() and getPiece(move.to());
+}
 
 Bitboard Position::getPiecesBB(PieceType pt) const { return piecesBB[pt]; }
 
@@ -779,6 +781,8 @@ void Position::makeNullMove(BoardState &state) {
   sideToMove = ~sideToMove;
 
   st->move = Move::null();
+
+  st->captured = NO_PIECE;
 
   // Update repetition
   st->repetition = 0;

@@ -80,7 +80,7 @@ inline std::string score2Str(const Value score) {
   } else if (score < VAL_MATE and score > VAL_MATE_BOUND) {
     return std::format("mate {}", (VAL_MATE - score) / 2 + 1);
   }
-  return std::format("cp {}", score);
+  return std::format("cp {}", score / 2);
 }
 
 // Convert a piece to a char
