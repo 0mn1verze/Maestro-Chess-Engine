@@ -80,21 +80,21 @@ Value eval(const Position &pos) {
   BoardState *st = pos.state();
   Score psq = pos.psq();
 
-  Value v;
-
   int mgPhase = pos.gamePhase();
   if (mgPhase > 24)
     mgPhase = 24;
   int egPhase = 24 - mgPhase;
 
-  v = (psq.mg * mgPhase + psq.eg * egPhase) / 24;
+  Value classical = (psq.mg * mgPhase + psq.eg * egPhase) / 24;
 
-  if (countBits(pos.getOccupiedBB()) > 6 and (std::abs(v) > 2500))
-    return pos.getSideToMove() == WHITE ? v : -v;
+  if (std::abs(classical) > 2500)
+    return pos.getSideToMove() == WHITE ? classical : -classical;
 
   Value nnue = evaluate_nnue(pos);
 
-  v = nnue * 5 / 4 + 28;
+  int mat = pos.getNonPawnMaterial() + 4 * PawnValue * pos.count<PAWN>();
+
+  Value v = nnue * (580 + mat / 32 - 4 * st->fiftyMove) / 1024 + 28;
 
   v = v * (100 - st->fiftyMove) / 100;
 

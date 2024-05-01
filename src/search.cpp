@@ -110,7 +110,7 @@ bool SearchWorker::finishSearch() {
 
   const double scoreFactor = std::max(0.75, std::max(1.25, scoreChange * 0.05));
 
-  return elapsed > tm.idealStopTime * scoreFactor * pvFactor * 0.5;
+  return elapsed > tm.idealStopTime * pvFactor * scoreFactor / 2;
 }
 
 void SearchWorker::tmUpdate() {
@@ -282,6 +282,9 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
   if ((nodes & 2047) == 0)
     checkTime();
 
+  if (stop)
+    return 0;
+
   // Increment nodes
   nodes++;
 
@@ -432,6 +435,9 @@ Value SearchWorker::search(Position &pos, PVLine &parentPV, Value alpha,
       ply--;
 
       pos.unmakeMove();
+
+      if (stop)
+        return 0;
 
       if (value >= rBeta) {
         TTStore(pos.state()->key, ply, move, value, evaluation, depth - 3,
