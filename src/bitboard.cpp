@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <format>
 #include <iostream>
 #include <string>
 
@@ -63,7 +62,7 @@ void printBitboard(Bitboard bb) {
   std::cout << "       A   B   C   D   E   F   G   H\n\n";
 
   // Print bitboard representations
-  std::cout << std::format("Bitboard: {:#x}", bb) << std::endl;
+  std::cout << std::hex << "Bitboard: " << bb << std::endl;
 }
 
 /******************************************\

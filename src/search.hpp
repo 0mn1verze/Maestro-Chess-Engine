@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <cstdint>
 #include <memory>
+#include <thread>
 
 #include "bitboard.hpp"
 #include "defs.hpp"

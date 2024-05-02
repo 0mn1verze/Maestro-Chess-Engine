@@ -3,8 +3,9 @@
 
 #include <chrono>
 #include <cstdint>
-#include <format>
+#include <sstream>
 #include <string>
+
 
 #include "defs.hpp"
 
@@ -80,12 +81,17 @@ inline std::string move2Str(const Move &m) {
 
 // Convert score to string
 inline std::string score2Str(const Value score) {
+  std::stringstream result;
+
   if (score > -VAL_MATE and score < -VAL_MATE_BOUND) {
-    return std::format("mate {}", -(score + VAL_MATE) / 2 - 1);
+    result << "mate " << -(score + VAL_MATE) / 2 - 1;
+    return result.str();
   } else if (score < VAL_MATE and score > VAL_MATE_BOUND) {
-    return std::format("mate {}", (VAL_MATE - score) / 2 + 1);
+    result << "mate " << (VAL_MATE - score) / 2 + 1;
+    return result.str();
   }
-  return std::format("cp {}", score / 2);
+  result << "cp " << score / 2;
+  return result.str();
 }
 
 // Convert a piece to a char

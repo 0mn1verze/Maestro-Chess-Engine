@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <iostream>
+
 
 #include "defs.hpp"
 #include "movegen.hpp"

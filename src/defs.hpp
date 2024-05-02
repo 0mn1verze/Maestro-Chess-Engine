@@ -171,7 +171,7 @@ public:
   Square from() const { return Square(data & H8); }
   Square to() const { return Square((data >> 6) & H8); }
   PieceType promoted() const { return PieceType((data >> 14) + KNIGHT); }
-  int raw() const { return data; }
+  constexpr int raw() const { return data; }
 
   // Move flags
   MoveFlag flag() const { return MoveFlag((data >> 12) & CASTLE); }
