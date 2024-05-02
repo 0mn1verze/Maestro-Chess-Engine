@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\Maestro.dir/objects.a
-C:\msys64\ucrt64\bin\llvm-ar.exe qc CMakeFiles\Maestro.dir/objects.a @CMakeFiles\Maestro.dir\objects1.rsp
-C:\msys64\ucrt64\bin\clang++.exe  -g -Ofast -DUSE-MMX -mavx  -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\Maestro.dir/objects.a -Wl,--no-whole-archive -o Maestro.exe -Wl,--out-implib,libMaestro.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\Maestro.dir\linkLibs.rsp
