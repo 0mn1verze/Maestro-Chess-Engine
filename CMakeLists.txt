@@ -38,4 +38,6 @@ set(USER_FLAGS "-g -Ofast -DUSE-MMX -mavx")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USER_FLAGS} ")
 
+set(EXECUTABLE_OUTPUT_PATH ../bin)
+
 add_executable(Maestro ${SOURCES} ${HEADERS})
