@@ -27,7 +27,7 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 39,
+				"line" : 41,
 				"parent" : 0
 			}
 		]
@@ -38,7 +38,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : " -g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG -std=gnu++23"
+					"fragment" : " -g -Ofast -DUSE-MMX -mavx  -O3 -DNDEBUG -std=gnu++23"
 				}
 			],
 			"language" : "CXX",
@@ -74,7 +74,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse  -O3 -DNDEBUG",
+				"fragment" : "-g -Ofast -DUSE-MMX -mavx  -O3 -DNDEBUG",
 				"role" : "flags"
 			},
 			{

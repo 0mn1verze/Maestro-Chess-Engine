@@ -64,7 +64,17 @@
 		{
 			"isCMake" : true,
 			"isExternal" : true,
-			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/GNU-C.cmake"
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/Clang-C.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/Clang.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/CMakeCommonCompilerMacros.cmake"
 		},
 		{
 			"isCMake" : true,
@@ -79,7 +89,12 @@
 		{
 			"isCMake" : true,
 			"isExternal" : true,
-			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Platform/Windows-GNU-C.cmake"
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Platform/Windows-Clang-C.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Platform/Windows-Clang.cmake"
 		},
 		{
 			"isCMake" : true,
@@ -123,22 +138,22 @@
 		{
 			"isCMake" : true,
 			"isExternal" : true,
-			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/GNU-CXX.cmake"
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/Clang-CXX.cmake"
 		},
 		{
 			"isCMake" : true,
 			"isExternal" : true,
-			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/GNU.cmake"
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Compiler/Clang.cmake"
 		},
 		{
 			"isCMake" : true,
 			"isExternal" : true,
-			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Platform/Windows-GNU-CXX.cmake"
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Platform/Windows-Clang-CXX.cmake"
 		},
 		{
 			"isCMake" : true,
 			"isExternal" : true,
-			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Platform/Windows-GNU.cmake"
+			"path" : "C:/Program Files/CMake/share/cmake-3.29/Modules/Platform/Windows-Clang.cmake"
 		},
 		{
 			"isCMake" : true,

@@ -1,8 +1,12 @@
 #ifndef BITBOARD_HPP
 #define BITBOARD_HPP
 
+// #define USE_INTRINSICS 1
+
 // C++ Standard Library
+#if defined(USE_INTRINSICS)
 #include <immintrin.h>
+#endif
 
 #include "defs.hpp"
 
@@ -19,25 +23,31 @@ void initBitboards();
 void printBitboard(Bitboard bb);
 
 // Count the number of set bits in a bitboard
-inline int countBits(Bitboard bb) { return _mm_popcnt_u64(bb); }
+inline int countBits(Bitboard bb) { return __builtin_popcountll(bb); }
 
 // Get the least significant bit from a bitboard
-inline Square getLSB(Bitboard bb) { return (Square)_tzcnt_u64(bb); }
+inline Square getLSB(Bitboard bb) { return (Square)__builtin_ctzll(bb); }
 
 // Get the most significant bit from a bitboard
-inline Square getMSB(Bitboard bb) { return (Square)(63 ^ _lzcnt_u64(bb)); }
+inline Square getMSB(Bitboard bb) { return (Square)(63 ^ __builtin_clzll(bb)); }
 
 // Pop the least significant bit from a bitboard
 inline Square popLSB(Bitboard &bb) {
   Square lsb = getLSB(bb);
+#if defined(USE_INTRINISICS)
   bb = _blsr_u64(bb);
+#else
+  bb &= bb - 1;
+#endif
   return lsb;
 }
 
+#if defined(USE_INTRINSICS)
 // Parallel bit extraction
-inline Square pext(Bitboard bb, Bitboard mask) {
-  return (Square)_pext_u64(bb, mask);
+inline unsigned pext(Bitboard bb, Bitboard mask) {
+  return (unsigned)_pext_u64(bb, mask);
 }
+#endif
 
 // More than one bit set
 inline bool moreThanOne(Bitboard bb) { return bb & (bb - 1); }
@@ -55,6 +65,13 @@ constexpr Bitboard EMPTYBB = 0ULL;
 constexpr Bitboard FULLBB = ~EMPTYBB;
 constexpr Bitboard DarkSquares = 0xAA55AA55AA55AA55ULL;
 
+// CPU flag
+#if defined(USE_INTRINSICS)
+constexpr bool HasPext = true;
+#else
+constexpr bool HasPext = false;
+#endif
+
 /******************************************\
 |==========================================|
 |              Lookup Tables               |
@@ -66,8 +83,19 @@ struct Magic {
   Bitboard *attacks;
   // Attack mask for slider piece on a particular square
   Bitboard mask;
+  // Magic number for the square
+  Bitboard magic;
+  // Shift right to get index
+  int shift;
   // Calculate index in attacks table
-  unsigned int index(Bitboard occupied) { return pext(occupied, mask); }
+  unsigned int index(Bitboard occupied) {
+#if defined(USE_INTRINSICS)
+    return pext(occupied, mask);
+#else
+    return unsigned(((occupied & mask) * magic) >> shift);
+#endif
+  }
+
   Bitboard operator[](Bitboard occupied) { return attacks[index(occupied)]; }
 };
 
@@ -324,5 +352,7 @@ constexpr Bitboard sameColourSquares(Square sq) {
 constexpr bool aligned(Square sq1, Square sq2, Square sq3) {
   return lineBB[sq1][sq2] & squareBB(sq3);
 }
+
+void magics();
 
 #endif // BITBOARD_HPP

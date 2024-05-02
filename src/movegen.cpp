@@ -175,17 +175,20 @@ Move *generatePawnMoves(Move *moves, const Position &pos) {
     if (st->enPassant != NO_SQ && !st->enPassantPin) {
       const Bitboard enPassantTarget = squareBB(pos.getEnPassantTarget(them));
       // Left capture enpassant pawn
-      Square pawnEPL =
-          getLSB(pawnsLR & shift<EPLeft>(checkMask & enPassantTarget) &
-                 (shift<-left>(bishopPin) | ~bishopPin));
-      Square pawnEPR =
-          getLSB(pawnsLR & shift<EPRight>(checkMask & enPassantTarget) &
-                 (shift<-right>(bishopPin) | ~bishopPin));
+      Bitboard pawnEPL = pawnsLR & shift<EPLeft>(checkMask & enPassantTarget) &
+                         (shift<-left>(bishopPin) | ~bishopPin);
+      Bitboard pawnEPR = pawnsLR & shift<EPRight>(checkMask & enPassantTarget) &
+                         (shift<-right>(bishopPin) | ~bishopPin);
 
-      if (pawnEPL != NO_SQ)
-        *moves++ = Move::encode<EN_PASSANT>(pawnEPL, pawnEPL + left);
-      if (pawnEPR != NO_SQ)
-        *moves++ = Move::encode<EN_PASSANT>(pawnEPR, pawnEPR + right);
+      if (pawnEPL) {
+        Square origin = getLSB(pawnEPL);
+        *moves++ = Move::encode<EN_PASSANT>(origin, origin + left);
+      }
+
+      if (pawnEPR) {
+        Square origin = getLSB(pawnEPR);
+        *moves++ = Move::encode<EN_PASSANT>(origin, origin + right);
+      }
     }
 
     if ((pawnL | pawnR) & promotionRank) {

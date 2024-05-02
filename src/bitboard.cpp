@@ -3,11 +3,9 @@
 #include <iostream>
 #include <string>
 
-
 #include "bitboard.hpp"
 #include "defs.hpp"
 #include "utils.hpp"
-
 
 /******************************************\
 |==========================================|
@@ -143,8 +141,9 @@ static inline Bitboard attacksOnTheFly(Square sq, Bitboard occupied) {
 
 template <PieceType pt>
 static inline void initMagics(Bitboard table[], Magic magics[]) {
-  int size;
-  Bitboard edges, occupied;
+  Bitboard occupancy[4096], reference[4096], edges, occupied;
+
+  int epoch[4096] = {}, cnt = 0, size = 0;
 
   for (Square sq = A1; sq <= H8; ++sq) {
     // Edges of the board are not included in the attack lookup because it
@@ -157,6 +156,8 @@ static inline void initMagics(Bitboard table[], Magic magics[]) {
     Magic &m = magics[sq];
     // Generate attack mask (Remove edges)
     m.mask = attacksOnTheFly<pt>(sq, EMPTYBB) & ~edges;
+    // Calculate the shift (Relevant bits in the occupancy bitboard)
+    m.shift = 64 - countBits(m.mask);
 
     // Assign the attacks pointer to the corresponding index in the attacks
     // table The table is like a 2D array but each row has different length
@@ -164,13 +165,18 @@ static inline void initMagics(Bitboard table[], Magic magics[]) {
     m.attacks = (sq == A1) ? table : magics[sq - 1].attacks + size;
 
     // Reset occupied and size as we are starting to fill the m.attacks array
-    occupied = EMPTYBB;
-    size = 0;
+    size = occupied = 0;
     do {
-      // Using the index function to calculate the corresponding index for the
-      // occupancy bitboard, and generate the corresponding attacks (with
-      // blockers) and store it at that index in the table
-      m.attacks[m.index(occupied)] = attacksOnTheFly<pt>(sq, occupied);
+      // Save occupancy bitboard
+      occupancy[size] = occupied;
+      // Create attack reference
+      reference[size] = attacksOnTheFly<pt>(sq, occupied);
+
+      if (HasPext)
+        // Using the index function to calculate the corresponding index for the
+        // occupancy bitboard, and generate the corresponding attacks (with
+        // blockers) and store it at that index in the table
+        m.attacks[m.index(occupied)] = reference[size];
 
       // Increment size
       size++;
@@ -178,11 +184,28 @@ static inline void initMagics(Bitboard table[], Magic magics[]) {
       // https://www.chessprogramming.org/Traversing_Subsets_of_a_Set
       occupied = (occupied - m.mask) & m.mask;
     } while (occupied);
+
+    if (HasPext)
+      continue;
+
+    for (int i = 0; i < size;) {
+
+      for (m.magic = 0; countBits((m.magic * m.mask) >> 56) < 6;)
+        m.magic = getSparseRandom<Bitboard>();
+
+      for (++cnt, i = 0; i < size; ++i) {
+
+        unsigned index = m.index(occupancy[i]);
+
+        if (epoch[index] < cnt) {
+          epoch[index] = cnt;
+          m.attacks[index] = reference[i];
+        } else if (m.attacks[index] != reference[i])
+          break;
+      }
+    }
   }
 }
-
-template <PieceType pt>
-void generateMagics(Bitboard table)
 
 /******************************************\
 |==========================================|

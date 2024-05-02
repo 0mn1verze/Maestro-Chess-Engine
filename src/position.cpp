@@ -834,8 +834,9 @@ bool Position::isLegal(Move move) const {
   if (move.isNormal()) {
     bool isCapture, isSinglePush, isDoublePush;
     Bitboard attacks;
-    switch (getPieceType(from)) {
-    case PAWN:
+
+    PieceType pt = getPieceType(from);
+    if (pt == PAWN) {
       attacks = (us == WHITE) ? pawnAttacksBB<WHITE>(from)
                               : pawnAttacksBB<BLACK>(from);
       isCapture = bool(attacks & getOccupiedBB(~us) & to);
@@ -848,29 +849,23 @@ bool Position::isLegal(Move move) const {
 
       if (!isCapture and !isSinglePush and !isDoublePush)
         return false;
-      break;
-    case KING:
+    } else if (pt == KING) {
       if ((st->kingBan & to) ||
           (squareDist(from, to) > 1 and !move.isCastle()) ||
           !(attacksBB<KING>(from, getOccupiedBB()) & to))
         return false;
-      break;
-    case KNIGHT:
+    } else if (pt == KNIGHT) {
       if (!(attacksBB<KNIGHT>(from, getOccupiedBB()) & to))
         return false;
-      break;
-    case BISHOP:
+    } else if (pt == BISHOP) {
       if (!(attacksBB<BISHOP>(from, getOccupiedBB()) & to))
         return false;
-      break;
-    case ROOK:
+    } else if (pt == ROOK) {
       if (!(attacksBB<ROOK>(from, getOccupiedBB()) & to))
         return false;
-      break;
-    case QUEEN:
+    } else if (pt == QUEEN) {
       if (!(attacksBB<QUEEN>(from, getOccupiedBB()) & to))
         return false;
-      break;
     }
   } else if (getPieceType(from) != PAWN and getPieceType(from) != KING)
     return false;

@@ -42,7 +42,9 @@ struct Result {
 
 class SearchWorker {
 public:
-  SearchWorker() : searchThread(&idleLoop, this) { waitForSearchFinished(); };
+  SearchWorker() : searchThread(&SearchWorker::idleLoop, this) {
+    waitForSearchFinished();
+  };
   ~SearchWorker();
 
   void idleLoop();
@@ -50,13 +52,10 @@ public:
   void waitForSearchFinished();
   void start(Position &, StateList &, TimeControl &, Depth);
 
-  void clear();
   void searchPosition();
-  void resetPosition();
   void checkTime();
   bool finishSearch();
   void tmUpdate();
-  void uciReport();
   std::string pv(PVLine pvLine);
 
   TimeControl tm;

@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 
+#include "bitboard.hpp"
 #include "eval.hpp"
 #include "perft.hpp"
 #include "polyglot.hpp"
@@ -11,7 +12,13 @@ int main() {
 
   UCI uci;
 
+
   uci.loop();
+
+  // initBitboards();
+
+  // printBitboard(F6 | C7);
+  // printBitboard(bishopAttacks[E5][F6 | C7]);
 
   // Position pos;
   // StateList states{new std::deque<BoardState>(1)};

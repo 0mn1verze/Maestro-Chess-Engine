@@ -15,7 +15,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/addr2line.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-addr2line.exe"
 		},
 		{
 			"name" : "CMAKE_AR",
@@ -31,7 +31,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/ar.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-ar.exe"
 		},
 		{
 			"name" : "CMAKE_BUILD_TYPE",
@@ -159,7 +159,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/g++.exe"
+			"value" : "C:/msys64/ucrt64/bin/clang++.exe"
 		},
 		{
 			"name" : "CMAKE_CXX_COMPILER_AR",
@@ -171,11 +171,27 @@
 				},
 				{
 					"name" : "HELPSTRING",
-					"value" : "A wrapper around 'ar' adding the appropriate '--plugin' option for the GCC compiler"
+					"value" : "LLVM archiver"
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/gcc-ar.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-ar.exe"
+		},
+		{
+			"name" : "CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS",
+			"properties" : 
+			[
+				{
+					"name" : "ADVANCED",
+					"value" : "1"
+				},
+				{
+					"name" : "HELPSTRING",
+					"value" : "`clang-scan-deps` dependency scanner"
+				}
+			],
+			"type" : "FILEPATH",
+			"value" : "C:/msys64/ucrt64/bin/clang-scan-deps.exe"
 		},
 		{
 			"name" : "CMAKE_CXX_COMPILER_RANLIB",
@@ -187,11 +203,11 @@
 				},
 				{
 					"name" : "HELPSTRING",
-					"value" : "A wrapper around 'ranlib' adding the appropriate '--plugin' option for the GCC compiler"
+					"value" : "Generate index for LLVM archive"
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/gcc-ranlib.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-ranlib.exe"
 		},
 		{
 			"name" : "CMAKE_CXX_FLAGS",
@@ -303,7 +319,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/gcc.exe"
+			"value" : "C:/msys64/ucrt64/bin/clang.exe"
 		},
 		{
 			"name" : "CMAKE_C_COMPILER_AR",
@@ -315,11 +331,27 @@
 				},
 				{
 					"name" : "HELPSTRING",
-					"value" : "A wrapper around 'ar' adding the appropriate '--plugin' option for the GCC compiler"
+					"value" : "LLVM archiver"
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/gcc-ar.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-ar.exe"
+		},
+		{
+			"name" : "CMAKE_C_COMPILER_CLANG_SCAN_DEPS",
+			"properties" : 
+			[
+				{
+					"name" : "ADVANCED",
+					"value" : "1"
+				},
+				{
+					"name" : "HELPSTRING",
+					"value" : "`clang-scan-deps` dependency scanner"
+				}
+			],
+			"type" : "FILEPATH",
+			"value" : "C:/msys64/ucrt64/bin/clang-scan-deps.exe"
 		},
 		{
 			"name" : "CMAKE_C_COMPILER_RANLIB",
@@ -331,11 +363,11 @@
 				},
 				{
 					"name" : "HELPSTRING",
-					"value" : "A wrapper around 'ranlib' adding the appropriate '--plugin' option for the GCC compiler"
+					"value" : "Generate index for LLVM archive"
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/gcc-ranlib.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-ranlib.exe"
 		},
 		{
 			"name" : "CMAKE_C_FLAGS",
@@ -447,7 +479,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/dlltool.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-dlltool.exe"
 		},
 		{
 			"name" : "CMAKE_EDIT_COMMAND",
@@ -799,7 +831,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/nm.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-nm.exe"
 		},
 		{
 			"name" : "CMAKE_NUMBER_OF_MAKEFILES",
@@ -827,7 +859,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/objcopy.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-objcopy.exe"
 		},
 		{
 			"name" : "CMAKE_OBJDUMP",
@@ -843,7 +875,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/objdump.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-objdump.exe"
 		},
 		{
 			"name" : "CMAKE_PLATFORM_INFO_INITIALIZED",
@@ -907,7 +939,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/ranlib.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-ranlib.exe"
 		},
 		{
 			"name" : "CMAKE_RC_COMPILER",
@@ -1031,7 +1063,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/readelf.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-readelf.exe"
 		},
 		{
 			"name" : "CMAKE_ROOT",
@@ -1251,7 +1283,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "C:/msys64/ucrt64/bin/strip.exe"
+			"value" : "C:/msys64/ucrt64/bin/llvm-strip.exe"
 		},
 		{
 			"name" : "CMAKE_TAPI",

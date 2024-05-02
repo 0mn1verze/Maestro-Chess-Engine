@@ -38,8 +38,13 @@ static inline U64 getRandomU64() {
 
   return result;
 }
+
 // Get random number of specific type
 template <typename T> inline T getRandom() { return T(getRandomU64()); }
+
+template <typename T> inline T getSparseRandom() {
+  return T(getRandomU64() & getRandomU64() & getRandomU64());
+}
 
 /******************************************\
 |==========================================|

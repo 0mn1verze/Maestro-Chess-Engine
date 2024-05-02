@@ -1,7 +1,7 @@
 #ifndef UCI_HPP
 #define UCI_HPP
 
-#include <Thread>
+#include <thread>
 
 #include <iostream>
 
