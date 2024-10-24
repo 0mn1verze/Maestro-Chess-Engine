@@ -1,7 +1,7 @@
 #ifndef BITBOARD_HPP
 #define BITBOARD_HPP
 
-// #define USE_INTRINSICS 1
+#define USE_INTRINSICS 1
 
 // C++ Standard Library
 #if defined(USE_INTRINSICS)

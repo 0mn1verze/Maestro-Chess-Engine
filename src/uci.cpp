@@ -16,7 +16,7 @@
 
 constexpr std::string_view NAME = "Maestro";
 constexpr std::string_view AUTHOR = "Evan Fung";
-constexpr bool USE_BOOK = false;
+constexpr bool USE_BOOK = true;
 
 // Constructor
 UCI::UCI() {

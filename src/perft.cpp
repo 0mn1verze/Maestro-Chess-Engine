@@ -45,7 +45,6 @@ void perftTest(Position &pos, int depth) {
   Time start = getTimeMs();
   // Init node variable
   Count nodes = 0;
-
   // Generate all moves
   Move moves[256];
   refreshMasks(pos);

@@ -10,12 +10,14 @@
 
 int main() {
 
-  UCI uci;
+  initBitboards();
 
+  perftBench();
 
-  uci.loop();
+  // UCI uci;
 
-  // initBitboards();
+  // uci.loop();
+
 
   // printBitboard(F6 | C7);
   // printBitboard(bishopAttacks[E5][F6 | C7]);
