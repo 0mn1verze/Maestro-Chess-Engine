@@ -44,13 +44,13 @@ Key getPolyKey(const Position &pos) {
 
   offset = 768;
 
-  if (pos.canCastle(WKCA))
+  if (pos.canCastle(WK_SIDE))
     key ^= Random64Poly[offset + 0];
-  if (pos.canCastle(WQCA))
+  if (pos.canCastle(WQ_SIDE))
     key ^= Random64Poly[offset + 1];
-  if (pos.canCastle(BKCA))
+  if (pos.canCastle(BK_SIDE))
     key ^= Random64Poly[offset + 2];
-  if (pos.canCastle(BQCA))
+  if (pos.canCastle(BQ_SIDE))
     key ^= Random64Poly[offset + 3];
 
   offset = 772;
@@ -119,7 +119,7 @@ Move getPolyBookMove(const Position &pos) {
       // Get move from the book and then convert to engine move format
       Move move = polyMoveToEngineMove(pos, __builtin_bswap16(entry.move));
 
-      if (move)
+      if (move.isValid())
         // Add moves to book moves
         bookMoves[index++] = move;
     }

@@ -3,6 +3,8 @@
 
 #include "defs.hpp"
 #include "position.hpp"
+#include "utils.hpp"
+
 
 // Function to count the number of leaf nodes at a given depth
 Count perftDriver(Position &pos, int depth);

@@ -7,7 +7,6 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
-#include "nnue.hpp"
 
 /******************************************\
 |==========================================|
@@ -54,27 +53,38 @@ void initZobrist();
 \******************************************/
 
 struct BoardState {
+
+  BoardState &operator=(const BoardState &bs) {
+    enPassant = bs.enPassant;
+    plies = bs.plies;
+    fiftyMove = bs.fiftyMove;
+    std::copy(std::begin(bs.nonPawnMaterial), std::end(bs.nonPawnMaterial),
+              std::begin(nonPawnMaterial));
+    castling = bs.castling;
+    // move = Move::none();
+    checkMask = FULLBB;
+    kingBan = EMPTYBB;
+    return *this;
+  }
+
   // Copied when making new move
   Square enPassant;
   int plies;
   int fiftyMove;
   Value nonPawnMaterial[COLOUR_N];
-  Score psq;
-  int gamePhase;
   Castling castling = NO_CASTLE;
 
   // Not copied when making new move
   Key key;
+  Key pawnKey;
   Piece captured = NO_PIECE;
   int repetition;
   Move move = Move::none();
   Bitboard checkMask = FULLBB;
-  Bitboard rookPin, bishopPin, kingBan, kingAttacks, available, attacked,
-      blockersForKing[COLOUR_N], pinners[COLOUR_N];
+  Bitboard rookPin = EMPTYBB, bishopPin = EMPTYBB, kingBan = EMPTYBB,
+           kingAttacks = EMPTYBB, available = EMPTYBB, attacked = EMPTYBB,
+           pinned[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
-
-  // Used by NNUE
-  NNUEdata nnueData;
 
   // Previous pieceList state
   BoardState *previous;
@@ -91,15 +101,16 @@ using StateList = std::unique_ptr<std::deque<BoardState>>;
 
 class Position {
 public:
-  // Constructors
   Position() = default;
   Position(const Position &pos) = delete;
   Position &operator=(const Position &pos) = default;
 
-  // Init Position
+  // Init pieceList states
   void set(const std::string &fen, BoardState &state);
-  void setState() const;
-  std::string fen() const;
+  void setState(BoardState &state);
+  Key initKey() const;
+  void initScore();
+  Key initPawnKey() const;
 
   // Output
   void print() const;
@@ -111,39 +122,35 @@ public:
   void unmakeNullMove();
 
   // Boardstate getters
-  BoardState *state() const;
-  int getPliesFromStart() const;
-  Square getEnPassantTarget(Colour side) const;
-  int getNonPawnMaterial() const;
-  int getNonPawnMaterial(Colour c) const;
-  Castling castling(Colour c) const;
-  bool canCastle(Castling cr) const;
-  bool isInCheck() const;
+  BoardState *state() const { return st; }
+  bool isInCheck() const { return (st->checkMask != FULLBB); }
   bool isDraw(int ply) const;
   bool isCapture(Move move) const;
-  Score psq() const;
-  int gamePhase() const;
 
   // Board getters
-  Bitboard getPiecesBB(PieceType pt) const;
+  Bitboard getPiecesBB(PieceType pt) const { return piecesBB[pt]; }
   template <typename... PieceTypes>
   Bitboard getPiecesBB(PieceType pt, PieceTypes... pts) const;
   template <typename... PieceTypes>
   Bitboard getPiecesBB(Colour us, PieceTypes... pts) const;
-
-  Piece getPiece(Square sq) const;
-  PieceType getPieceType(Square sq) const;
-  template <PieceType pt> Square square(Colour us) const;
-  int getPieceCount(Piece pce) const;
-
-  template <Piece pce> int count() const;
-
-  template <PieceType pt> int count() const;
-
-  Bitboard getOccupiedBB() const;
-  Bitboard getOccupiedBB(Colour us) const;
-  bool empty(Square sq) const;
-  Colour getSideToMove() const;
+  Piece getPiece(Square sq) const { return board[sq]; }
+  PieceType getPieceType(Square sq) const { return pieceTypeOf(board[sq]); }
+  int getPieceCount(Piece pce) const { return pieceCount[pce]; }
+  Bitboard getOccupiedBB() const { return occupiedBB[BOTH]; }
+  Bitboard getOccupiedBB(Colour us) const { return occupiedBB[us]; }
+  Colour getSideToMove() const { return sideToMove; }
+  Square getEnPassantTarget(Colour side) const {
+    return st->enPassant + ((side == WHITE) ? N : S);
+  }
+  Square kingSquare(Colour side) const {
+    return getLSB(getPiecesBB(side, KING));
+  }
+  bool isOnSemiOpenFile(Colour side, Square sq) const {
+    return !(getPiecesBB(side, PAWN) & fileBB(sq));
+  }
+  Castling castling(Colour c) const {
+    return Castling(st->castling & (c == WHITE ? WHITE_SIDE : BLACK_SIDE));
+  }
   Bitboard getSliderBlockers(Bitboard sliders, Square sq,
                              Bitboard &pinners) const;
 
@@ -154,14 +161,12 @@ public:
   template <bool doMove>
   void castleRook(Square from, Square to, Square &rookFrom, Square &rookTo);
 
-  // Move generation and legality
   Bitboard attackedByBB(Colour enemy) const;
   Bitboard sqAttackedByBB(Square sq, Bitboard occupied) const;
   bool isLegal(Move move) const;
   bool SEE(Move move, Value threshold) const;
-  Bitboard pinners() const;
-  Bitboard blockersForKing() const;
-  bool givesCheck(Move move) const;
+
+  int pliesFromStart;
 
 private:
   // Piece list
@@ -173,12 +178,7 @@ private:
   // Board state
   BoardState *st;
   Colour sideToMove;
-  int pliesFromStart;
 };
-
-template <PieceType pt> Square Position::square(Colour us) const {
-  return getLSB(getPiecesBB(us, pt));
-}
 
 template <typename... PieceTypes>
 Bitboard Position::getPiecesBB(PieceType pt, PieceTypes... pts) const {
@@ -189,17 +189,10 @@ Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
   return occupiedBB[us] & getPiecesBB(pts...);
 }
 
-template <Piece pce> int Position::count() const { return pieceCount[pce]; }
-
-template <PieceType pt> int Position::count() const {
-  return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)];
-}
-
 template <bool doMove>
 void Position::castleRook(Square from, Square to, Square &rookFrom,
                           Square &rookTo) {
   bool kingSide = to > from;
-  Colour us = sideToMove;
   // Define the square that the rook is from
   rookFrom = kingSide ? H1 : A1;
   // Flip the rank if the side to move is black
@@ -211,10 +204,10 @@ void Position::castleRook(Square from, Square to, Square &rookFrom,
   rookTo = (sideToMove == BLACK) ? flipRank(rookTo) : rookTo;
 
   // Move the rook
-  if constexpr (doMove) {
+  if constexpr (doMove)
     // Move the rook
     movePiece(rookFrom, rookTo);
-  } else
+  else
     // Move the rook back
     movePiece(rookTo, rookFrom);
 }

@@ -1,10 +1,9 @@
-#include <algorithm>
+#include <format>
 #include <iostream>
 #include <string>
 
 #include "bitboard.hpp"
 #include "defs.hpp"
-#include "utils.hpp"
 
 /******************************************\
 |==========================================|
@@ -13,27 +12,27 @@
 \******************************************/
 
 // Pseudo attacks for all pieces except pawns
-Bitboard pseudoAttacks[PIECE_TYPE_N][SQ_N]{};
-
-// Bishop and rook magics
+Bitboard pseudoAttacks[PIECE_TYPE_N][SQ_N];
+// Pseudo attacks for pawns
+Bitboard pawnAttacks[COLOUR_N][SQ_N];
+// Bishop magics
 Magic bishopAttacks[SQ_N]{};
+// Rook magics
 Magic rookAttacks[SQ_N]{};
-
-// Bishop and rook attack tables
+// Bishop attack tables
 Bitboard bishopTable[0x1480]{};
+// Rook attack tables
 Bitboard rookTable[0x19000]{};
-
-// Line that the two squares lie on [from][to]
-Bitboard lineBB[SQ_N][SQ_N]{};
-Bitboard betweenBB[SQ_N][SQ_N]{};
-
-// Pins and checks [king][attacker]
-Bitboard pinBB[SQ_N][SQ_N]{};
-Bitboard checkBB[SQ_N][SQ_N]{};
-
-// Square distance
-int dist[SQ_N][SQ_N]{};
-
+// Square distance lookup table
+int dist[SQ_N][SQ_N];
+// Line the two squares lie on [from][to]
+Bitboard lineBB[SQ_N][SQ_N];
+// In between bitboards [from][to]
+Bitboard betweenBB[SQ_N][SQ_N];
+// Pins [king][attacker]
+Bitboard pinBB[SQ_N][SQ_N];
+// Checks [king][attacker]
+Bitboard checkBB[SQ_N][SQ_N];
 // Castling rights lookup table
 Castling castlingRights[SQ_N];
 
@@ -62,53 +61,7 @@ void printBitboard(Bitboard bb) {
   std::cout << "       A   B   C   D   E   F   G   H\n\n";
 
   // Print bitboard representations
-  std::cout << std::hex << "Bitboard: " << bb << std::endl;
-}
-
-/******************************************\
-|==========================================|
-|                Distance                  |
-|==========================================|
-\******************************************/
-
-int rankDist(Square sq1, Square sq2) {
-  return std::abs(rankOf(sq1) - rankOf(sq2));
-}
-
-int fileDist(Square sq1, Square sq2) {
-  return std::abs(fileOf(sq1) - fileOf(sq2));
-}
-
-static int sqDist(Square sq1, Square sq2) { return dist[sq1][sq2]; }
-
-/******************************************\
-|==========================================|
-|               Directions                 |
-|==========================================|
-\******************************************/
-
-constexpr Bitboard shift(Square sq, Direction d) {
-  Square to = sq + d;
-  return (isSquare(to) && isShift(sq, to)) ? squareBB(to) : Bitboard(0);
-}
-
-constexpr Direction direction(Square from, Square to) {
-  // Rank and file distance
-  int rankDist = rankOf(from) - rankOf(to);
-  int fileDist = fileOf(from) - fileOf(to);
-  // Check if the squares are on the anti diagonal
-  if (rankDist > 0) {
-    if (fileDist)
-      return (fileDist > 0) ? SW : SE;
-    return S;
-  } else if (rankDist < 0) {
-    if (fileDist)
-      return (fileDist > 0) ? NW : NE;
-    return N;
-  }
-  if (fileDist)
-    return (fileDist > 0) ? W : E;
-  return Direction(0);
+  std::cout << std::format("Bitboard: {:#x}", bb) << std::endl;
 }
 
 /******************************************\
@@ -117,14 +70,19 @@ constexpr Direction direction(Square from, Square to) {
 |==========================================|
 \******************************************/
 
+// Calculate the attacks of a piece on the fly (Slow approach used to populate
+// tables)
 template <PieceType pt>
 static inline Bitboard attacksOnTheFly(Square sq, Bitboard occupied) {
+  // Directions for rook and bishop
   constexpr Direction rookDir[4] = {N, E, W, S};
   constexpr Direction bishopDir[4] = {NE, NW, SE, SW};
 
+  // Get the corresponding attack pattern for the piece
   Bitboard attacks = EMPTYBB;
   for (Direction d : (pt == BISHOP) ? bishopDir : rookDir) {
     Square to = sq;
+    // While the shift is valid and the square is not occupied
     while (shift(to, d) && !(occupied & to))
       attacks |= (to += d);
   }
@@ -139,10 +97,9 @@ static inline Bitboard attacksOnTheFly(Square sq, Bitboard occupied) {
 \******************************************/
 
 template <PieceType pt>
-static inline void initMagics(Bitboard table[], Magic magics[]) {
-  Bitboard occupancy[4096], reference[4096], edges, occupied;
-
-  int epoch[4096] = {}, cnt = 0, size = 0;
+constexpr void initMagics(Bitboard table[], Magic magics[]) {
+  int size;
+  Bitboard edges, occupied;
 
   for (Square sq = A1; sq <= H8; ++sq) {
     // Edges of the board are not included in the attack lookup because it
@@ -155,8 +112,6 @@ static inline void initMagics(Bitboard table[], Magic magics[]) {
     Magic &m = magics[sq];
     // Generate attack mask (Remove edges)
     m.mask = attacksOnTheFly<pt>(sq, EMPTYBB) & ~edges;
-    // Calculate the shift (Relevant bits in the occupancy bitboard)
-    m.shift = 64 - countBits(m.mask);
 
     // Assign the attacks pointer to the corresponding index in the attacks
     // table The table is like a 2D array but each row has different length
@@ -164,18 +119,13 @@ static inline void initMagics(Bitboard table[], Magic magics[]) {
     m.attacks = (sq == A1) ? table : magics[sq - 1].attacks + size;
 
     // Reset occupied and size as we are starting to fill the m.attacks array
-    size = occupied = 0;
+    occupied = EMPTYBB;
+    size = 0;
     do {
-      // Save occupancy bitboard
-      occupancy[size] = occupied;
-      // Create attack reference
-      reference[size] = attacksOnTheFly<pt>(sq, occupied);
-
-      if (HasPext)
-        // Using the index function to calculate the corresponding index for the
-        // occupancy bitboard, and generate the corresponding attacks (with
-        // blockers) and store it at that index in the table
-        m.attacks[m.index(occupied)] = reference[size];
+      // Using the index function to calculate the corresponding index for the
+      // occupancy bitboard, and generate the corresponding attacks (with
+      // blockers) and store it at that index in the table
+      m.attacks[m.index(occupied)] = attacksOnTheFly<pt>(sq, occupied);
 
       // Increment size
       size++;
@@ -183,26 +133,6 @@ static inline void initMagics(Bitboard table[], Magic magics[]) {
       // https://www.chessprogramming.org/Traversing_Subsets_of_a_Set
       occupied = (occupied - m.mask) & m.mask;
     } while (occupied);
-
-    if (HasPext)
-      continue;
-
-    for (int i = 0; i < size;) {
-
-      for (m.magic = 0; countBits((m.magic * m.mask) >> 56) < 6;)
-        m.magic = getSparseRandom<Bitboard>();
-
-      for (++cnt, i = 0; i < size; ++i) {
-
-        unsigned index = m.index(occupancy[i]);
-
-        if (epoch[index] < cnt) {
-          epoch[index] = cnt;
-          m.attacks[index] = reference[i];
-        } else if (m.attacks[index] != reference[i])
-          break;
-      }
-    }
   }
 }
 
@@ -212,12 +142,13 @@ static inline void initMagics(Bitboard table[], Magic magics[]) {
 |==========================================|
 \******************************************/
 
-// Bitboard initialization function
+// initialize bitboards lookup tables
 void initBitboards() {
   // Init square distances
   for (Square sq1 = A1; sq1 <= H8; ++sq1)
     for (Square sq2 = A1; sq2 <= H8; ++sq2)
-      dist[sq1][sq2] = std::max(rankDist(sq1, sq2), fileDist(sq1, sq2));
+      dist[sq1][sq2] = std::max(static_cast<int>(rankDist(sq1, sq2)),
+                                static_cast<int>(fileDist(sq1, sq2)));
 
   // Init magics bitboards
   initMagics<BISHOP>(bishopTable, bishopAttacks);
@@ -225,6 +156,9 @@ void initBitboards() {
 
   // Init pseudo attacks for knights and kings
   for (Square sq = A1; sq <= H8; ++sq) {
+    // Init pseudo attacks for pawn
+    pawnAttacks[WHITE][sq] = shift<NW>(squareBB(sq)) | shift<NE>(squareBB(sq));
+    pawnAttacks[BLACK][sq] = shift<SW>(squareBB(sq)) | shift<SE>(squareBB(sq));
     // Init pseudo attacks for knights
     for (Direction d : {NNE, NNW, NEE, NWW, SEE, SWW, SSE, SSW})
       pseudoAttacks[KNIGHT][sq] |= shift(sq, d);
@@ -238,30 +172,37 @@ void initBitboards() {
         pseudoAttacks[BISHOP][sq] | pseudoAttacks[ROOK][sq];
   }
 
-  Direction offset;
-  // Init line and between BB
   for (Square from = A1; from <= H8; ++from) {
-    for (Square to = A1; to <= H8; ++to) {
-      offset = -direction(from, to);
-      if (attacksBB<BISHOP>(from, EMPTYBB) & to) {
-        lineBB[from][to] =
-            attacksBB<BISHOP>(from, EMPTYBB) & attacksBB<BISHOP>(to, EMPTYBB) |
-            (from | to);
-        betweenBB[from][to] = attacksBB<BISHOP>(from, squareBB(to)) &
-                              attacksBB<BISHOP>(to, squareBB(from));
-        pinBB[from][to] = betweenBB[from][to] | to;
-        checkBB[from][to] = betweenBB[from][to] | from | (from + offset);
-      }
+    // Get the squares attacked by the bishop
+    Bitboard attacked = attacksBB<BISHOP>(from, EMPTYBB);
 
-      if (attacksBB<ROOK>(from, EMPTYBB) & to) {
-        lineBB[from][to] =
-            attacksBB<ROOK>(from, EMPTYBB) & attacksBB<ROOK>(to, EMPTYBB) |
-            (from | to);
-        betweenBB[from][to] = attacksBB<ROOK>(from, squareBB(to)) &
-                              attacksBB<ROOK>(to, squareBB(from));
-        pinBB[from][to] = betweenBB[from][to] | to;
-        checkBB[from][to] = betweenBB[from][to] | from | (from + offset);
-      }
+    // For each square attacked by the bishop, calculate the line it lies on
+    while (attacked) {
+      Square to = popLSB(attacked);
+      lineBB[from][to] =
+          (attacksBB<BISHOP>(from, EMPTYBB) & attacksBB<BISHOP>(to, EMPTYBB)) |
+          (from | to);
+      betweenBB[from][to] = attacksBB<BISHOP>(from, squareBB(to)) &
+                            attacksBB<BISHOP>(to, squareBB(from));
+      pinBB[from][to] = betweenBB[from][to] | to;
+      checkBB[from][to] =
+          betweenBB[from][to] | from | (from - direction(from, to));
+    }
+
+    // Get the squares attacked by the rook
+    attacked = attacksBB<ROOK>(from, EMPTYBB);
+
+    // For each square attacked by the bishop, calculate the line it lies on
+    while (attacked) {
+      Square to = popLSB(attacked);
+      lineBB[from][to] =
+          (attacksBB<ROOK>(from, EMPTYBB) & attacksBB<ROOK>(to, EMPTYBB)) |
+          (from | to);
+      betweenBB[from][to] = attacksBB<ROOK>(from, squareBB(to)) &
+                            attacksBB<ROOK>(to, squareBB(from));
+      pinBB[from][to] = betweenBB[from][to] | to;
+      checkBB[from][to] =
+          betweenBB[from][to] | from | (from - direction(from, to));
     }
   }
 
@@ -273,11 +214,11 @@ void initBitboards() {
   // Remove Black castling rights if the king is moved
   castlingRights[E8] &= ~BLACK_SIDE;
   // Remove White King side castling rights if the rook on H1 is moved
-  castlingRights[H1] &= ~WKCA;
+  castlingRights[H1] &= ~WK_SIDE;
   // Remove White Queen side castling rights if the rook on A1 is moved
-  castlingRights[A1] &= ~WQCA;
+  castlingRights[A1] &= ~WQ_SIDE;
   // Remove Black King side castling rights if the rook on H8 is moved
-  castlingRights[H8] &= ~BKCA;
+  castlingRights[H8] &= ~BK_SIDE;
   // Remove Black Queen side castling rights if the rook on A8 is moved
-  castlingRights[A8] &= ~BQCA;
+  castlingRights[A8] &= ~BQ_SIDE;
 }
