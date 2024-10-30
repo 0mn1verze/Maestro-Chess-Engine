@@ -61,7 +61,6 @@ struct BoardState {
     std::copy(std::begin(bs.nonPawnMaterial), std::end(bs.nonPawnMaterial),
               std::begin(nonPawnMaterial));
     castling = bs.castling;
-    // move = Move::none();
     checkMask = FULLBB;
     kingBan = EMPTYBB;
     return *this;
@@ -81,9 +80,8 @@ struct BoardState {
   int repetition;
   Move move = Move::none();
   Bitboard checkMask = FULLBB;
-  Bitboard rookPin = EMPTYBB, bishopPin = EMPTYBB, kingBan = EMPTYBB,
-           kingAttacks = EMPTYBB, available = EMPTYBB, attacked = EMPTYBB,
-           pinned[COLOUR_N], pinners[COLOUR_N];
+  Bitboard rookPin, bishopPin, kingBan, kingAttacks, available, attacked,
+      pinned[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
 
   // Previous pieceList state
@@ -105,11 +103,13 @@ public:
   Position(const Position &pos) = delete;
   Position &operator=(const Position &pos) = default;
 
-  // Init pieceList states
+  // Init Position
   void set(const std::string &fen, BoardState &state);
-  void setState(BoardState &state);
+
+  std::string fen() const;
+
+  // Init Keys
   Key initKey() const;
-  void initScore();
   Key initPawnKey() const;
 
   // Output
@@ -122,93 +122,76 @@ public:
   void unmakeNullMove();
 
   // Boardstate getters
-  BoardState *state() const { return st; }
-  bool isInCheck() const { return (st->checkMask != FULLBB); }
+  BoardState *state() const;
+  int getPliesFromStart() const;
+  Square getEnPassantTarget(Colour side) const;
+  int getNonPawnMaterial() const;
+  int getNonPawnMaterial(Colour c) const;
+  Castling castling(Colour c) const;
+  bool canCastle(Castling cr) const;
+  bool isInCheck() const;
   bool isDraw(int ply) const;
   bool isCapture(Move move) const;
+  Score psq() const;
+  int gamePhase() const;
+  bool empty(Square sq) const;
 
-  // Board getters
-  Bitboard getPiecesBB(PieceType pt) const { return piecesBB[pt]; }
+  // Board piece bitboard getters
+  Bitboard getPiecesBB(PieceType pt) const;
   template <typename... PieceTypes>
   Bitboard getPiecesBB(PieceType pt, PieceTypes... pts) const;
   template <typename... PieceTypes>
   Bitboard getPiecesBB(Colour us, PieceTypes... pts) const;
-  Piece getPiece(Square sq) const { return board[sq]; }
-  PieceType getPieceType(Square sq) const { return pieceTypeOf(board[sq]); }
-  int getPieceCount(Piece pce) const { return pieceCount[pce]; }
-  Bitboard getOccupiedBB() const { return occupiedBB[BOTH]; }
-  Bitboard getOccupiedBB(Colour us) const { return occupiedBB[us]; }
-  Colour getSideToMove() const { return sideToMove; }
-  Square getEnPassantTarget(Colour side) const {
-    return st->enPassant + ((side == WHITE) ? N : S);
-  }
-  Square kingSquare(Colour side) const {
-    return getLSB(getPiecesBB(side, KING));
-  }
-  bool isOnSemiOpenFile(Colour side, Square sq) const {
-    return !(getPiecesBB(side, PAWN) & fileBB(sq));
-  }
-  Castling castling(Colour c) const {
-    return Castling(st->castling & (c == WHITE ? WHITE_SIDE : BLACK_SIDE));
-  }
+
+  // Get piece information from square
+  Piece getPiece(Square sq) const;
+  PieceType getPieceType(Square sq) const;
+  template <PieceType pt> Square square(Colour us) const;
+
+  // Piece count
+  template <typename... Pieces> int count(Piece pce, Pieces... pcs) const;
+  template <typename... PieceTypes>
+  int count(PieceType pt, PieceTypes... pts) const;
+
+  // Board occupancy
+  Bitboard getOccupiedBB() const;
+  Bitboard getOccupiedBB(Colour us) const;
+
+  // Side to move
+  Colour getSideToMove() const;
+
+  // Slider blockers
   Bitboard getSliderBlockers(Bitboard sliders, Square sq,
                              Bitboard &pinners) const;
 
+  // Move generation and legality
+  Bitboard attackedByBB(Colour enemy) const;
+  Bitboard sqAttackedByBB(Square sq, Bitboard occupied) const;
+  bool isLegal(Move move) const;
+  Bitboard pinners() const;
+  Bitboard blockersForKing() const;
+
+  int pliesFromStart;
+
+private:
+  void setState() const;
   // Piece manipulations
   void putPiece(Piece pce, Square sq);
   void popPiece(Square sq);
   void movePiece(Square from, Square to);
   template <bool doMove>
   void castleRook(Square from, Square to, Square &rookFrom, Square &rookTo);
-
-  Bitboard attackedByBB(Colour enemy) const;
-  Bitboard sqAttackedByBB(Square sq, Bitboard occupied) const;
-  bool isLegal(Move move) const;
-  bool SEE(Move move, Value threshold) const;
-
-  int pliesFromStart;
-
-private:
   // Piece list
   Piece board[SQ_N];
   int pieceCount[PIECE_N];
   // Bitboard representation
   Bitboard piecesBB[PIECE_TYPE_N];
-  Bitboard occupiedBB[COLOUR_N + 1];
+  Bitboard occupiedBB[COLOUR_N];
   // Board state
   BoardState *st;
   Colour sideToMove;
 };
 
-template <typename... PieceTypes>
-Bitboard Position::getPiecesBB(PieceType pt, PieceTypes... pts) const {
-  return piecesBB[pt] | getPiecesBB(pts...);
-}
-template <typename... PieceTypes>
-Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
-  return occupiedBB[us] & getPiecesBB(pts...);
-}
+#include "position.ipp"
 
-template <bool doMove>
-void Position::castleRook(Square from, Square to, Square &rookFrom,
-                          Square &rookTo) {
-  bool kingSide = to > from;
-  // Define the square that the rook is from
-  rookFrom = kingSide ? H1 : A1;
-  // Flip the rank if the side to move is black
-  rookFrom = (sideToMove == BLACK) ? flipRank(rookFrom) : rookFrom;
-
-  // Define the square that the rook is going to
-  rookTo = kingSide ? F1 : D1;
-  // Flip the rank if the side to move is black
-  rookTo = (sideToMove == BLACK) ? flipRank(rookTo) : rookTo;
-
-  // Move the rook
-  if constexpr (doMove)
-    // Move the rook
-    movePiece(rookFrom, rookTo);
-  else
-    // Move the rook back
-    movePiece(rookTo, rookFrom);
-}
 #endif // POSITION_HPP

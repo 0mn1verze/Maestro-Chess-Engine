@@ -14,7 +14,7 @@
 Count perftDriver(Position &pos, int depth) {
   // Generate Moves
   Move moves[256];
-  Move *last = generateMoves<ALL>(moves, pos);
+  Move *last = MoveGen::generateMoves<MoveGen::ALL>(moves, pos);
 
   // Return move count (bulk counting)
   if (depth == 1)
@@ -46,8 +46,8 @@ void perftTest(Position &pos, int depth) {
 
   // Generate all moves
   Move moves[256];
-  refreshMasks(pos);
-  Move *last = generateMoves<ALL>(moves, pos);
+  MoveGen::refreshMasks(pos);
+  Move *last = MoveGen::generateMoves<MoveGen::ALL>(moves, pos);
   // Init node count
   Count count = 1;
   BoardState st{};
