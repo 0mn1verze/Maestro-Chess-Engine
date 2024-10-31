@@ -29,24 +29,6 @@ constexpr std::string_view repetitions =
 
 /******************************************\
 |==========================================|
-|             Zobrist Hashing              |
-|==========================================|
-\******************************************/
-
-// https://www.chessprogramming.org/Zobrist_Hashing
-
-namespace Zobrist {
-extern Key pieceSquareKeys[PIECE_N][SQ_N];
-extern Key enPassantKeys[FILE_N];
-extern Key castlingKeys[CASTLING_N];
-extern Key sideKey;
-} // namespace Zobrist
-
-// Init zobrist hashing
-void initZobrist();
-
-/******************************************\
-|==========================================|
 |               Board State                |
 |          Used for unmaking moves         |
 |==========================================|
@@ -54,23 +36,13 @@ void initZobrist();
 
 struct BoardState {
 
-  BoardState &operator=(const BoardState &bs) {
-    enPassant = bs.enPassant;
-    plies = bs.plies;
-    fiftyMove = bs.fiftyMove;
-    std::copy(std::begin(bs.nonPawnMaterial), std::end(bs.nonPawnMaterial),
-              std::begin(nonPawnMaterial));
-    castling = bs.castling;
-    checkMask = FULLBB;
-    kingBan = EMPTYBB;
-    return *this;
-  }
+  BoardState &operator=(const BoardState &bs);
 
   // Copied when making new move
   Square enPassant;
   int plies;
   int fiftyMove;
-  Value nonPawnMaterial[COLOUR_N];
+  U16 nonPawnMaterial[COLOUR_N];
   Castling castling = NO_CASTLE;
 
   // Not copied when making new move
@@ -89,7 +61,10 @@ struct BoardState {
 };
 
 // Move history (Ideas from Stockfish)
-using StateList = std::unique_ptr<std::deque<BoardState>>;
+using StateListPtr = std::unique_ptr<std::deque<BoardState>>;
+
+// Define thread for use in function
+class Thread;
 
 /******************************************\
 |==========================================|
@@ -104,7 +79,7 @@ public:
   Position &operator=(const Position &pos) = default;
 
   // Init Position
-  void set(const std::string &fen, BoardState &state);
+  void set(const std::string &fen, BoardState &state, Thread *th);
 
   std::string fen() const;
 
@@ -190,6 +165,9 @@ private:
   // Board state
   BoardState *st;
   Colour sideToMove;
+
+  // Thread
+  Thread *thisThread;
 };
 
 #include "position.ipp"

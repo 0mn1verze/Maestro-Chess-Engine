@@ -7,16 +7,17 @@
 
 /******************************************\
 |==========================================|
-|             Board Value Types            |
+|             Board U16 Types            |
 |==========================================|
 \******************************************/
 
 using Bitboard = std::uint64_t;
-using Time = std::uint64_t;
-using Count = std::uint32_t;
+using U64 = std::uint64_t;
+using U32 = std::uint32_t;
 using Key = std::uint64_t;
-using Value = std::int32_t;
 using U16 = std::uint16_t;
+using I16 = std::int16_t;
+using U8 = std::uint8_t;
 
 /******************************************\
 |==========================================|
@@ -26,11 +27,11 @@ using U16 = std::uint16_t;
 
 constexpr int MAX_DEPTH = 64;
 constexpr int MAX_MOVES = 256;
-constexpr Time MOVE_OVERHEAD = 300;
-constexpr Value VAL_INFINITE = 50000;
-constexpr Value VAL_MATE = 49000;
-constexpr Value VAL_MATE_BOUND = 48000;
-constexpr Value VAL_NONE = VAL_MATE + 1;
+constexpr U64 MOVE_OVERHEAD = 300;
+constexpr U16 VAL_INFINITE = 50000;
+constexpr U16 VAL_MATE = 49000;
+constexpr U16 VAL_MATE_BOUND = 48000;
+constexpr U16 VAL_NONE = VAL_MATE + 1;
 
 /******************************************\
 |==========================================|
@@ -100,11 +101,14 @@ enum Colour : int {
     WHITE, BLACK, BOTH, COLOUR_N = 2
 };
 
+constexpr int CONT_N = 2;
+
 /******************************************\
 |==========================================|
 |           Board Enum Operators           |
 |==========================================|
 \******************************************/
+
 // Add direction to square
 constexpr Square operator+(Square sq, Direction d) { return static_cast<Square>(static_cast<int>(sq) + static_cast<int>(d)); }
 // Subtract direction from square
@@ -167,9 +171,9 @@ constexpr Castling &operator++(Castling &c) { return c = static_cast<Castling>(s
 \******************************************/
 
 // Score type
-using Score = std::pair<Value, Value>;
+using Score = std::pair<U16, U16>;
 // Score constructors
-inline Score _S(Value mg, Value eg) { return std::make_pair(mg, eg); }
+constexpr Score _S(U16 mg, U16 eg) { return std::make_pair(mg, eg); }
 // Score addition
 inline Score operator+(Score s1, Score s2) {
   return _S(s1.first + s2.first, s1.second + s2.second);

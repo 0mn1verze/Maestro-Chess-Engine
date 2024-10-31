@@ -424,6 +424,6 @@ void clearPolyBook();
 
 Key getPolyKey(const Position &pos);
 
-Move getPolyBookMove(const Position &pos);
+GenMove getPolyBookMove(const Position &pos);
 
 #endif // POLYGLOT_HPP

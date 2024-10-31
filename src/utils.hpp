@@ -194,7 +194,7 @@ inline std::string move2Str(const Move &m) {
 }
 
 // Convert score to string
-inline std::string score2Str(const Value score) {
+inline std::string score2Str(const U16 score) {
   std::stringstream result;
 
   if (score > -VAL_MATE and score < -VAL_MATE_BOUND) {
@@ -217,7 +217,7 @@ inline char piece2Char(Piece pce) { return pieceToChar.at(pce); }
 |==========================================|
 \******************************************/
 
-inline Time getTimeMs() {
+inline U64 getTimeMs() {
   // Get time in milliseconds
   return std::chrono::duration_cast<std::chrono::milliseconds>(
              std::chrono::system_clock::now().time_since_epoch())

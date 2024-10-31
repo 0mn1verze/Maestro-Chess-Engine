@@ -74,7 +74,7 @@ Key getPolyKey(const Position &pos) {
 
 constexpr char promotedPieceASCII[] = "nbrq";
 
-Move polyMoveToEngineMove(const Position &pos, std::uint16_t polyMove) {
+GenMove polyMoveToEngineMove(const Position &pos, std::uint16_t polyMove) {
 
   File from_file = File((polyMove >> 6) & 7);
   Rank from_rank = Rank((polyMove >> 9) & 7);
@@ -94,24 +94,24 @@ Move polyMoveToEngineMove(const Position &pos, std::uint16_t polyMove) {
   }
 
   // Generate all moves
-  Move moves[256];
-  Move *last = generateMoves<ALL>(moves, pos);
+  GenMove moves[256];
+  GenMove *last = generateMoves<ALL>(moves, pos);
 
-  for (Move *begin = moves; begin < last; ++begin) {
+  for (GenMove *begin = moves; begin < last; ++begin) {
     if (move == move2Str(*begin)) {
       return *begin;
     }
   }
 
-  return Move::none();
+  return GenMove::none();
 }
 
-Move getPolyBookMove(const Position &pos) {
+GenMove getPolyBookMove(const Position &pos) {
   srand(getTimeMs());
 
   Key polyKey = getPolyKey(pos);
 
-  Move bookMoves[32]{};
+  GenMove bookMoves[32]{};
 
   int index = 0;
   for (const auto &entry : book.entries) {
@@ -130,5 +130,5 @@ Move getPolyBookMove(const Position &pos) {
     return bookMoves[randomIndex % index];
   }
 
-  return Move::none();
+  return GenMove::none();
 }

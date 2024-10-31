@@ -5,8 +5,6 @@
 #include "utils.hpp"
 #include <iostream>
 
-namespace MoveGen {
-
 /******************************************\
 |==========================================|
 |              Move Gen Init               |
@@ -134,7 +132,7 @@ void refreshEPPin(const Position &pos) {
 \******************************************/
 
 // Add pawn promotions
-inline Move *addPawnPromotions(Move *moves, Bitboard bb, Direction dir) {
+inline GenMove *addPawnPromotions(GenMove *moves, Bitboard bb, Direction dir) {
   while (bb) {
     const Square origin = popLSB(bb);
     for (PieceType pt : {KNIGHT, BISHOP, ROOK, QUEEN})
@@ -144,7 +142,7 @@ inline Move *addPawnPromotions(Move *moves, Bitboard bb, Direction dir) {
 }
 
 // Add pawn moves
-inline Move *addPawnMoves(Move *moves, Bitboard bb, Direction dir) {
+inline GenMove *addPawnMoves(GenMove *moves, Bitboard bb, Direction dir) {
   while (bb) {
     const Square origin = popLSB(bb);
     *moves++ = Move::encode(origin, origin + dir);
@@ -153,7 +151,7 @@ inline Move *addPawnMoves(Move *moves, Bitboard bb, Direction dir) {
 }
 
 // Add piece moves
-inline Move *addPieceMoves(Move *moves, Bitboard bb, Square origin) {
+inline GenMove *addPieceMoves(GenMove *moves, Bitboard bb, Square origin) {
   while (bb) {
     const Square destination = popLSB(bb);
     *moves++ = Move::encode(origin, destination);
@@ -163,8 +161,8 @@ inline Move *addPieceMoves(Move *moves, Bitboard bb, Square origin) {
 
 // Add piece moves with mask
 template <PieceType pt, GenType gt>
-inline Move *addPieceMoves(Move *moves, const Position &pos, Bitboard bb,
-                           Bitboard masks, Colour them) {
+inline GenMove *addPieceMoves(GenMove *moves, const Position &pos, Bitboard bb,
+                              Bitboard masks, Colour them) {
   while (bb) {
     // Get origin square and pop it from the bitboard
     Square origin = popLSB(bb);
@@ -190,7 +188,7 @@ inline Move *addPieceMoves(Move *moves, const Position &pos, Bitboard bb,
 
 // Generate pawn moves
 template <GenType gt, Colour us>
-inline Move *generatePawnMoves(Move *moves, const Position &pos) {
+inline GenMove *generatePawnMoves(GenMove *moves, const Position &pos) {
   // Constants for the function (us = side to move, them = enemy)
   constexpr Colour them = ~us;
   constexpr Direction left = (us == WHITE) ? NW : SE;
@@ -292,7 +290,7 @@ inline Move *generatePawnMoves(Move *moves, const Position &pos) {
 
 // Generate pawn moves
 template <GenType gt>
-inline Move *generateKnightMoves(Move *moves, const Position &pos) {
+inline GenMove *generateKnightMoves(GenMove *moves, const Position &pos) {
   // Side to move and enemy
   const Colour us = pos.getSideToMove();
   const Colour them = ~us;
@@ -311,7 +309,7 @@ inline Move *generateKnightMoves(Move *moves, const Position &pos) {
 
 // Generate pawn moves
 template <GenType gt>
-inline Move *generateBishopMoves(Move *moves, const Position &pos) {
+inline GenMove *generateBishopMoves(GenMove *moves, const Position &pos) {
   // Side to move and enemy
   const Colour us = pos.getSideToMove();
   const Colour them = ~us;
@@ -339,7 +337,7 @@ inline Move *generateBishopMoves(Move *moves, const Position &pos) {
 }
 
 template <GenType gt>
-inline Move *generateRookMoves(Move *moves, const Position &pos) {
+inline GenMove *generateRookMoves(GenMove *moves, const Position &pos) {
   // Side to move and enemy
   const Colour us = pos.getSideToMove();
   const Colour them = ~us;
@@ -367,7 +365,7 @@ inline Move *generateRookMoves(Move *moves, const Position &pos) {
 }
 
 template <GenType gt>
-inline Move *generateQueenMoves(Move *moves, const Position &pos) {
+inline GenMove *generateQueenMoves(GenMove *moves, const Position &pos) {
   // Side to move and enemy
   const Colour us = pos.getSideToMove();
   const Colour them = ~us;
@@ -385,7 +383,7 @@ inline Move *generateQueenMoves(Move *moves, const Position &pos) {
 }
 
 template <GenType gt, Colour us>
-Move *generateKingMoves(Move *moves, const Position &pos) {
+GenMove *generateKingMoves(GenMove *moves, const Position &pos) {
   // Side to move and enemy
   constexpr Colour them = ~us;
   BoardState *st = pos.state();
@@ -443,7 +441,8 @@ Move *generateKingMoves(Move *moves, const Position &pos) {
   return moves;
 }
 
-template <GenType gt> Move *generateMoves(Move *moves, const Position &pos) {
+template <GenType gt>
+GenMove *generateMoves(GenMove *moves, const Position &pos) {
 
   if (pos.getSideToMove() == WHITE)
     moves = generateKingMoves<gt, WHITE>(moves, pos);
@@ -468,8 +467,6 @@ template <GenType gt> Move *generateMoves(Move *moves, const Position &pos) {
 }
 
 // Explicit instantiation
-template Move *generateMoves<ALL>(Move *moves, const Position &pos);
-template Move *generateMoves<CAPTURES>(Move *moves, const Position &pos);
-template Move *generateMoves<QUIETS>(Move *moves, const Position &pos);
-
-} // namespace MoveGen
+template GenMove *generateMoves<ALL>(GenMove *moves, const Position &pos);
+template GenMove *generateMoves<CAPTURES>(GenMove *moves, const Position &pos);
+template GenMove *generateMoves<QUIETS>(GenMove *moves, const Position &pos);

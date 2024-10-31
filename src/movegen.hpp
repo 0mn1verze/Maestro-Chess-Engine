@@ -4,10 +4,27 @@
 #include "defs.hpp"
 #include "position.hpp"
 
-namespace MoveGen {
-
 // Move generation types
 enum GenType { ALL, CAPTURES, QUIETS };
+
+struct GenMove {
+  // Assignment operator
+  void operator=(const Move &m) { move = m; }
+  // Move
+  Move move;
+  // Move score for ordering
+  int score;
+  // Operators
+  bool operator<(const GenMove &m) const { return score < m.score; }
+  bool operator>(const GenMove &m) const { return score > m.score; }
+  bool operator<=(const GenMove &m) const { return score <= m.score; }
+  bool operator>=(const GenMove &m) const { return score >= m.score; }
+  // Convert to move
+  operator Move() const { return move; }
+  // Null and none move
+  static GenMove none() { return GenMove{Move::none(), 0}; }
+  static GenMove null() { return GenMove{Move::null(), 0}; }
+};
 
 // Refresh masks
 void refreshMasks(const Position &pos);
@@ -16,8 +33,22 @@ void refreshMasks(const Position &pos);
 void refreshEPPin(const Position &pos);
 
 // Generate moves
-template <GenType gt> Move *generateMoves(Move *moves, const Position &pos);
+template <GenType gt>
+GenMove *generateMoves(GenMove *moves, const Position &pos);
 
-} // namespace MoveGen
+template <GenType T> struct MoveList {
+  explicit MoveList(const Position &pos) : last(generate<T>(pos, moves)) {}
+  GenMove *begin() const { return moves; }
+  GenMove *end() const { return last; }
+  size_t size() const { return last - moves; }
+  GenMove &operator[](size_t idx) { return moves[idx]; }
+  bool empty() const { return moves == last; }
+  bool contains(const GenMove &m) const {
+    return std::find(begin(), end(), m) != end();
+  }
+
+private:
+  GenMove moves[MAX_MOVES], *last;
+};
 
 #endif // MOVEGEN_HPP

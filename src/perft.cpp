@@ -9,22 +9,23 @@
 #include "defs.hpp"
 #include "movegen.hpp"
 #include "position.hpp"
+#include "thread.hpp"
 #include "utils.hpp"
 
-Count perftDriver(Position &pos, int depth) {
+U32 perftDriver(Position &pos, int depth) {
   // Generate Moves
-  Move moves[256];
-  Move *last = MoveGen::generateMoves<MoveGen::ALL>(moves, pos);
+  GenMove moves[256];
+  GenMove *last = generateMoves<ALL>(moves, pos);
 
   // Return move count (bulk counting)
   if (depth == 1)
     return last - moves;
 
-  Count nodes = 0;
+  U32 nodes = 0;
 
   BoardState st{};
   // Loop through all moves
-  for (Move *begin = moves; begin < last; ++begin) {
+  for (GenMove *begin = moves; begin < last; ++begin) {
     pos.makeMove(*begin, st);
     // Recurse if depth > 1
     nodes += perftDriver(pos, depth - 1);
@@ -40,19 +41,19 @@ void perftTest(Position &pos, int depth) {
   // Print depth
   std::cout << "\n\n	Perft Test: Depth " << depth << std::endl;
   std::cout << "\n\n";
-  Time start = getTimeMs();
+  U64 start = getTimeMs();
   // Init node variable
-  Count nodes = 0;
+  U32 nodes = 0;
 
   // Generate all moves
-  Move moves[256];
-  MoveGen::refreshMasks(pos);
-  Move *last = MoveGen::generateMoves<MoveGen::ALL>(moves, pos);
+  GenMove moves[256];
+  refreshMasks(pos);
+  GenMove *last = generateMoves<ALL>(moves, pos);
   // Init node count
-  Count count = 1;
+  U32 count = 1;
   BoardState st{};
   // Loop through all moves
-  for (Move *begin = moves; begin < last; ++begin) {
+  for (GenMove *begin = moves; begin < last; ++begin) {
     // Make move
     pos.makeMove(*begin, st);
     // Recurse if depth > 1
@@ -68,7 +69,7 @@ void perftTest(Position &pos, int depth) {
     nodes += count;
   }
   // End clock
-  Time duration = getTimeMs() - start;
+  U64 duration = getTimeMs() - start;
   if (duration == 0)
     duration = 1;
   // Print results
@@ -125,18 +126,18 @@ void perftBench() {
   std::vector<PerftPosition> positions = readBenchFile();
   // Init position and nodes variable
   Position pos;
-  Count nodes;
+  U32 nodes;
   BoardState st{};
   // Loop through all positions
   for (PerftPosition p : positions) {
     // Set position
-    pos.set(p.fen, st);
+    pos.set(p.fen, st, Threads.main());
     // Get time
-    Time start = getTimeMs();
+    U64 start = getTimeMs();
     // Run perft test
     nodes = perftDriver(pos, p.depth);
     // End clock
-    Time duration = getTimeMs() - start;
+    U64 duration = getTimeMs() - start;
     if (duration == 0)
       duration = 1;
     if (p.nodes == nodes) {

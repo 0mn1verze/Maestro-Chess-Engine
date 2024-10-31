@@ -31,13 +31,13 @@ Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
   return occupiedBB[us] & getPiecesBB(pts...);
 }
 
-// Count the number of pieces of a certain type
+// U32 the number of pieces of a certain type
 template <typename... Pieces>
 int Position::count(Piece pce, Pieces... pcs) const {
   return pieceCount[pce] + count(pcs...);
 }
 
-// Count the number of pieces of a certain type
+// U32 the number of pieces of a certain type
 template <typename... PieceTypes>
 int Position::count(PieceType pt, PieceTypes... pts) const {
   return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)] +

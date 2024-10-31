@@ -5,9 +5,29 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "hash.hpp"
 #include "movegen.hpp"
 #include "position.hpp"
+#include "thread.hpp"
 #include "utils.hpp"
+
+/******************************************\
+|==========================================|
+|          State Copy Constructor          |
+|==========================================|
+\******************************************/
+
+BoardState &BoardState::operator=(const BoardState &bs) {
+  enPassant = bs.enPassant;
+  plies = bs.plies;
+  fiftyMove = bs.fiftyMove;
+  std::copy(std::begin(bs.nonPawnMaterial), std::end(bs.nonPawnMaterial),
+            std::begin(nonPawnMaterial));
+  castling = bs.castling;
+  checkMask = FULLBB;
+  kingBan = EMPTYBB;
+  return *this;
+}
 
 /******************************************\
 |==========================================|
@@ -129,7 +149,7 @@ void Position::print() const {
 }
 
 // Set the position based on fen string
-void Position::set(const std::string &fen, BoardState &state) {
+void Position::set(const std::string &fen, BoardState &state, Thread *th) {
   // Initialize square and piece index
   Square square = A8;
   size_t pieceIdx;
@@ -212,6 +232,9 @@ void Position::set(const std::string &fen, BoardState &state) {
   is >> std::skipws >> st->fiftyMove;
 
   setState();
+
+  // Set thread
+  thisThread = th;
 }
 
 void Position::setState() const {
@@ -291,8 +314,60 @@ void Position::setState() const {
   }
 
   // Refresh masks
-  MoveGen::refreshMasks(*this);
+  refreshMasks(*this);
 }
+
+std::string Position::fen() const {
+  int emptyCount;
+  std::ostringstream os;
+
+  for (Rank r = RANK_8; r >= RANK_1; --r) {
+    for (File f = FILE_A; f <= FILE_H; ++f) {
+
+      for (emptyCount = 0; f <= FILE_H and empty(toSquare(f, r)); ++f)
+        ++emptyCount;
+
+      if (emptyCount)
+        os << emptyCount;
+
+      if (f <= FILE_H) {
+        os << piece2Char(getPiece(toSquare(f, r)));
+      }
+    }
+
+    if (r > RANK_1)
+      os << '/';
+  }
+
+  os << (sideToMove == WHITE ? " w " : " b ");
+
+  if (canCastle(WK_SIDE))
+    os << 'K';
+
+  if (canCastle(WQ_SIDE))
+    os << 'Q';
+
+  if (canCastle(BK_SIDE))
+    os << 'k';
+
+  if (canCastle(BQ_SIDE))
+    os << 'q';
+
+  if (!canCastle(ANY_SIDE))
+    os << '-';
+
+  os << (st->enPassant == NO_SQ ? " - " : " " + sq2Str(st->enPassant) + " ")
+     << st->fiftyMove << " "
+     << 1 + (pliesFromStart - (sideToMove == BLACK)) / 2;
+
+  return os.str();
+}
+
+/******************************************\
+|==========================================|
+|             Key Calculations             |
+|==========================================|
+\******************************************/
 
 Key Position::initKey() const {
   // Initialize hash key
@@ -342,8 +417,7 @@ Bitboard Position::sqAttackedByBB(Square sq, Bitboard occupied) const {
   return (pawnAttacksBB<BLACK>(sq) & getPiecesBB(WHITE, PAWN)) |
          (pawnAttacksBB<WHITE>(sq) & getPiecesBB(BLACK, PAWN)) |
          (attacksBB<KNIGHT>(sq, occupied) & getPiecesBB(KNIGHT)) |
-         (attacksBB<BISHOP>(sq, occupied) &
-          getPiecesBB(BISHOP, QUEEN)) |
+         (attacksBB<BISHOP>(sq, occupied) & getPiecesBB(BISHOP, QUEEN)) |
          (attacksBB<ROOK>(sq, occupied) & getPiecesBB(ROOK, QUEEN)) |
          (attacksBB<KING>(sq, occupied) & getPiecesBB(KING));
 }
@@ -367,8 +441,7 @@ Bitboard Position::attackedByBB(Colour enemy) const {
 
   // King attacks
   Bitboard kings = getPiecesBB(enemy, KING);
-  attacks |=
-      attacksBB<KING>(popLSB(kings), EMPTYBB);
+  attacks |= attacksBB<KING>(popLSB(kings), EMPTYBB);
 
   // Bishop and Queen attacks
   Bitboard bishops = getPiecesBB(enemy, BISHOP, QUEEN);
@@ -392,10 +465,9 @@ Bitboard Position::getSliderBlockers(Bitboard sliders, Square sq,
   Bitboard blockers = EMPTYBB;
   pinners = 0;
 
-  Bitboard snipers =
-      ((attacksBB<BISHOP>(sq) & getPiecesBB(BISHOP, QUEEN)) |
-       (attacksBB<ROOK>(sq) & getPiecesBB(ROOK, QUEEN))) &
-      sliders;
+  Bitboard snipers = ((attacksBB<BISHOP>(sq) & getPiecesBB(BISHOP, QUEEN)) |
+                      (attacksBB<ROOK>(sq) & getPiecesBB(ROOK, QUEEN))) &
+                     sliders;
   Bitboard occupancy = getOccupiedBB() ^ snipers;
 
   while (snipers) {
@@ -504,8 +576,7 @@ void Position::makeMove(Move move, BoardState &state) {
 
       // Update check mask for promotions
       if (pieceTypeOf(promotedTo) == KNIGHT &&
-          attacksBB<KNIGHT>(to, EMPTYBB) &
-              getPiecesBB(enemy, KING))
+          attacksBB<KNIGHT>(to, EMPTYBB) & getPiecesBB(enemy, KING))
         st->checkMask = squareBB(to);
 
       // Update hash key
@@ -521,23 +592,21 @@ void Position::makeMove(Move move, BoardState &state) {
                Zobrist::pieceSquareKeys[piece][to];
 
     // Handle pawn checks to update check mask
-    Bitboard pawnAttack = (side == WHITE) ? pawnAttacksBB<WHITE>(to)
-                                          : pawnAttacksBB<BLACK>(to);
+    Bitboard pawnAttack =
+        (side == WHITE) ? pawnAttacksBB<WHITE>(to) : pawnAttacksBB<BLACK>(to);
     if (pawnAttack & getPiecesBB(enemy, KING))
       st->checkMask = squareBB(to);
   }
 
   // Update checkmask for piece moves
   if (pieceTypeOf(piece) == KNIGHT &&
-      attacksBB<KNIGHT>(to, EMPTYBB) &
-          getPiecesBB(enemy, KING))
+      attacksBB<KNIGHT>(to, EMPTYBB) & getPiecesBB(enemy, KING))
     st->checkMask = squareBB(to);
 
   // Update hash key (Remove previous castling rights)
   hashKey ^= Zobrist::castlingKeys[st->castling];
   // Update castling flag (By Code Monkey King)
-  st->castling &=
-      castlingRights[from] & castlingRights[to];
+  st->castling &= castlingRights[from] & castlingRights[to];
   // Update hash key (Add new castling rights)
   hashKey ^= Zobrist::castlingKeys[st->castling];
 
@@ -571,7 +640,7 @@ void Position::makeMove(Move move, BoardState &state) {
     }
   }
 
-  MoveGen::refreshMasks(*this);
+  refreshMasks(*this);
 }
 
 void Position::unmakeMove() {
@@ -642,7 +711,7 @@ void Position::makeNullMove(BoardState &state) {
   // Update repetition
   st->repetition = 0;
 
-  MoveGen::refreshMasks(*this);
+  refreshMasks(*this);
 }
 
 void Position::unmakeNullMove() {
@@ -692,8 +761,8 @@ bool Position::isLegal(Move move) const {
   case PAWN:
     if (move.is<EN_PASSANT>())
       break;
-    attacks = (us == WHITE) ? pawnAttacksBB<WHITE>(from)
-                            : pawnAttacksBB<BLACK>(from);
+    attacks =
+        (us == WHITE) ? pawnAttacksBB<WHITE>(from) : pawnAttacksBB<BLACK>(from);
     isCapture = bool(attacks & getOccupiedBB(~us) & to);
     isSinglePush =
         bool((from + pawnPush(us) == to) and !(getOccupiedBB() & to));

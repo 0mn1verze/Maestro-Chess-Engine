@@ -30,7 +30,7 @@ class Move {
 public:
   // Constructors
   Move() = default;
-  explicit Move(U16 m) : data(m), score(0){};
+  explicit Move(U16 m) : data(m){};
   Move &operator=(const Move &m) = default;
   // Encode move
   template <MoveFlag flag = NORMAL>
@@ -50,22 +50,19 @@ public:
   // Operators
   bool operator==(const Move &m) const { return data == m.raw(); }
   bool operator!=(const Move &m) const { return data != m.raw(); }
-  bool operator<(const Move &m) const { return score < m.score; }
-  bool operator>(const Move &m) const { return score > m.score; }
-  bool operator<=(const Move &m) const { return score <= m.score; }
-  bool operator>=(const Move &m) const { return score >= m.score; }
+
   // Check if move is valid
   bool isValid() const { return data != none().raw() and data != null().raw(); }
   // No move
   static Move none() { return Move(0); }
   // Null move
   static Move null() { return Move::encode(B1, B1); }
-  // Move score for ordering
-  int score;
 
 private:
   MoveFlag flag() const { return MoveFlag((data >> 12) & CASTLE); }
   U16 data;
 };
+
+
 
 #endif // MOVE_HPP

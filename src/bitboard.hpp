@@ -19,7 +19,7 @@ void initBitboards();
 // Bitboard print function
 void printBitboard(Bitboard bb);
 
-// Count the number of set bits in a bitboard
+// U32 the number of set bits in a bitboard
 inline int countBits(Bitboard bb) { return _mm_popcnt_u64(bb); }
 
 // Get the least significant bit from a bitboard
