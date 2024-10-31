@@ -19,6 +19,8 @@ struct GenMove {
   bool operator>(const GenMove &m) const { return score > m.score; }
   bool operator<=(const GenMove &m) const { return score <= m.score; }
   bool operator>=(const GenMove &m) const { return score >= m.score; }
+  bool operator==(const GenMove &m) const { return move == m.move; }
+  bool operator!=(const GenMove &m) const { return move != m.move; }
   // Convert to move
   operator Move() const { return move; }
   // Null and none move
@@ -37,6 +39,7 @@ template <GenType gt>
 GenMove *generateMoves(GenMove *moves, const Position &pos);
 
 template <GenType T> struct MoveList {
+
   explicit MoveList(const Position &pos) : last(generateMoves<T>(moves, pos)) {}
   const GenMove *begin() const { return moves; }
   const GenMove *end() const { return last; }

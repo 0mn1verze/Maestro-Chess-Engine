@@ -51,11 +51,55 @@ struct Stats<T, D, N> : public std::array<StatsEntry<T, D>, N> {};
 enum { NOT_USED, HISTORY = 16384 };
 
 using KillerTable = Stats<Move, NOT_USED, MAX_DEPTH + 1, 2>;
-using CounterMoveTable = Stats<Move, NOT_USED, COLOUR_N, PIECE_N, SQ_N>;
+using CounterMoveTable = Stats<Move, NOT_USED, COLOUR_N, PIECE_TYPE_N, SQ_N>;
 using HistoryTable = Stats<U16, HISTORY, COLOUR_N, 2, 2, SQ_N, SQ_N>;
 using CaptureHistoryTable =
-    Stats<U16, HISTORY, PIECE_N, 2, 2, SQ_N, PIECE_N - 1>;
+    Stats<U16, HISTORY, PIECE_TYPE_N, 2, 2, SQ_N, PIECE_TYPE_N - 1>;
 using ContinuationTable =
-    Stats<U16, HISTORY, 2, PIECE_N, SQ_N, CONT_N, PIECE_N, SQ_N>;
+    Stats<U16, HISTORY, 2, PIECE_TYPE_N, SQ_N, CONT_N, PIECE_TYPE_N, SQ_N>;
+
+/******************************************\
+|==========================================|
+|           MovePicker Definition          |
+|==========================================|
+\******************************************/
+
+class MovePicker {
+
+public:
+  MovePicker(const Position &pos, GenMove ttm, U8 depth, const KillerTable *kt,
+             const CounterMoveTable *cmt, const HistoryTable *ht,
+             const CaptureHistoryTable *cht, const ContinuationTable *ct,
+             int ply);
+  MovePicker(const Position &pos, GenMove ttm, int threshold,
+             const CaptureHistoryTable *cht);
+
+  Move selectNext(bool skipQuiets);
+
+private:
+  GenMove *begin() { return cur; }
+  GenMove *end() { return endMoves; }
+
+  template <GenType Type> void score();
+
+  GenMove *bestMove(GenMove *start, GenMove *end);
+
+  const KillerTable *kt;
+  const CounterMoveTable *cmt;
+  const HistoryTable *ht;
+  const CaptureHistoryTable *cht;
+  const ContinuationTable *ct;
+
+  const Position &pos;
+
+  GenMove ttMove, killer1, killer2, counterMove;
+  GenMove *cur, *endCaptures, *startQuiet, *endQuiet, *endMoves;
+  int stage;
+  int threshold;
+  U8 depth;
+  int ply;
+  bool skipQuiets;
+  GenMove moves[MAX_MOVES];
+};
 
 #endif // MOVEPICKER_HPP

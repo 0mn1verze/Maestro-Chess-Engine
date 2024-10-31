@@ -5,6 +5,7 @@
 #include "defs.hpp"
 #include "hash.hpp"
 #include "movegen.hpp"
+#include "movepick.hpp"
 #include "perft.hpp"
 #include "position.hpp"
 #include "thread.hpp"
@@ -12,9 +13,20 @@
 
 int main() {
 
-  UCI uci;
+  // UCI uci;
 
-  uci.loop();
+  // uci.loop();
+
+  ThreadPool threads;
+
+  threads.set(1);
+
+  Position pos;
+  BoardState st{};
+
+  pos.set(startPos.data(), st, threads.main());
+
+  
 
   // Position pos;
   // BoardState st{};

@@ -23,6 +23,7 @@ struct Limits {
   U64 nodes;
 
   bool useTimeManagement() const { return time[WHITE] || time[BLACK]; }
+  void trace() const;
 };
 
 /******************************************\

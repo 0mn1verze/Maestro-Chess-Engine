@@ -92,6 +92,14 @@ inline bool Position::isCapture(Move move) const {
   return move.isValid() and getPiece(move.to());
 }
 
+inline PieceType Position::captured(Move move) const {
+  return move.is<NORMAL>() ? getPieceType(move.to()) : PAWN;
+}
+
+inline PieceType Position::movedPiece(Move move) const {
+  return getPieceType(move.from());
+}
+
 // Returns bitboard for piece type
 inline Bitboard Position::getPiecesBB(PieceType pt) const {
   return piecesBB[pt];

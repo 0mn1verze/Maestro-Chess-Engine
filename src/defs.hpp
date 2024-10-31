@@ -105,6 +105,24 @@ constexpr int CONT_N = 2;
 
 /******************************************\
 |==========================================|
+|             Piece Constants              |
+|==========================================|
+\******************************************/
+
+constexpr U16 VAL_ZERO = 0;
+constexpr U16 PawnValue = 126;
+constexpr U16 KnightValue = 781;
+constexpr U16 BishopValue = 825;
+constexpr U16 RookValue = 1276;
+constexpr U16 QueenValue = 2538;
+
+constexpr U16 PieceValue[PIECE_N] = {
+    VAL_ZERO,  PawnValue,  KnightValue, BishopValue, RookValue,   QueenValue,
+    VAL_ZERO,  VAL_ZERO,   VAL_ZERO,    PawnValue,   KnightValue, BishopValue,
+    RookValue, QueenValue, VAL_ZERO,    VAL_ZERO};
+
+/******************************************\
+|==========================================|
 |           Board Enum Operators           |
 |==========================================|
 \******************************************/

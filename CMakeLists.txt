@@ -14,6 +14,7 @@ set(SOURCES src/bitboard.cpp
             src/eval.cpp
             src/thread.cpp
             src/uci.cpp
+            src/movepick.cpp
             src/main.cpp
             )
 set(HEADERS src/defs.hpp
@@ -28,6 +29,7 @@ set(HEADERS src/defs.hpp
             src/search.hpp
             src/eval.hpp
             src/thread.hpp
+            src/movepick.hpp
             src/uci.hpp
             )
 

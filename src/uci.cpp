@@ -10,6 +10,17 @@
 constexpr std::string_view NAME = "Maestro";
 constexpr std::string_view AUTHOR = "Evan Fung";
 
+void Limits::trace() const {
+  std::cout << "time: " << time[WHITE] << " " << time[BLACK] << std::endl;
+  std::cout << "inc: " << inc[WHITE] << " " << inc[BLACK] << std::endl;
+  std::cout << "startTime: " << startTime << std::endl;
+  std::cout << "depth: " << depth << std::endl;
+  std::cout << "movestogo: " << movesToGo << std::endl;
+  std::cout << "movetime: " << movetime << std::endl;
+  std::cout << "infinite: " << infinite << std::endl;
+  std::cout << "perft: " << perft << std::endl;
+}
+
 // Engine constructor
 Engine::Engine() : states(new std::deque<BoardState>(1)) {
   // // Initialize bitboards
@@ -141,7 +152,7 @@ void UCI::loop() {
 
 // Parse UCI limits
 Limits UCI::parseLimits(std::istringstream &is) {
-  Limits limits;
+  Limits limits{};
   std::string token;
 
   limits.startTime = getTimeMs();
@@ -167,6 +178,8 @@ Limits UCI::parseLimits(std::istringstream &is) {
       limits.perft = true;
     }
   }
+
+  limits.trace();
 
   return limits;
 }

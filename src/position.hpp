@@ -107,6 +107,8 @@ public:
   bool isInCheck() const;
   bool isDraw(int ply) const;
   bool isCapture(Move move) const;
+  PieceType captured(Move move) const;
+  PieceType movedPiece(Move move) const;
   Score psq() const;
   int gamePhase() const;
   bool empty(Square sq) const;
@@ -145,6 +147,9 @@ public:
   bool isLegal(Move move) const;
   Bitboard pinners() const;
   Bitboard blockersForKing() const;
+
+  // Static Exchange Evaluation
+  bool SEE(Move move, int threshold) const;
 
   int pliesFromStart;
 
