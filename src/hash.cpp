@@ -110,8 +110,8 @@ std::tuple<bool, TTEntry, TTWriter> TTable::probe(Key key) const {
 // Estimate the utilization of the transposition table
 int TTable::hashFull() const { return 0; }
 // Resize the transposition table
-void TTable::resize(size_t mb) {
-  constexpr size_t MB = 1ull << 20;
+void TTable::resize(size_t mb, ThreadPool &threads) {
+  constexpr size_t MB = 1ULL << 20;
   U64 keySize = 16ULL;
 
   if (hashMask)
@@ -126,15 +126,15 @@ void TTable::resize(size_t mb) {
 
   hashMask = bucketCount - 1;
 
-  clear();
+  clear(threads);
 }
 // Clear the transposition table
-void TTable::clear() {
+void TTable::clear(ThreadPool &threads) {
   gen8 = 0;
-  const size_t n = Threads.size();
+  const size_t n = threads.size();
 
   for (size_t i = 0; i < n; ++i) {
-    Threads.run(i, [this, i, n] {
+    threads.startCustomJob(i, [this, i, n] {
       const size_t stride = bucketCount / n;
       const size_t begin = i * stride;
       const size_t len = (i + 1 == n) ? bucketCount - begin : stride;
@@ -143,5 +143,10 @@ void TTable::clear() {
     });
   }
 
-  Threads.wait();
+  threads.waitForThreads();
 }
+
+int initHash = []() -> int {
+  initZobrist();
+  return 0;
+}();

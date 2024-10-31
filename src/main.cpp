@@ -8,20 +8,13 @@
 #include "perft.hpp"
 #include "position.hpp"
 #include "thread.hpp"
+#include "uci.hpp"
 
 int main() {
 
-  initBitboards();
+  UCI uci;
 
-  Threads.set(10);
-
-  TT.resize(100);
-
-  TT.resize(50);
-
-  Threads.set(30);
-
-  perftBench();
+  uci.loop();
 
   // Position pos;
   // BoardState st{};

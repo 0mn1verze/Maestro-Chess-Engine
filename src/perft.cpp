@@ -13,20 +13,19 @@
 #include "utils.hpp"
 
 U32 perftDriver(Position &pos, int depth) {
-  // Generate Moves
-  GenMove moves[256];
-  GenMove *last = generateMoves<ALL>(moves, pos);
+  // Generate all moves
+  MoveList<ALL> moves(pos);
 
   // Return move count (bulk counting)
   if (depth == 1)
-    return last - moves;
+    return moves.size();
 
   U32 nodes = 0;
 
   BoardState st{};
   // Loop through all moves
-  for (GenMove *begin = moves; begin < last; ++begin) {
-    pos.makeMove(*begin, st);
+  for (GenMove move : moves) {
+    pos.makeMove(move, st);
     // Recurse if depth > 1
     nodes += perftDriver(pos, depth - 1);
 
@@ -46,16 +45,14 @@ void perftTest(Position &pos, int depth) {
   U32 nodes = 0;
 
   // Generate all moves
-  GenMove moves[256];
-  refreshMasks(pos);
-  GenMove *last = generateMoves<ALL>(moves, pos);
+  MoveList<ALL> moves(pos);
   // Init node count
   U32 count = 1;
   BoardState st{};
   // Loop through all moves
-  for (GenMove *begin = moves; begin < last; ++begin) {
+  for (GenMove move : moves) {
     // Make move
-    pos.makeMove(*begin, st);
+    pos.makeMove(move, st);
     // Recurse if depth > 1
     count = 1;
     if (depth > 1)
@@ -63,7 +60,7 @@ void perftTest(Position &pos, int depth) {
     // Unmake move
     pos.unmakeMove();
     // Print move and node count (For debugging)
-    std::cout << "	Move: " << move2Str(*begin) << " Nodes: " << count
+    std::cout << "	Move: " << move2Str(move) << " Nodes: " << count
               << std::endl;
     // Add to total node count
     nodes += count;
@@ -121,7 +118,7 @@ std::vector<PerftPosition> readBenchFile() {
   return positions;
 }
 
-void perftBench() {
+void perftBench(ThreadPool &threads) {
   // Read bench file
   std::vector<PerftPosition> positions = readBenchFile();
   // Init position and nodes variable
@@ -131,7 +128,7 @@ void perftBench() {
   // Loop through all positions
   for (PerftPosition p : positions) {
     // Set position
-    pos.set(p.fen, st, Threads.main());
+    pos.set(p.fen, st, threads.main());
     // Get time
     U64 start = getTimeMs();
     // Run perft test

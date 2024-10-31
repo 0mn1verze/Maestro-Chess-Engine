@@ -222,3 +222,8 @@ void initBitboards() {
   // Remove Black Queen side castling rights if the rook on A8 is moved
   castlingRights[A8] &= ~BQ_SIDE;
 }
+
+int initBitboard = []() -> int {
+  initBitboards();
+  return 0;
+}();

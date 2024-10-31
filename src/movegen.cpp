@@ -63,9 +63,6 @@ void refreshMasks(const Position &pos) {
   const Square kingSquare = getLSB(pos.getPiecesBB(us, KING));
   BoardState *st = pos.state();
 
-  // Define pinners bitboard
-  Bitboard pinners = EMPTYBB;
-
   // Define king attacks bitboard
   st->kingAttacks = attacksBB<KING>(kingSquare, EMPTYBB);
 

@@ -217,7 +217,9 @@ inline char piece2Char(Piece pce) { return pieceToChar.at(pce); }
 |==========================================|
 \******************************************/
 
-inline U64 getTimeMs() {
+using TimePt = int64_t;
+
+inline TimePt getTimeMs() {
   // Get time in milliseconds
   return std::chrono::duration_cast<std::chrono::milliseconds>(
              std::chrono::system_clock::now().time_since_epoch())

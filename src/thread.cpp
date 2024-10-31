@@ -4,15 +4,14 @@
 #include "move.hpp"
 #include "thread.hpp"
 
-ThreadPool Threads;
 
 Thread::Thread(size_t idx) : idx(idx), thread(&Thread::idleLoop, this) {
-  wait();
+  waitForThread();
 }
 
 Thread::~Thread() {
   exit = true;
-  start();
+  startSearch();
   thread.join();
 }
 
@@ -24,12 +23,12 @@ void Thread::clear() {
   continuationTable.fill(0);
 }
 
-void Thread::start() {
-  run([this] { search(); });
+void Thread::startSearch() {
+  startCustomJob([this] { search(); });
 }
 
 // Launch a function in the thread
-void Thread::run(std::function<void()> f) {
+void Thread::startCustomJob(std::function<void()> f) {
   std::unique_lock<std::mutex> lock(
       mutex); // Lock mutex to gain control to the thread
   cv.wait(lock, [&] {
@@ -40,7 +39,7 @@ void Thread::run(std::function<void()> f) {
   cv.notify_one();  // Notify the thread to start searching
 }
 
-void Thread::wait() {
+void Thread::waitForThread() {
   std::unique_lock<std::mutex> lock(
       mutex); // Lock mutex to gain control to the thread
   cv.wait(lock, [&] {
@@ -72,8 +71,8 @@ void Thread::idleLoop() {
 }
 
 void ThreadPool::set(size_t n) {
-  if (size() > 0) { // Destroy existing threads
-    main()->wait(); // Wait for main thread to finish
+  if (size() > 0) {          // Destroy existing threads
+    main()->waitForThread(); // Wait for main thread to finish
     while (size() > 0)
       delete back(), pop_back(); // Delete threads
   }
@@ -94,7 +93,7 @@ void ThreadPool::clear() {
 }
 
 void ThreadPool::init(Position &pos, StateListPtr &s) {
-  main()->wait(); // Wait for main thread to finish
+  main()->waitForThread(); // Wait for main thread to finish
 
   if (states.get())
     states = std::move(s);
@@ -109,24 +108,26 @@ void ThreadPool::init(Position &pos, StateListPtr &s) {
 
   states->back() = tmp;
 
-  main()->start(); // Start main thread
+  main()->startSearch(); // Start main thread
 }
 
-void ThreadPool::run(size_t threadId, std::function<void()> f) {
-  at(threadId)->run(std::move(f));
+void ThreadPool::startCustomJob(size_t threadId, std::function<void()> f) {
+  at(threadId)->startCustomJob(std::move(f));
 }
 
-void ThreadPool::wait(size_t threadId) { at(threadId)->wait(); }
+void ThreadPool::waitForThread(size_t threadId) {
+  at(threadId)->waitForThread();
+}
 
-void ThreadPool::start() {
+void ThreadPool::startSearch() {
   for (Thread *th : *this)
     if (th != main())
-      th->start();
+      th->startSearch();
 }
-void ThreadPool::wait() {
+void ThreadPool::waitForThreads() {
   for (Thread *th : *this)
     if (th != main())
-      th->wait();
+      th->waitForThread();
 }
 
 void Thread::search() {}

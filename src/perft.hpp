@@ -3,7 +3,9 @@
 
 #include "defs.hpp"
 #include "position.hpp"
+#include "thread.hpp"
 #include "utils.hpp"
+
 
 // Function to count the number of leaf nodes at a given depth
 U32 perftDriver(Position &pos, int depth);
@@ -11,7 +13,7 @@ U32 perftDriver(Position &pos, int depth);
 // and Performance Information)
 void perftTest(Position &pos, int depth);
 // Function to test multiple position from bench.csv
-void perftBench();
+void perftBench(ThreadPool &threads);
 
 struct PerftPosition {
   std::string fen;

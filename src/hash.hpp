@@ -3,6 +3,7 @@
 
 #include "defs.hpp"
 #include "move.hpp"
+#include "thread.hpp"
 
 /******************************************\
 |==========================================|
@@ -108,9 +109,9 @@ public:
   // Estimate the utilization of the transposition table
   int hashFull() const;
   // Resize the transposition table
-  void resize(size_t mb);
+  void resize(size_t mb, ThreadPool &);
   // Clear the transposition table
-  void clear();
+  void clear(ThreadPool &);
   // Get first entry based on hash key
   TTEntry *firstEntry(const Key key) const;
 
@@ -119,10 +120,8 @@ private:
 
   size_t bucketCount;
   Bucket *buckets;
-  U64 hashMask;
+  U64 hashMask = 0ULL;
   U8 gen8;
 };
-
-extern TTable TT;
 
 #endif // HASH_HPP

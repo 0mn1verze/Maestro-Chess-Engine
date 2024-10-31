@@ -13,6 +13,7 @@ set(SOURCES src/bitboard.cpp
             src/search.cpp
             src/eval.cpp
             src/thread.cpp
+            src/uci.cpp
             src/main.cpp
             )
 set(HEADERS src/defs.hpp
@@ -27,6 +28,7 @@ set(HEADERS src/defs.hpp
             src/search.hpp
             src/eval.hpp
             src/thread.hpp
+            src/uci.hpp
             )
 
 set(USER_FLAGS "-g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse")

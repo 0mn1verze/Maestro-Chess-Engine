@@ -32,9 +32,9 @@ public:
   virtual void search();
   void clear();
   void idleLoop();
-  void start();
-  void wait();
-  void run(std::function<void()> f);
+  void startSearch();
+  void waitForThread();
+  void startCustomJob(std::function<void()> f);
 
   size_t pvIdx, pvLast;
   int selfDepth;
@@ -66,10 +66,10 @@ public:
   void clear();
   void set(size_t n);
 
-  void run(size_t threadId, std::function<void()> f);
-  void wait(size_t threadId);
-  void start();
-  void wait();
+  void startCustomJob(size_t threadId, std::function<void()> f);
+  void waitForThread(size_t threadId);
+  void startSearch();
+  void waitForThreads();
 
   MainThread *main() const { return static_cast<MainThread *>(front()); }
   U64 nodes_searched() const { return accumulate(&Thread::nodes); }
@@ -87,7 +87,5 @@ private:
     return sum;
   }
 };
-
-extern ThreadPool Threads;
 
 #endif // THREAD_HPP

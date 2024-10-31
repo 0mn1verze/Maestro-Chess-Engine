@@ -37,9 +37,9 @@ template <GenType gt>
 GenMove *generateMoves(GenMove *moves, const Position &pos);
 
 template <GenType T> struct MoveList {
-  explicit MoveList(const Position &pos) : last(generate<T>(pos, moves)) {}
-  GenMove *begin() const { return moves; }
-  GenMove *end() const { return last; }
+  explicit MoveList(const Position &pos) : last(generateMoves<T>(moves, pos)) {}
+  const GenMove *begin() const { return moves; }
+  const GenMove *end() const { return last; }
   size_t size() const { return last - moves; }
   GenMove &operator[](size_t idx) { return moves[idx]; }
   bool empty() const { return moves == last; }
