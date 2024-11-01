@@ -11,6 +11,8 @@
 #include "thread.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |          State Copy Constructor          |
@@ -894,3 +896,5 @@ bool Position::SEE(Move move, int threshold) const {
 
   return bool(res);
 }
+
+} // namespace Maestro

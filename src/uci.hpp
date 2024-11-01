@@ -10,6 +10,8 @@
 #include "thread.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |              Search Limits               |
@@ -98,5 +100,7 @@ public:
 private:
   Engine engine;
 };
+
+} // namespace Maestro
 
 #endif // UCI_HPP

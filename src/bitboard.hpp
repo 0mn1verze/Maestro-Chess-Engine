@@ -7,6 +7,8 @@
 #include "defs.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |           Bitboard functions             |
@@ -288,5 +290,7 @@ template <Colour c> Bitboard pawnAttacksBB(Square sq) {
 inline bool aligned(Square sq1, Square sq2, Square sq3) {
   return lineBB[sq1][sq2] & squareBB(sq3);
 }
+
+} // namespace Maestro
 
 #endif // BITBOARD_HPP

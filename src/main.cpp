@@ -11,29 +11,13 @@
 #include "thread.hpp"
 #include "uci.hpp"
 
+using namespace Maestro;
+
 int main() {
 
-  // UCI uci;
+  UCI uci;
 
-  // uci.loop();
-
-  ThreadPool threads;
-
-  threads.set(1);
-
-  Position pos;
-  BoardState st{};
-
-  pos.set(startPos.data(), st, threads.main());
-
-  
-
-  // Position pos;
-  // BoardState st{};
-  // const std::string fen(startPos);
-  // pos.set(fen, st);
-
-  // perftTest(pos, 7);
+  uci.loop();
 
   return 0;
 }

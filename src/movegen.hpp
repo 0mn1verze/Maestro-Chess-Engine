@@ -4,6 +4,8 @@
 #include "defs.hpp"
 #include "position.hpp"
 
+namespace Maestro {
+
 // Move generation types
 enum GenType { ALL, CAPTURES, QUIETS };
 
@@ -23,6 +25,8 @@ struct GenMove {
   bool operator!=(const GenMove &m) const { return move != m.move; }
   // Convert to move
   operator Move() const { return move; }
+  // Check if move is valid
+  operator bool() const { return move; }
   // Null and none move
   static GenMove none() { return GenMove{Move::none(), 0}; }
   static GenMove null() { return GenMove{Move::null(), 0}; }
@@ -53,5 +57,7 @@ template <GenType T> struct MoveList {
 private:
   GenMove moves[MAX_MOVES], *last;
 };
+
+} // namespace Maestro
 
 #endif // MOVEGEN_HPP

@@ -5,6 +5,8 @@
 #include "utils.hpp"
 #include <iostream>
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |              Move Gen Init               |
@@ -467,3 +469,5 @@ GenMove *generateMoves(GenMove *moves, const Position &pos) {
 template GenMove *generateMoves<ALL>(GenMove *moves, const Position &pos);
 template GenMove *generateMoves<CAPTURES>(GenMove *moves, const Position &pos);
 template GenMove *generateMoves<QUIETS>(GenMove *moves, const Position &pos);
+
+} // namespace Maestro

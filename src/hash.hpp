@@ -5,6 +5,8 @@
 #include "move.hpp"
 #include "thread.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |             Zobrist Hashing              |
@@ -120,8 +122,10 @@ private:
 
   size_t bucketCount;
   Bucket *buckets;
-  U64 hashMask = 0ULL;
+  Key hashMask = 0ULL;
   U8 gen8;
 };
+
+} // namespace Maestro
 
 #endif // HASH_HPP

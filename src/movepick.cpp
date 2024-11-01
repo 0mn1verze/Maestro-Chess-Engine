@@ -1,12 +1,13 @@
+#include <iostream>
 
-#include "movepick.hpp"
 #include "bitboard.hpp"
 #include "defs.hpp"
 #include "move.hpp"
+#include "movepick.hpp"
 #include "position.hpp"
 #include "utils.hpp"
 
-namespace {
+namespace Maestro {
 
 enum GenStage {
   // Generate main search moves
@@ -32,47 +33,48 @@ enum GenStage {
   PROBCUT,
 };
 
-} // namespace
-
 // Find the best move index in the list [start to end]
-GenMove *MovePicker::bestMove(GenMove *start, GenMove *end) {
-  //   return std::max_element(start, end);
+GenMove MovePicker::bestMove() {
 
-  while (start < end) {
-    std::swap(*start, *std::max_element(start, endMoves));
+  while (cur < endMoves) {
+    std::swap(*cur, *std::max_element(cur, endMoves));
 
-    if (*start != ttMove and *start != counterMove and *start != killer1 and
-        *start != killer2)
-      return start++;
+    if (!isSpecial(cur))
+      return *cur++;
 
-    start++;
+    cur++;
   }
 
-  return endMoves;
+  return GenMove::none();
 }
 
 MovePicker::MovePicker(const Position &pos, GenMove ttm, U8 depth,
                        const KillerTable *kt, const CounterMoveTable *cmt,
                        const HistoryTable *ht, const CaptureHistoryTable *cht,
-                       const ContinuationTable *ct, int ply)
-    : kt(kt), cmt(cmt), ht(ht), cht(cht), ct(ct), pos(pos), ttMove(ttm),
-      cur(moves), endMoves(moves), depth(depth), ply(ply), skipQuiets(false) {
+                       int ply)
+    : kt(kt), cmt(cmt), ht(ht), cht(cht), pos(pos), ttMove(ttm), cur(moves),
+      endMoves(moves), depth(depth), ply(ply), skipQuiets(false) {
 
   counterMove =
       (*cmt)[~pos.getSideToMove()][pos.movedPiece(ttm)][ttm.move.to()];
   killer1 = (*kt)[ply][0];
   killer2 = (*kt)[ply][1];
 
-  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) +
-          !(ttm.move.isValid() and pos.isLegal(ttm));
+  if (pos.isCapture(counterMove))
+    counterMove = GenMove::none();
+  if (pos.isCapture(killer1))
+    killer1 = GenMove::none();
+  if (pos.isCapture(killer2))
+    killer2 = GenMove::none();
+
+  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm.move and pos.isLegal(ttm));
 }
 
 MovePicker::MovePicker(const Position &pos, GenMove ttm, int threshold,
                        const CaptureHistoryTable *cht)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
-  stage = PROBCUT_TT +
-          !(ttm.move.isValid() and pos.isCapture(ttm) and pos.isLegal(ttm));
+  stage = PROBCUT_TT + !(ttm.move and pos.isCapture(ttm) and pos.isLegal(ttm));
 }
 
 // Assigns numerical value to each move in a list [start to end]
@@ -102,7 +104,8 @@ template <GenType Type> void MovePicker::score() {
 }
 
 Move MovePicker::selectNext(bool skipQuiets = false) {
-  GenMove *best;
+
+  // std::cout << "stage: " << stage << std::endl;
 
   switch (stage) {
   case PROBCUT_TT:
@@ -119,28 +122,14 @@ Move MovePicker::selectNext(bool skipQuiets = false) {
     stage++;
     [[fallthrough]];
   case GOOD_CAPTURE:
-    while (cur < endMoves) {
-      best = bestMove(cur, endMoves);
-
-      if (best->score < 0)
-        break;
-
-      if (!pos.SEE(*best, threshold)) {
-        best->score = -1;
-        endCaptures++;
-        continue;
+    if (bestMove()) {
+      if (!pos.SEE(*(cur - 1), threshold)) {
+        (cur - 1)->score = -1;
+        *endCaptures++ = *(cur - 1);
+        selectNext(skipQuiets);
       }
 
-      if (best->move == ttMove)
-        continue;
-      if (best->move == counterMove)
-        counterMove = Move::none();
-      if (best->move == killer1)
-        killer1 = Move::none();
-      if (best->move == killer2)
-        killer2 = Move::none();
-
-      return *best;
+      return *(cur - 1);
     }
     stage++;
     [[fallthrough]];
@@ -163,50 +152,31 @@ Move MovePicker::selectNext(bool skipQuiets = false) {
     [[fallthrough]];
   case QUIET_INIT:
     if (!skipQuiets) {
-      cur = endQuiet = endMoves;
-      endMoves = generateMoves<QUIETS>(cur, pos);
+      cur = endCaptures;
+      endMoves = startQuiet = endQuiet = generateMoves<QUIETS>(cur, pos);
       score<QUIETS>();
-      stage = GOOD_QUIET;
-    }
-    [[fallthrough]];
-  case GOOD_QUIET:
-    if (!skipQuiets) {
-      while (cur < endMoves) {
-        best = bestMove(cur, endMoves);
-
-        if (best->score > -8000 || best->score <= -3560 * depth)
-          return *best;
-
-        if (best->move == ttMove || best->move == counterMove ||
-            best->move == killer1 || best->move == killer2)
-          continue;
-
-        endQuiet++;
-        return *best;
-      }
-    }
-    stage = BAD_CAPTURE;
-    [[fallthrough]];
-  case BAD_CAPTURE:
-    cur = endCaptures;
-    while (cur < startQuiet) {
-      if (best->move == ttMove || best->move == counterMove ||
-          best->move == killer1 || best->move == killer2)
-        continue;
-
-      return *cur++;
     }
     stage++;
     [[fallthrough]];
-  case BAD_QUIET:
-    cur = endQuiet;
-    while (cur < endMoves) {
-      if (best->move == ttMove || best->move == counterMove ||
-          best->move == killer1 || best->move == killer2)
-        continue;
-
-      return *cur++;
+  case GOOD_QUIET:
+    if (!skipQuiets and bestMove()) {
+      if ((cur - 1)->score > -8000 || (cur - 1)->score <= -3560 * depth)
+        return *(cur - 1);
+      startQuiet = cur - 1;
     }
+    cur = moves;
+    endMoves = endCaptures;
+    stage++;
+    [[fallthrough]];
+  case BAD_CAPTURE:
+    if (bestMove())
+      return *(cur - 1);
+    stage++;
+    cur = startQuiet;
+    endMoves = endQuiet;
+    [[fallthrough]];
+  case BAD_QUIET:
+    return bestMove();
     break;
   case PROBCUT:
     while (cur < endMoves) {
@@ -222,3 +192,5 @@ Move MovePicker::selectNext(bool skipQuiets = false) {
 
   return Move::none();
 }
+
+} // namespace Maestro

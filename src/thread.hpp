@@ -13,6 +13,8 @@
 #include "position.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |            Thread Definitions            |
@@ -47,7 +49,6 @@ public:
   CounterMoveTable counterMoveTable;
   HistoryTable historyTable;
   CaptureHistoryTable captureHistoryTable;
-  ContinuationTable continuationTable;
 
   std::function<void()> jobFunc;
 };
@@ -87,5 +88,7 @@ private:
     return sum;
   }
 };
+
+} // namespace Maestro
 
 #endif // THREAD_HPP

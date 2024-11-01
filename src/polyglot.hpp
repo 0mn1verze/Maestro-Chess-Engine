@@ -6,6 +6,8 @@
 #include "defs.hpp"
 #include "position.hpp"
 
+namespace Maestro {
+
 // By H.G Muller
 constexpr Key Random64Poly[781] = {
     Key(0x9D39247E33776D41ULL), Key(0x2AF7398005AAA5C7ULL),
@@ -425,5 +427,7 @@ void clearPolyBook();
 Key getPolyKey(const Position &pos);
 
 GenMove getPolyBookMove(const Position &pos);
+
+} // namespace Maestro
 
 #endif // POLYGLOT_HPP

@@ -6,6 +6,8 @@
 
 #include "defs.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |            Move representation           |
@@ -52,7 +54,9 @@ public:
   bool operator!=(const Move &m) const { return data != m.raw(); }
 
   // Check if move is valid
-  bool isValid() const { return data != none().raw() and data != null().raw(); }
+  operator bool() const {
+    return data != none().raw() and data != null().raw();
+  }
   // No move
   static Move none() { return Move(0); }
   // Null move
@@ -63,6 +67,6 @@ private:
   U16 data;
 };
 
-
+} // namespace Maestro
 
 #endif // MOVE_HPP

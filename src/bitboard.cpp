@@ -5,6 +5,8 @@
 #include "bitboard.hpp"
 #include "defs.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |              Lookup Tables               |
@@ -227,3 +229,5 @@ int initBitboard = []() -> int {
   initBitboards();
   return 0;
 }();
+
+}; // namespace Maestro

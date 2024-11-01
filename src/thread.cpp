@@ -4,6 +4,7 @@
 #include "move.hpp"
 #include "thread.hpp"
 
+namespace Maestro {
 
 Thread::Thread(size_t idx) : idx(idx), thread(&Thread::idleLoop, this) {
   waitForThread();
@@ -20,7 +21,6 @@ void Thread::clear() {
   counterMoveTable.fill(GenMove::none());
   historyTable.fill(0);
   captureHistoryTable.fill(0);
-  continuationTable.fill(0);
 }
 
 void Thread::startSearch() {
@@ -133,3 +133,5 @@ void ThreadPool::waitForThreads() {
 void Thread::search() {}
 
 void MainThread::search() {}
+
+} // namespace Maestro

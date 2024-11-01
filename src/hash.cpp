@@ -6,6 +6,8 @@
 #include "thread.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |             Zobrist Hashing              |
@@ -59,7 +61,7 @@ void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, U8 d, Move m, I16 ev,
 
   // Don't overwrite move if we don't have a new one and the position is the
   // same
-  if (m.isValid() || k16 != key16)
+  if (m || k16 != key16)
     move16 = m;
 
   // Overwrite less valuable entries
@@ -150,3 +152,5 @@ int initHash = []() -> int {
   initZobrist();
   return 0;
 }();
+
+} // namespace Maestro

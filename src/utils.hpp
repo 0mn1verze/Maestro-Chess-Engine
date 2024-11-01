@@ -10,6 +10,8 @@
 #include "move.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
 |      Pseudo Random Number Generator      |
@@ -225,5 +227,7 @@ inline TimePt getTimeMs() {
              std::chrono::system_clock::now().time_since_epoch())
       .count();
 }
+
+} // namespace Maestro
 
 #endif // UTILS_HPP

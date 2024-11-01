@@ -12,6 +12,8 @@
 #include "thread.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 U32 perftDriver(Position &pos, int depth) {
   // Generate all moves
   MoveList<ALL> moves(pos);
@@ -21,8 +23,8 @@ U32 perftDriver(Position &pos, int depth) {
     return moves.size();
 
   U32 nodes = 0;
-
   BoardState st{};
+
   // Loop through all moves
   for (GenMove move : moves) {
     pos.makeMove(move, st);
@@ -150,3 +152,5 @@ void perftBench(ThreadPool &threads) {
     }
   }
 }
+
+} // namespace Maestro

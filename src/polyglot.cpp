@@ -11,6 +11,8 @@
 #include "position.hpp"
 #include "utils.hpp"
 
+namespace Maestro {
+
 PolyBook book;
 
 void initPolyBook(std::string filename) {
@@ -119,7 +121,7 @@ GenMove getPolyBookMove(const Position &pos) {
       // Get move from the book and then convert to engine move format
       Move move = polyMoveToEngineMove(pos, __builtin_bswap16(entry.move));
 
-      if (move.isValid())
+      if (move)
         // Add moves to book moves
         bookMoves[index++] = move;
     }
@@ -132,3 +134,5 @@ GenMove getPolyBookMove(const Position &pos) {
 
   return GenMove::none();
 }
+
+} // namespace Maestro

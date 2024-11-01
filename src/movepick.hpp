@@ -3,8 +3,12 @@
 
 #include "defs.hpp"
 #include "move.hpp"
+#include "movegen.hpp"
 #include "position.hpp"
 #include "utils.hpp"
+
+
+namespace Maestro {
 
 /******************************************\
 |==========================================|
@@ -52,11 +56,9 @@ enum { NOT_USED, HISTORY = 16384 };
 
 using KillerTable = Stats<Move, NOT_USED, MAX_DEPTH + 1, 2>;
 using CounterMoveTable = Stats<Move, NOT_USED, COLOUR_N, PIECE_TYPE_N, SQ_N>;
-using HistoryTable = Stats<U16, HISTORY, COLOUR_N, 2, 2, SQ_N, SQ_N>;
+using HistoryTable = Stats<Value, HISTORY, COLOUR_N, 2, 2, SQ_N, SQ_N>;
 using CaptureHistoryTable =
-    Stats<U16, HISTORY, PIECE_TYPE_N, 2, 2, SQ_N, PIECE_TYPE_N - 1>;
-using ContinuationTable =
-    Stats<U16, HISTORY, 2, PIECE_TYPE_N, SQ_N, CONT_N, PIECE_TYPE_N, SQ_N>;
+    Stats<Value, HISTORY, PIECE_TYPE_N, 2, 2, SQ_N, PIECE_TYPE_N - 1>;
 
 /******************************************\
 |==========================================|
@@ -69,8 +71,7 @@ class MovePicker {
 public:
   MovePicker(const Position &pos, GenMove ttm, U8 depth, const KillerTable *kt,
              const CounterMoveTable *cmt, const HistoryTable *ht,
-             const CaptureHistoryTable *cht, const ContinuationTable *ct,
-             int ply);
+             const CaptureHistoryTable *cht, int ply);
   MovePicker(const Position &pos, GenMove ttm, int threshold,
              const CaptureHistoryTable *cht);
 
@@ -82,13 +83,17 @@ private:
 
   template <GenType Type> void score();
 
-  GenMove *bestMove(GenMove *start, GenMove *end);
+  GenMove bestMove();
+
+  bool isSpecial(GenMove *move) {
+    return move->move == ttMove || move->move == counterMove ||
+           move->move == killer1 || move->move == killer2;
+  }
 
   const KillerTable *kt;
   const CounterMoveTable *cmt;
   const HistoryTable *ht;
   const CaptureHistoryTable *cht;
-  const ContinuationTable *ct;
 
   const Position &pos;
 
@@ -101,5 +106,7 @@ private:
   bool skipQuiets;
   GenMove moves[MAX_MOVES];
 };
+
+} // namespace Maestro
 
 #endif // MOVEPICKER_HPP

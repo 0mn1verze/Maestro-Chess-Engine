@@ -7,6 +7,8 @@
 #include "position.hpp"
 #include "uci.hpp"
 
+namespace Maestro {
+
 constexpr std::string_view NAME = "Maestro";
 constexpr std::string_view AUTHOR = "Evan Fung";
 
@@ -217,3 +219,5 @@ void UCI::pos(std::istringstream &is) {
 
   engine.setPosition(fen, moves);
 }
+
+} // namespace Maestro

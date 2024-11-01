@@ -5,18 +5,25 @@
 #include <cstdlib>
 #include <utility>
 
+namespace Maestro {
+
 /******************************************\
 |==========================================|
-|             Board U16 Types            |
+|             Board U16 Types              |
 |==========================================|
 \******************************************/
 
 using Bitboard = std::uint64_t;
 using U64 = std::uint64_t;
-using U32 = std::uint32_t;
 using Key = std::uint64_t;
+
+using U32 = std::uint32_t;
+
 using U16 = std::uint16_t;
+using Value = std::uint16_t;
+
 using I16 = std::int16_t;
+
 using U8 = std::uint8_t;
 
 /******************************************\
@@ -28,10 +35,10 @@ using U8 = std::uint8_t;
 constexpr int MAX_DEPTH = 64;
 constexpr int MAX_MOVES = 256;
 constexpr U64 MOVE_OVERHEAD = 300;
-constexpr U16 VAL_INFINITE = 50000;
-constexpr U16 VAL_MATE = 49000;
-constexpr U16 VAL_MATE_BOUND = 48000;
-constexpr U16 VAL_NONE = VAL_MATE + 1;
+constexpr Value VAL_INFINITE = 50000;
+constexpr Value VAL_MATE = 49000;
+constexpr Value VAL_MATE_BOUND = 48000;
+constexpr Value VAL_NONE = VAL_MATE + 1;
 
 /******************************************\
 |==========================================|
@@ -109,14 +116,14 @@ constexpr int CONT_N = 2;
 |==========================================|
 \******************************************/
 
-constexpr U16 VAL_ZERO = 0;
-constexpr U16 PawnValue = 126;
-constexpr U16 KnightValue = 781;
-constexpr U16 BishopValue = 825;
-constexpr U16 RookValue = 1276;
-constexpr U16 QueenValue = 2538;
+constexpr Value VAL_ZERO = 0;
+constexpr Value PawnValue = 126;
+constexpr Value KnightValue = 781;
+constexpr Value BishopValue = 825;
+constexpr Value RookValue = 1276;
+constexpr Value QueenValue = 2538;
 
-constexpr U16 PieceValue[PIECE_N] = {
+constexpr Value PieceValue[PIECE_N] = {
     VAL_ZERO,  PawnValue,  KnightValue, BishopValue, RookValue,   QueenValue,
     VAL_ZERO,  VAL_ZERO,   VAL_ZERO,    PawnValue,   KnightValue, BishopValue,
     RookValue, QueenValue, VAL_ZERO,    VAL_ZERO};
@@ -189,9 +196,9 @@ constexpr Castling &operator++(Castling &c) { return c = static_cast<Castling>(s
 \******************************************/
 
 // Score type
-using Score = std::pair<U16, U16>;
+using Score = std::pair<Value, Value>;
 // Score constructors
-constexpr Score _S(U16 mg, U16 eg) { return std::make_pair(mg, eg); }
+constexpr Score _S(Value mg, Value eg) { return std::make_pair(mg, eg); }
 // Score addition
 inline Score operator+(Score s1, Score s2) {
   return _S(s1.first + s2.first, s1.second + s2.second);
@@ -210,5 +217,7 @@ inline Score operator-(Score s) { return _S(-s.first, -s.second); }
 inline Score &operator+=(Score &s1, Score s2) { return s1 = s1 + s2; }
 // Score subtraction assignment
 inline Score &operator-=(Score &s1, Score s2) { return s1 = s1 - s2; }
+
+} // namespace Maestro
 
 #endif // DEFS_HPP
