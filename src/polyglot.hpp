@@ -418,15 +418,13 @@ struct PolyBook {
   std::vector<PolyBookEntry> entries;
 };
 
-extern PolyBook book;
+void initPolyBook(PolyBook &book, std::string filename);
 
-void initPolyBook(std::string filename);
-
-void clearPolyBook();
+void clearPolyBook(PolyBook &book);
 
 Key getPolyKey(const Position &pos);
 
-GenMove getPolyBookMove(const Position &pos);
+GenMove getPolyBookMove(PolyBook &book, const Position &pos);
 
 } // namespace Maestro
 

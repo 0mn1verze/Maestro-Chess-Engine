@@ -6,6 +6,7 @@
 #include "defs.hpp"
 #include "hash.hpp"
 #include "move.hpp"
+#include "polyglot.hpp"
 #include "position.hpp"
 #include "thread.hpp"
 #include "utils.hpp"
@@ -17,16 +18,6 @@ namespace Maestro {
 |              Search Limits               |
 |==========================================|
 \******************************************/
-
-struct Limits {
-  TimePt time[COLOUR_N], inc[COLOUR_N], movetime, startTime;
-  int movesToGo, depth;
-  bool perft, infinite;
-  U64 nodes;
-
-  bool useTimeManagement() const { return time[WHITE] || time[BLACK]; }
-  void trace() const;
-};
 
 /******************************************\
 |==========================================|
@@ -72,6 +63,7 @@ public:
 private:
   Position pos;
   StateListPtr states;
+  PolyBook book;
 
   ThreadPool threads;
   TTable TT;

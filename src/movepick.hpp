@@ -7,7 +7,6 @@
 #include "position.hpp"
 #include "utils.hpp"
 
-
 namespace Maestro {
 
 /******************************************\
@@ -54,11 +53,26 @@ struct Stats<T, D, N> : public std::array<StatsEntry<T, D>, N> {};
 
 enum { NOT_USED, HISTORY = 16384 };
 
+// Killer table [Ply][Move]
 using KillerTable = Stats<Move, NOT_USED, MAX_DEPTH + 1, 2>;
+
+// Counter move table [Colour][PieceType][To]
 using CounterMoveTable = Stats<Move, NOT_USED, COLOUR_N, PIECE_TYPE_N, SQ_N>;
+
+// History table [Colour][IsThreatened][IsAttacking][From][To]
 using HistoryTable = Stats<Value, HISTORY, COLOUR_N, 2, 2, SQ_N, SQ_N>;
+
+// Capture history table
+// [MovedPiece][IsThreatened][IsAttacking][To][AttackedPiece]
 using CaptureHistoryTable =
     Stats<Value, HISTORY, PIECE_TYPE_N, 2, 2, SQ_N, PIECE_TYPE_N - 1>;
+
+// Continuation History [Piece][To]
+using ContinuationHistory = Stats<Value, HISTORY, PIECE_N, SQ_N>;
+
+// Continuation table [IsCapture][Piece][To][Continuation Number]
+using ContinuationTable =
+    Stats<ContinuationHistory, NOT_USED, 2, PIECE_N, SQ_N, CONT_N>;
 
 /******************************************\
 |==========================================|
@@ -71,7 +85,8 @@ class MovePicker {
 public:
   MovePicker(const Position &pos, GenMove ttm, U8 depth, const KillerTable *kt,
              const CounterMoveTable *cmt, const HistoryTable *ht,
-             const CaptureHistoryTable *cht, int ply);
+             const CaptureHistoryTable *cht, const ContinuationHistory **ch,
+             int ply);
   MovePicker(const Position &pos, GenMove ttm, int threshold,
              const CaptureHistoryTable *cht);
 
@@ -94,6 +109,7 @@ private:
   const CounterMoveTable *cmt;
   const HistoryTable *ht;
   const CaptureHistoryTable *cht;
+  const ContinuationHistory **ch;
 
   const Position &pos;
 

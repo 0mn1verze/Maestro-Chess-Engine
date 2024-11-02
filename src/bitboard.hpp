@@ -156,27 +156,28 @@ struct Magic {
 };
 
 // Pseudo attacks for all pieces except pawns
-extern Bitboard pseudoAttacks[PIECE_TYPE_N][SQ_N];
+// extern Bitboard pseudoAttacks[PIECE_TYPE_N][SQ_N];
+extern Array<Bitboard, PIECE_TYPE_N, SQ_N> pseudoAttacks;
 // Pseudo attacks for pawns
-extern Bitboard pawnAttacks[COLOUR_N][SQ_N];
+extern Array<Bitboard, COLOUR_N, SQ_N> pawnAttacks;
 // Bishop magics
-extern Magic bishopAttacks[SQ_N];
+extern Array<Magic, SQ_N> bishopAttacks;
 // Rook magics
-extern Magic rookAttacks[SQ_N];
+extern Array<Magic, SQ_N> rookAttacks;
 // Bishop attack tables
 extern Bitboard bishopTable[0x1480];
 // Rook attack tables
 extern Bitboard rookTable[0x19000];
 // Line the two squares lie on [from][to]
-extern Bitboard lineBB[SQ_N][SQ_N];
+extern Array<Bitboard, SQ_N, SQ_N> lineBB;
 // In between bitboards [from][to]
-extern Bitboard betweenBB[SQ_N][SQ_N];
+extern Array<Bitboard, SQ_N, SQ_N> betweenBB;
 // Pins [king][attacker]
-extern Bitboard pinBB[SQ_N][SQ_N];
+extern Array<Bitboard, SQ_N, SQ_N> pinBB;
 // Checks [king][attacker]
-extern Bitboard checkBB[SQ_N][SQ_N];
+extern Array<Bitboard, SQ_N, SQ_N> checkBB;
 // Castling rights lookup table
-extern Castling castlingRights[SQ_N];
+extern Array<Castling, SQ_N> castlingRights;
 
 /******************************************\
 |==========================================|

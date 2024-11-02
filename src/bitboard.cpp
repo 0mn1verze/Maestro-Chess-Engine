@@ -4,6 +4,7 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "utils.hpp"
 
 namespace Maestro {
 
@@ -14,29 +15,29 @@ namespace Maestro {
 \******************************************/
 
 // Pseudo attacks for all pieces except pawns
-Bitboard pseudoAttacks[PIECE_TYPE_N][SQ_N];
+Array<Bitboard, PIECE_TYPE_N, SQ_N> pseudoAttacks;
 // Pseudo attacks for pawns
-Bitboard pawnAttacks[COLOUR_N][SQ_N];
+Array<Bitboard, COLOUR_N, SQ_N> pawnAttacks;
 // Bishop magics
-Magic bishopAttacks[SQ_N]{};
+Array<Magic, SQ_N> bishopAttacks;
 // Rook magics
-Magic rookAttacks[SQ_N]{};
+Array<Magic, SQ_N> rookAttacks;
 // Bishop attack tables
 Bitboard bishopTable[0x1480]{};
 // Rook attack tables
 Bitboard rookTable[0x19000]{};
 // Square distance lookup table
-int dist[SQ_N][SQ_N];
+Array<int, SQ_N, SQ_N> dist;
 // Line the two squares lie on [from][to]
-Bitboard lineBB[SQ_N][SQ_N];
+Array<Bitboard, SQ_N, SQ_N> lineBB;
 // In between bitboards [from][to]
-Bitboard betweenBB[SQ_N][SQ_N];
+Array<Bitboard, SQ_N, SQ_N> betweenBB;
 // Pins [king][attacker]
-Bitboard pinBB[SQ_N][SQ_N];
+Array<Bitboard, SQ_N, SQ_N> pinBB;
 // Checks [king][attacker]
-Bitboard checkBB[SQ_N][SQ_N];
+Array<Bitboard, SQ_N, SQ_N> checkBB;
 // Castling rights lookup table
-Castling castlingRights[SQ_N];
+Array<Castling, SQ_N> castlingRights;
 
 /******************************************\
 |==========================================|
@@ -99,7 +100,7 @@ static inline Bitboard attacksOnTheFly(Square sq, Bitboard occupied) {
 \******************************************/
 
 template <PieceType pt>
-constexpr void initMagics(Bitboard table[], Magic magics[]) {
+constexpr void initMagics(Bitboard table[], Array<Magic, SQ_N> &magics) {
   int size;
   Bitboard edges, occupied;
 
@@ -209,7 +210,7 @@ void initBitboards() {
   }
 
   // Init castling rights array
-  std::fill_n(castlingRights, std::size(castlingRights), ANY_SIDE);
+  std::fill_n(castlingRights.begin(), std::size(castlingRights), ANY_SIDE);
   // Special cases
   // Remove White castling rights if the king is moved
   castlingRights[E1] &= ~WHITE_SIDE;
@@ -224,10 +225,5 @@ void initBitboards() {
   // Remove Black Queen side castling rights if the rook on A8 is moved
   castlingRights[A8] &= ~BQ_SIDE;
 }
-
-int initBitboard = []() -> int {
-  initBitboards();
-  return 0;
-}();
 
 }; // namespace Maestro

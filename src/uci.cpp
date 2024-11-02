@@ -5,12 +5,16 @@
 #include "hash.hpp"
 #include "perft.hpp"
 #include "position.hpp"
+#include "search.hpp"
 #include "uci.hpp"
 
 namespace Maestro {
 
 constexpr std::string_view NAME = "Maestro";
 constexpr std::string_view AUTHOR = "Evan Fung";
+constexpr std::string_view VERSION = "2.0";
+constexpr std::string_view BENCH_FILE = "bench.csv";
+constexpr std::string_view BOOK_FILE = "OPTIMUS2403.bin";
 
 void Limits::trace() const {
   std::cout << "time: " << time[WHITE] << " " << time[BLACK] << std::endl;
@@ -25,10 +29,12 @@ void Limits::trace() const {
 
 // Engine constructor
 Engine::Engine() : states(new std::deque<BoardState>(1)) {
-  // // Initialize bitboards
-  // initBitboards();
-  // // Initialize zobrist keys
-  // initZobrist();
+  // Initialize bitboards
+  initBitboards();
+  // Initialize zobrist keys
+  initZobrist();
+  // Initialize polyglot book
+  initPolyBook(book, BOOK_FILE.data());
 
   // Initialise default config
   config.hashSize = 64;
@@ -36,7 +42,7 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   config.useBook = true;
 
   // Initialise thread pool
-  threads.set(config.threads);
+  resizeThreads(config.threads);
   // Initialise transposition table
   TT.resize(config.hashSize, threads);
 
@@ -65,7 +71,7 @@ Move UCI::toMove(const Position &pos, const std::string &move) {
 
 // Resize threads
 void Engine::resizeThreads(int n) {
-  threads.set(n);
+  threads.set(n, SearchState{threads, TT});
   config.threads = n;
 }
 
@@ -108,13 +114,13 @@ void Engine::setOption(std::istringstream &is) {
 
 void Engine::perft(Limits &limits) { perftTest(pos, limits.depth); }
 
-void Engine::bench() { perftBench(threads); }
+void Engine::bench() { perftBench(threads, BENCH_FILE.data()); }
 
 void Engine::go(Limits &limits) {}
 
 void Engine::stop() { threads.waitForThreads(); }
 
-void Engine::clear() {}
+void Engine::clear() { threads.clear(); }
 
 // Main loop of the chess engine
 void UCI::loop() {
@@ -131,6 +137,8 @@ void UCI::loop() {
     if (token == "uci") {
       std::cout << "id name " << NAME << std::endl;
       std::cout << "id author " << AUTHOR << std::endl;
+      std::cout << "version " << VERSION << std::endl;
+
       std::cout << "uciok" << std::endl;
     } else if (token == "isready") {
       std::cout << "readyok" << std::endl;
@@ -178,6 +186,7 @@ Limits UCI::parseLimits(std::istringstream &is) {
       limits.infinite = true;
     } else if (token == "perft") {
       limits.perft = true;
+      is >> limits.depth;
     }
   }
 

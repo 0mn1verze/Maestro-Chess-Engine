@@ -80,10 +80,10 @@ void perftTest(Position &pos, int depth) {
   std::cout << "\n==========================================\n\n";
 }
 
-std::vector<PerftPosition> readBenchFile() {
+std::vector<PerftPosition> readBenchFile(std::string filePath) {
   std::ifstream bench;
   // Open bench file
-  bench.open("../src/bench.csv");
+  bench.open(filePath);
   // Create positions vector
   std::vector<PerftPosition> positions;
   // Check if file is open
@@ -120,9 +120,9 @@ std::vector<PerftPosition> readBenchFile() {
   return positions;
 }
 
-void perftBench(ThreadPool &threads) {
+void perftBench(ThreadPool &threads, std::string filePath) {
   // Read bench file
-  std::vector<PerftPosition> positions = readBenchFile();
+  std::vector<PerftPosition> positions = readBenchFile(filePath);
   // Init position and nodes variable
   Position pos;
   U32 nodes;

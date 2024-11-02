@@ -20,7 +20,7 @@ using Key = std::uint64_t;
 using U32 = std::uint32_t;
 
 using U16 = std::uint16_t;
-using Value = std::uint16_t;
+using Value = int;
 
 using I16 = std::int16_t;
 

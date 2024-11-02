@@ -51,9 +51,9 @@ GenMove MovePicker::bestMove() {
 MovePicker::MovePicker(const Position &pos, GenMove ttm, U8 depth,
                        const KillerTable *kt, const CounterMoveTable *cmt,
                        const HistoryTable *ht, const CaptureHistoryTable *cht,
-                       int ply)
-    : kt(kt), cmt(cmt), ht(ht), cht(cht), pos(pos), ttMove(ttm), cur(moves),
-      endMoves(moves), depth(depth), ply(ply), skipQuiets(false) {
+                       const ContinuationHistory **ch, int ply)
+    : kt(kt), cmt(cmt), ht(ht), cht(cht), ch(ch), pos(pos), ttMove(ttm),
+      cur(moves), endMoves(moves), depth(depth), ply(ply), skipQuiets(false) {
 
   counterMove =
       (*cmt)[~pos.getSideToMove()][pos.movedPiece(ttm)][ttm.move.to()];
@@ -99,13 +99,13 @@ template <GenType Type> void MovePicker::score() {
                 MVVAugment[captured];
     else if constexpr (Type == QUIETS) {
       m.score = (*ht)[pos.getSideToMove()][threatFrom][threatTo][from][to];
+      m.score += (*ch[0])[piece][to];
+      m.score += (*ch[1])[piece][to];
     }
   }
 }
 
 Move MovePicker::selectNext(bool skipQuiets = false) {
-
-  // std::cout << "stage: " << stage << std::endl;
 
   switch (stage) {
   case PROBCUT_TT:

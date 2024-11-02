@@ -2,11 +2,25 @@
 #include <functional>
 
 #include "move.hpp"
+#include "search.hpp"
 #include "thread.hpp"
 
 namespace Maestro {
 
-Thread::Thread(size_t idx) : idx(idx), thread(&Thread::idleLoop, this) {
+/******************************************\
+|==========================================|
+|            Thread Definitions            |
+|==========================================|
+\******************************************/
+
+Thread::Thread(SearchState &sharedState, size_t idx)
+    : idx(idx), thread(&Thread::idleLoop, this) {
+  waitForThread();
+
+  startCustomJob([this, &sharedState, idx] {
+    worker = std::make_unique<SearchWorker>(sharedState, idx);
+  });
+
   waitForThread();
 }
 
@@ -16,15 +30,12 @@ Thread::~Thread() {
   thread.join();
 }
 
-void Thread::clear() {
-  killerTable.fill(GenMove::none());
-  counterMoveTable.fill(GenMove::none());
-  historyTable.fill(0);
-  captureHistoryTable.fill(0);
+void Thread::startSearch() {
+  startCustomJob([this] { worker->startSearch(); });
 }
 
-void Thread::startSearch() {
-  startCustomJob([this] { search(); });
+void Thread::clearWorker() {
+  startCustomJob([this] { worker->clear(); });
 }
 
 // Launch a function in the thread
@@ -70,40 +81,77 @@ void Thread::idleLoop() {
   }
 }
 
-void ThreadPool::set(size_t n) {
+/******************************************\
+|==========================================|
+|          Thread Pool Definitions         |
+|==========================================|
+\******************************************/
+
+ThreadPool::~ThreadPool() {
+  if (size()) {
+    main()->waitForThread();
+    this->clear();
+  }
+}
+
+void ThreadPool::set(size_t n, SearchState sharedState) {
   if (size() > 0) {          // Destroy existing threads
     main()->waitForThread(); // Wait for main thread to finish
-    while (size() > 0)
-      delete back(), pop_back(); // Delete threads
+    clear();
+
+    for (auto &&th : *this)
+      delete th.get(); // Delete thread
   }
 
   if (n > 0) {
     reserve(n); // Reserve space for n threads
 
-    push_back(new MainThread(0)); // Create main thread
-
     while (size() < n)
-      push_back(new Thread(size())); // Create worker threads
+      emplace_back(std::make_unique<Thread>(sharedState,
+                                            n)); // Create worker threads
   }
+
+  main()->waitForThread(); // Wait for main thread to finish
 }
 
 void ThreadPool::clear() {
-  for (Thread *th : *this)
-    th->clear(); // Clear thread
+
+  if (size() == 0)
+    return; // If no threads, return
+
+  for (auto &&th : *this)
+    th->clearWorker(); // Clear thread
+
+  for (auto &&th : *this)
+    th->waitForThread(); // Wait for thread to finish
 }
 
-void ThreadPool::init(Position &pos, StateListPtr &s) {
+struct Limits;
+
+void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   main()->waitForThread(); // Wait for main thread to finish
+
+  RootMoves rootMoves;
+  const auto legalMoves = MoveList<ALL>(pos);
+
+  if (rootMoves.empty())
+    for (const Move &m : legalMoves)
+      rootMoves.emplace_back(m);
 
   if (states.get())
     states = std::move(s);
 
   BoardState tmp = states->back();
 
-  for (Thread *th : *this) {
-    th->nodes = th->tbHits = 0;                     // Reset nodes and tbHits
-    th->rootDepth = 0;                              // Reset root depth
-    th->rootPos.set(pos.fen(), states->back(), th); // Set root position
+  for (auto &&th : *this) {
+    th->startCustomJob([&] {
+      th->worker->limits = limits;
+      th->worker->nodes = th->worker->tbHits = th->worker->bestMoveChanges = 0;
+      th->worker->rootDepth = 0;
+      th->worker->rootMoves = rootMoves;
+      th->worker->rootPos.set(pos.fen(), th->worker->rootState, th.get());
+      th->worker->rootState = states->back();
+    });
   }
 
   states->back() = tmp;
@@ -120,18 +168,22 @@ void ThreadPool::waitForThread(size_t threadId) {
 }
 
 void ThreadPool::startSearch() {
-  for (Thread *th : *this)
-    if (th != main())
+  for (auto &&th : *this)
+    if (th.get() != main())
       th->startSearch();
 }
 void ThreadPool::waitForThreads() {
-  for (Thread *th : *this)
-    if (th != main())
+  for (auto &&th : *this)
+    if (th.get() != main())
       th->waitForThread();
 }
 
-void Thread::search() {}
+// Return nodes searched
+U64 ThreadPool::nodesSearched() const {
+  return accumulate(&SearchWorker::nodes);
+}
 
-void MainThread::search() {}
+// Return table hits
+U64 ThreadPool::tbHits() const { return accumulate(&SearchWorker::tbHits); }
 
 } // namespace Maestro

@@ -11,6 +11,7 @@
 #include "move.hpp"
 #include "movepick.hpp"
 #include "position.hpp"
+#include "search.hpp"
 #include "utils.hpp"
 
 namespace Maestro {
@@ -22,69 +23,67 @@ namespace Maestro {
 \******************************************/
 
 class Thread {
-  std::mutex mutex;
-  std::condition_variable cv;
-  size_t idx;
-  bool exit = false, searching = true;
-  std::thread thread;
 
 public:
-  explicit Thread(size_t);
+  Thread(SearchState &, size_t);
   virtual ~Thread();
-  virtual void search();
-  void clear();
+
+  void clearWorker();
   void idleLoop();
   void startSearch();
   void waitForThread();
   void startCustomJob(std::function<void()> f);
 
-  size_t pvIdx, pvLast;
-  int selfDepth;
-  std::atomic<U64> nodes, tbHits, bestMoveChanges;
-
-  Position rootPos;
-  U16 rootDepth;
-
-  KillerTable killerTable;
-  CounterMoveTable counterMoveTable;
-  HistoryTable historyTable;
-  CaptureHistoryTable captureHistoryTable;
-
+  std::unique_ptr<SearchWorker> worker;
   std::function<void()> jobFunc;
+
+private:
+  std::mutex mutex;
+  std::condition_variable cv;
+  size_t idx;
+  bool exit = false, searching = true;
+  std::thread thread;
 };
 
-class MainThread : public Thread {
+/******************************************\
+|==========================================|
+|          Thread Pool Definitions         |
+|==========================================|
+\******************************************/
 
-  using Thread::Thread; // Inherit constructor and keeping explicit constructor
-
-  void search() override;
-  void check_time();
-};
-
-class ThreadPool : public std::vector<Thread *> {
+class ThreadPool : public std::vector<std::unique_ptr<Thread>> {
 public:
-  void init(Position &pos, StateListPtr &states);
+  ThreadPool(){};
+  ~ThreadPool();
+
+  ThreadPool(const ThreadPool &) = delete;
+  ThreadPool(ThreadPool &&) = delete;
+
+  ThreadPool &operator=(const ThreadPool &) = delete;
+  ThreadPool &operator=(ThreadPool &&) = delete;
+
+  void startThinking(Position &pos, StateListPtr &states, Limits limits);
   void clear();
-  void set(size_t n);
+  void set(size_t n, SearchState sharedState);
 
   void startCustomJob(size_t threadId, std::function<void()> f);
   void waitForThread(size_t threadId);
   void startSearch();
   void waitForThreads();
 
-  MainThread *main() const { return static_cast<MainThread *>(front()); }
-  U64 nodes_searched() const { return accumulate(&Thread::nodes); }
-  U64 tb_hits() const { return accumulate(&Thread::tbHits); }
+  Thread *main() const { return front().get(); }
+  U64 nodesSearched() const;
+  U64 tbHits() const;
 
   std::atomic_bool stop;
 
 private:
   StateListPtr states;
 
-  U64 accumulate(std::atomic<U64> Thread::*member) const {
+  U64 accumulate(std::atomic<U64> SearchWorker::*member) const {
     U64 sum = 0;
     for (auto &&t : *this)
-      sum += (t->*member).load(std::memory_order_relaxed);
+      sum += (t->worker.get()->*member).load(std::memory_order_relaxed);
     return sum;
   }
 };

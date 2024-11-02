@@ -13,9 +13,7 @@
 
 namespace Maestro {
 
-PolyBook book;
-
-void initPolyBook(std::string filename) {
+void initPolyBook(PolyBook &book, std::string filename) {
   book.entries.clear();
   std::ifstream file(filename, std::ios::binary);
   if (file.is_open()) {
@@ -29,7 +27,7 @@ void initPolyBook(std::string filename) {
               << std::endl;
 }
 
-void clearPolyBook() { book.entries.clear(); }
+void clearPolyBook(PolyBook &book) { book.entries.clear(); }
 
 Key getPolyKey(const Position &pos) {
   int offset = 0;
@@ -108,7 +106,7 @@ GenMove polyMoveToEngineMove(const Position &pos, std::uint16_t polyMove) {
   return GenMove::none();
 }
 
-GenMove getPolyBookMove(const Position &pos) {
+GenMove getPolyBookMove(PolyBook &book, const Position &pos) {
   srand(getTimeMs());
 
   Key polyKey = getPolyKey(pos);

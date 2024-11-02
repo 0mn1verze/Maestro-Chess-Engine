@@ -109,7 +109,7 @@ public:
   // Probe the transposition table
   std::tuple<bool, TTEntry, TTWriter> probe(Key key) const;
   // Estimate the utilization of the transposition table
-  int hashFull() const;
+  int hashFull(int maxAge) const;
   // Resize the transposition table
   void resize(size_t mb, ThreadPool &);
   // Clear the transposition table

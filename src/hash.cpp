@@ -110,7 +110,20 @@ std::tuple<bool, TTEntry, TTWriter> TTable::probe(Key key) const {
   return {false, TTEntry(), TTWriter(replace)};
 }
 // Estimate the utilization of the transposition table
-int TTable::hashFull() const { return 0; }
+int TTable::hashFull(int maxAge) const {
+  int cnt = 0;
+  for (size_t i = 0; i < 1000; ++i) {
+    for (size_t j = 0; j < bucketCount; ++j)
+      if (buckets[j].entries[i].isOccupied()) {
+        int age = (gen8 >> 3) - (buckets[j].entries[j].gen8() >> 3);
+        if (age < 0)
+          age += 1 << 5;
+        cnt += age <= maxAge;
+      }
+  }
+
+  return cnt / bucketCount;
+}
 // Resize the transposition table
 void TTable::resize(size_t mb, ThreadPool &threads) {
   constexpr size_t MB = 1ULL << 20;
@@ -147,10 +160,5 @@ void TTable::clear(ThreadPool &threads) {
 
   threads.waitForThreads();
 }
-
-int initHash = []() -> int {
-  initZobrist();
-  return 0;
-}();
 
 } // namespace Maestro

@@ -147,24 +147,6 @@ constexpr Direction pawnRight(Colour side) { return (side == WHITE) ? NE : SW; }
 
 /******************************************\
 |==========================================|
-|          Distance Lookup Table           |
-|                                          |
-| dist[sq1][sq2] = max(rankDist, fileDist) |
-|==========================================|
-\******************************************/
-
-extern int dist[SQ_N][SQ_N];
-
-// Distance between two squares (dist = max(rankDist, fileDist))
-constexpr int distance(Square sq1, Square sq2) { return dist[sq1][sq2]; }
-
-// Check if shift is valid
-constexpr bool isShift(Square from, Square to) {
-  return distance(from, to) <= 3;
-}
-
-/******************************************\
-|==========================================|
 |             Input / Output               |
 |==========================================|
 \******************************************/
@@ -226,6 +208,37 @@ inline TimePt getTimeMs() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
              std::chrono::system_clock::now().time_since_epoch())
       .count();
+}
+
+/******************************************\
+|==========================================|
+|          Multi Dimensional Array         |
+|==========================================|
+\******************************************/
+
+template <typename T, size_t N, size_t... M>
+struct Array : public std::array<Array<T, M...>, N> {
+  using stats = Array<T, N, M...>;
+};
+
+template <typename T, size_t N> struct Array<T, N> : public std::array<T, N> {};
+
+/******************************************\
+|==========================================|
+|          Distance Lookup Table           |
+|                                          |
+| dist[sq1][sq2] = max(rankDist, fileDist) |
+|==========================================|
+\******************************************/
+
+extern Array<int, SQ_N, SQ_N> dist;
+
+// Distance between two squares (dist = max(rankDist, fileDist))
+constexpr int distance(Square sq1, Square sq2) { return dist[sq1][sq2]; }
+
+// Check if shift is valid
+constexpr bool isShift(Square from, Square to) {
+  return distance(from, to) <= 3;
 }
 
 } // namespace Maestro

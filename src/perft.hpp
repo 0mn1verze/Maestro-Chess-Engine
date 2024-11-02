@@ -20,7 +20,7 @@ struct PerftPosition {
 // and Performance Information)
 void perftTest(Position &pos, int depth);
 // Function to test multiple position from bench.csv
-void perftBench(ThreadPool &threads);
+void perftBench(ThreadPool &threads, std::string filePath);
 
 } // namespace Maestro
 
