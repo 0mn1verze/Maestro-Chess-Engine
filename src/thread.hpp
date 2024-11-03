@@ -64,18 +64,18 @@ public:
 
   void startThinking(Position &pos, StateListPtr &states, Limits limits);
   void clear();
-  void set(size_t n, SearchState sharedState);
+  void set(size_t n, SearchState &sharedState);
 
   void startCustomJob(size_t threadId, std::function<void()> f);
   void waitForThread(size_t threadId);
   void startSearch();
   void waitForThreads();
+  Thread *getBestThread();
 
   Thread *main() const { return front().get(); }
   U64 nodesSearched() const;
-  U64 tbHits() const;
 
-  std::atomic_bool stop;
+  std::atomic_bool stop, abortedSearch;
 
 private:
   StateListPtr states;

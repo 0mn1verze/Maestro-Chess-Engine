@@ -15,20 +15,27 @@ namespace Maestro {
 
 /******************************************\
 |==========================================|
-|              Search Limits               |
-|==========================================|
-\******************************************/
-
-/******************************************\
-|==========================================|
 |              Engine Config               |
 |==========================================|
 \******************************************/
 
+constexpr std::string_view NAME = "Maestro";
+constexpr std::string_view AUTHOR = "Evan Fung";
+constexpr std::string_view VERSION = "2.0";
+constexpr std::string_view BENCH_FILE = "bench.csv";
+constexpr std::string_view BOOK_FILE = "OPTIMUS2403.bin";
+
+constexpr size_t DEFAULT_HASH_SIZE = 64;
+constexpr size_t DEFAULT_THREADS = 1;
+constexpr bool DEFAULT_USE_BOOK = true;
+constexpr int DEFAULT_MULTI_PV = 1;
+constexpr int MOVE_OVERHEAD = 300;
+
 struct Config {
-  size_t hashSize;
-  int threads;
-  bool useBook;
+  size_t hashSize = DEFAULT_HASH_SIZE;
+  int threads = DEFAULT_THREADS;
+  bool useBook = DEFAULT_USE_BOOK;
+  int multiPV = DEFAULT_MULTI_PV;
 };
 
 /******************************************\
@@ -66,8 +73,27 @@ private:
   PolyBook book;
 
   ThreadPool threads;
-  TTable TT;
+  TTable tt;
   Config config;
+  SearchState searchState{config, threads, tt};
+};
+
+/******************************************\
+|==========================================|
+|           Input / Output Structs         |
+|==========================================|
+\******************************************/
+
+struct PrintInfo {
+  Depth depth;
+  Depth selDepth;
+  int multiPVIdx;
+  TimePt timeMs;
+  Value score;
+  U64 nodes;
+  U64 nps;
+  std::string_view pv;
+  int hashFull;
 };
 
 /******************************************\
@@ -88,6 +114,8 @@ public:
   static Move toMove(const Position &pos, const std::string &move);
   // Parse go time controls
   Limits parseLimits(std::istringstream &is);
+  // Print UCI info
+  static void uciReport(const PrintInfo &info);
 
 private:
   Engine engine;

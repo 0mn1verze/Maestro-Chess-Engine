@@ -15,7 +15,56 @@ namespace Maestro {
 // Heavily inspired by Stockfish's design, with some modifications to fit my
 // engine
 
+class ThreadPool;
+class TTable;
+struct Config;
+
+/******************************************\
+|==========================================|
+|              Search Limits               |
+|==========================================|
+\******************************************/
+
+// Search Limits, used to store information about the time constraints
+struct Limits {
+  TimePt time[COLOUR_N], inc[COLOUR_N], movetime, startTime;
+  int movesToGo, depth, mate;
+  bool perft, infinite;
+  U64 nodes;
+  std::vector<std::string> searchMoves;
+
+  bool useTimeManagement() const { return time[WHITE] || time[BLACK]; }
+  void trace() const;
+};
+
+/******************************************\
+|==========================================|
+|               Time Manager               |
+|==========================================|
+\******************************************/
+
+class TimeManager {
+public:
+  void init(Limits &limits, Colour us, int ply, const Config &config);
+
+  TimePt optimum() const { return optimumTime; }
+  TimePt maximum() const { return maximumTime; }
+
+  TimePt elapsed() const { return getTimeMs() - startTime; }
+
+private:
+  TimePt startTime;
+  TimePt optimumTime;
+  TimePt maximumTime;
+};
+
 enum NodeType { PV, CUT, ROOT };
+
+/******************************************\
+|==========================================|
+|              Search Stack                |
+|==========================================|
+\******************************************/
 
 // Search Stack, used to store search information when searching the tree,
 // remembering the information in parent nodes
@@ -33,15 +82,11 @@ struct SearchStack {
   int cutOffCnt;
 };
 
-struct Limits {
-  TimePt time[COLOUR_N], inc[COLOUR_N], movetime, startTime;
-  int movesToGo, depth;
-  bool perft, infinite;
-  U64 nodes;
-
-  bool useTimeManagement() const { return time[WHITE] || time[BLACK]; }
-  void trace() const;
-};
+/******************************************\
+|==========================================|
+|                Root Move                 |
+|==========================================|
+\******************************************/
 
 // Root Move, used to store information about the root move and its PV
 struct RootMove {
@@ -54,33 +99,51 @@ struct RootMove {
 
   Value score = -VAL_INFINITE;
   Value prevScore = -VAL_INFINITE;
+  Value averageScore = -VAL_INFINITE;
   int selDepth = 0;
   std::vector<Move> pv;
 };
 
 using RootMoves = std::vector<RootMove>;
 
-class ThreadPool;
-class TTable;
+/******************************************\
+|==========================================|
+|              Search State                |
+|==========================================|
+\******************************************/
 
 // Shared State, used to store information shared between threads
 struct SearchState {
-  SearchState(ThreadPool &threads, TTable &tt) : threads(threads), tt(tt) {}
+  SearchState(Config &config, ThreadPool &threads, TTable &tt)
+      : config(config), threads(threads), tt(tt) {}
 
+  Config &config;
   ThreadPool &threads;
   TTable &tt;
 };
 
+/******************************************\
+|==========================================|
+|              Search Worker               |
+|==========================================|
+\******************************************/
+
 class SearchWorker {
 public:
   SearchWorker(SearchState &sharedState, size_t threadId)
-      : sharedState(sharedState), threadId(threadId) {}
+      : sharedState(sharedState), threadId(threadId), tt(sharedState.tt),
+        config(sharedState.config), threads(sharedState.threads) {}
 
   void clear();
 
   void startSearch();
 
   bool isMainThread() const { return threadId == 0; }
+
+  int getCompletedDepth() const { return completedDepth; }
+  int getSelDepth() const { return selDepth; }
+
+  TimeManager tm;
 
   KillerTable killerTable;
   CounterMoveTable counterMoveTable;
@@ -90,6 +153,10 @@ public:
 
 private:
   void iterativeDeepening();
+  void aspirationWindows(SearchStack *ss, Value &alpha, Value &beta,
+                         Value &delta, Value &bestValue);
+
+  void getPV(SearchWorker &best, Depth depth) const;
 
   template <NodeType nodeType>
   Value search(Position &pos, SearchStack *ss, int depth, Value alpha,
@@ -98,22 +165,28 @@ private:
   template <NodeType nodeType>
   Value qSearch(Position &pos, SearchStack *ss, Value alpha, Value beta);
 
-  TimePt elapsed() const;
-  bool checkTime() const;
+  bool checkTM(Depth &, int &, int &) const;
+  void checkTime() const;
 
   size_t threadId;
   SearchState &sharedState;
   Limits limits;
 
+  const Config &config;
+  ThreadPool &threads;
+  TTable &tt;
+
   size_t pvIdx, pvLast;
-  int selfDepth;
-  std::atomic<U64> nodes, tbHits, bestMoveChanges;
+  int selDepth, completedDepth, multiPV;
+  std::atomic<U64> nodes;
 
   Position rootPos;
   BoardState rootState;
   RootMoves rootMoves;
-  U8 rootDepth;
+  Depth rootDepth;
   Value rootDelta;
+
+  Value bestPreviousScore, bestPreviousAvgScore;
 
   friend class ThreadPool;
 };

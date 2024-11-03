@@ -10,11 +10,33 @@
 
 namespace Maestro {
 
-constexpr std::string_view NAME = "Maestro";
-constexpr std::string_view AUTHOR = "Evan Fung";
-constexpr std::string_view VERSION = "2.0";
-constexpr std::string_view BENCH_FILE = "bench.csv";
-constexpr std::string_view BOOK_FILE = "OPTIMUS2403.bin";
+void TimeManager::init(Limits &limits, Colour us, int ply,
+                       const Config &config) {
+
+  startTime = limits.startTime;
+  // If we have no time, we don't need to continue
+  if (limits.time[us] == 0)
+    return;
+
+  const TimePt time = limits.time[us];
+  const TimePt inc = limits.inc[us];
+
+  int mtg = limits.movesToGo ? std::min(limits.movesToGo, 50) : 50;
+
+  if (limits.movesToGo >= 0) {
+    // X / Y + Z time management
+    optimumTime = 1.80 * (time - MOVE_OVERHEAD) / mtg + inc;
+    maximumTime = 10.00 * (time - MOVE_OVERHEAD) / mtg + inc;
+  } else {
+    // X + Y time management
+    optimumTime = 2.50 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
+    maximumTime = 10.00 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
+  }
+
+  // Cap time allocation using move overhead
+  optimumTime = std::max(optimumTime, time - MOVE_OVERHEAD);
+  maximumTime = std::max(maximumTime, time - MOVE_OVERHEAD);
+}
 
 void Limits::trace() const {
   std::cout << "time: " << time[WHITE] << " " << time[BLACK] << std::endl;
@@ -35,17 +57,10 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   initZobrist();
   // Initialize polyglot book
   initPolyBook(book, BOOK_FILE.data());
-
-  // Initialise default config
-  config.hashSize = 64;
-  config.threads = 1;
-  config.useBook = true;
-
   // Initialise thread pool
   resizeThreads(config.threads);
   // Initialise transposition table
-  TT.resize(config.hashSize, threads);
-
+  tt.resize(config.hashSize, threads);
   // Set starting position
   pos.set(startPos.data(), states->back(), threads.main());
 }
@@ -71,12 +86,12 @@ Move UCI::toMove(const Position &pos, const std::string &move) {
 
 // Resize threads
 void Engine::resizeThreads(int n) {
-  threads.set(n, SearchState{threads, TT});
+  threads.set(n, searchState);
   config.threads = n;
 }
 
 void Engine::setTTSize(size_t mb) {
-  TT.resize(mb, threads);
+  tt.resize(mb, threads);
   config.hashSize = mb;
 }
 
@@ -103,12 +118,20 @@ void Engine::setOption(std::istringstream &is) {
   is >> token; // Consume name token
   is >> name;  // Get name
   is >> token; // Consume value token
-  is >> value; // Get value
 
   if (name == "Hash") {
+    is >> value; // Get value
     setTTSize(value);
   } else if (name == "Threads") {
+    is >> value; // Get value
     resizeThreads(value);
+  } else if (name == "MultiPV") {
+    is >> value;
+    config.multiPV = value;
+  } else if (name == "Clear") {
+    is >> token;
+    if (token == "Hash")
+      tt.clear(threads);
   }
 }
 
@@ -116,7 +139,7 @@ void Engine::perft(Limits &limits) { perftTest(pos, limits.depth); }
 
 void Engine::bench() { perftBench(threads, BENCH_FILE.data()); }
 
-void Engine::go(Limits &limits) {}
+void Engine::go(Limits &limits) { threads.startThinking(pos, states, limits); }
 
 void Engine::stop() { threads.waitForThreads(); }
 
@@ -138,12 +161,20 @@ void UCI::loop() {
       std::cout << "id name " << NAME << std::endl;
       std::cout << "id author " << AUTHOR << std::endl;
       std::cout << "version " << VERSION << std::endl;
+      // UCI options
+      std::cout << "option name Hash type spin default 64 min 1 max 1024"
+                << std::endl;
+      std::cout << "option name Threads type spin default 1 min 1 max 10"
+                << std::endl;
+      std::cout << "option name MultiPV type spin default 1 min 1 max 10"
+                << std::endl;
+      std::cout << "option name Clear Hash type button" << std::endl;
 
       std::cout << "uciok" << std::endl;
     } else if (token == "isready") {
       std::cout << "readyok" << std::endl;
     } else if (token == "quit" || token == "stop") {
-      //   worker.stop = true;
+      engine.stop();
     } else if (token == "setoption") {
       engine.setOption(is);
     } else if (token == "ucinewgame") {
@@ -168,7 +199,10 @@ Limits UCI::parseLimits(std::istringstream &is) {
   limits.startTime = getTimeMs();
 
   while (is >> token) {
-    if (token == "wtime") {
+    if (token == "searchmoves") {
+      while (is >> token)
+        limits.searchMoves.push_back(to_lower(token));
+    } else if (token == "wtime") {
       is >> limits.time[WHITE];
     } else if (token == "btime") {
       is >> limits.time[BLACK];
@@ -182,6 +216,8 @@ Limits UCI::parseLimits(std::istringstream &is) {
       is >> limits.movesToGo;
     } else if (token == "movetime") {
       is >> limits.movetime;
+    } else if (token == "mate") {
+      is >> limits.mate;
     } else if (token == "infinite") {
       limits.infinite = true;
     } else if (token == "perft") {
@@ -227,6 +263,21 @@ void UCI::pos(std::istringstream &is) {
     moves.push_back(token);
 
   engine.setPosition(fen, moves);
+}
+
+void UCI::uciReport(const PrintInfo &info) {
+  int score = (info.score >= VAL_MATE_BOUND) ? (VAL_MATE - info.score + 1) / 2
+              : (info.score <= -VAL_MATE_BOUND) ? (-VAL_MATE - info.score) / 2
+                                                : info.score;
+
+  std::string type = abs(info.score) >= VAL_MATE_BOUND ? "mate" : "cp";
+
+  std::cout << "info"
+            << " depth " << info.depth << " seldepth " << info.selDepth
+            << " multipv " << info.multiPVIdx << " score " << type << " "
+            << score << " time " << info.timeMs << " nodes " << info.nodes
+            << " nps " << info.nps << " hashfull " << info.hashFull << " pv "
+            << info.pv << std::endl;
 }
 
 } // namespace Maestro

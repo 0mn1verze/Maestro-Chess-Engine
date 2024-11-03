@@ -50,8 +50,8 @@ void initZobrist() {
 
 TTable TT;
 
-void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, U8 d, Move m, I16 ev,
-                   U8 gen8) {
+void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
+                   Depth gen8) {
 
   const U16 k16 = k >> 48;
   // Don't overwrite an entry with the same position, unless we have an exact
@@ -69,18 +69,18 @@ void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, U8 d, Move m, I16 ev,
   value16 = v;
   eval16 = ev;
   depth8 = d;
-  genFlag8 = U8(gen8 | (pv << 2) | f);
-  depth8 = U8(d - DEPTH_OFFSET);
+  genFlag8 = Depth(gen8 | (pv << 2) | f);
+  depth8 = Depth(d - DEPTH_OFFSET);
 }
 
-U8 TTEntry::relativeAge(U8 gen8) const {
+Depth TTEntry::relativeAge(Depth gen8) const {
   return (255 + 8 + gen8 - genFlag8) & TT_GEN_MASK;
 }
 
 bool TTEntry::isOccupied() const { return bool(depth8); }
 
-void TTWriter::write(Key k, I16 v, bool pv, TTFlag f, U8 d, Move m, I16 ev,
-                     U8 gen8) {
+void TTWriter::write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
+                     Depth gen8) {
   entry->save(k, v, pv, f, d, m, ev, gen8);
 }
 
@@ -90,7 +90,7 @@ TTEntry *TTable::firstEntry(const Key key) const {
 }
 
 // Probe the transposition table
-std::tuple<bool, TTEntry, TTWriter> TTable::probe(Key key) const {
+std::tuple<bool, TTData, TTWriter> TTable::probe(Key key) const {
   // Get entry
   TTEntry *entry = firstEntry(key);
   // Calculate truncated key
@@ -98,7 +98,7 @@ std::tuple<bool, TTEntry, TTWriter> TTable::probe(Key key) const {
 
   for (int i = 0; i < TT_BUCKET_N; ++i)
     if (entry[i].key() == k16)
-      return {entry[i].isOccupied(), TTEntry(entry[i]), TTWriter(&entry[i])};
+      return {entry[i].isOccupied(), entry[i].read(), TTWriter(&entry[i])};
 
   // Find an entry to be replaced according to the replacement strategy
   TTEntry *replace = entry;
@@ -107,7 +107,7 @@ std::tuple<bool, TTEntry, TTWriter> TTable::probe(Key key) const {
         entry[i].depth() - entry[i].relativeAge(gen8) * 2)
       replace = &entry[i];
 
-  return {false, TTEntry(), TTWriter(replace)};
+  return {false, TTData(), TTWriter(replace)};
 }
 // Estimate the utilization of the transposition table
 int TTable::hashFull(int maxAge) const {
@@ -159,6 +159,31 @@ void TTable::clear(ThreadPool &threads) {
   }
 
   threads.waitForThreads();
+}
+
+// Value conversions
+Value TTable::valueToTT(Value v, int ply) {
+  return v >= VAL_MATE_BOUND ? v + ply : v <= -VAL_MATE_BOUND ? v - ply : v;
+}
+Value TTable::valueFromTT(Value v, int ply, int r50c) {
+  if (v == VAL_NONE)
+    return VAL_NONE;
+
+  if (v >= VAL_MATE_BOUND) {
+    // Downgrade potential false mate score (Too close to 50 move draw)
+    if (v >= VAL_MATE_BOUND and VAL_MATE - v > 100 - r50c)
+      return VAL_MATE_BOUND - 1;
+    return v - ply;
+  }
+
+  if (v <= -VAL_MATE_BOUND) {
+    // Downgrade potential false mate score (Too close to 50 move draw)
+    if (v <= -VAL_MATE_BOUND and VAL_MATE + v > 100 - r50c)
+      return -VAL_MATE_BOUND + 1;
+    return v + ply;
+  }
+
+  return v;
 }
 
 } // namespace Maestro

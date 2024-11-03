@@ -48,7 +48,7 @@ GenMove MovePicker::bestMove() {
   return GenMove::none();
 }
 
-MovePicker::MovePicker(const Position &pos, GenMove ttm, U8 depth,
+MovePicker::MovePicker(const Position &pos, GenMove ttm, Depth depth,
                        const KillerTable *kt, const CounterMoveTable *cmt,
                        const HistoryTable *ht, const CaptureHistoryTable *cht,
                        const ContinuationHistory **ch, int ply)

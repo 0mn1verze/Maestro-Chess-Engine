@@ -24,7 +24,7 @@ using Value = int;
 
 using I16 = std::int16_t;
 
-using U8 = std::uint8_t;
+using Depth = std::uint8_t;
 
 /******************************************\
 |==========================================|
@@ -34,10 +34,10 @@ using U8 = std::uint8_t;
 
 constexpr int MAX_DEPTH = 64;
 constexpr int MAX_MOVES = 256;
-constexpr U64 MOVE_OVERHEAD = 300;
+constexpr int MAX_PLY = 128;
 constexpr Value VAL_INFINITE = 50000;
-constexpr Value VAL_MATE = 49000;
-constexpr Value VAL_MATE_BOUND = 48000;
+constexpr Value VAL_MATE_BOUND = 32000;
+constexpr Value VAL_MATE = VAL_MATE_BOUND + MAX_PLY;
 constexpr Value VAL_NONE = VAL_MATE + 1;
 
 /******************************************\

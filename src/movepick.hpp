@@ -83,10 +83,10 @@ using ContinuationTable =
 class MovePicker {
 
 public:
-  MovePicker(const Position &pos, GenMove ttm, U8 depth, const KillerTable *kt,
-             const CounterMoveTable *cmt, const HistoryTable *ht,
-             const CaptureHistoryTable *cht, const ContinuationHistory **ch,
-             int ply);
+  MovePicker(const Position &pos, GenMove ttm, Depth depth,
+             const KillerTable *kt, const CounterMoveTable *cmt,
+             const HistoryTable *ht, const CaptureHistoryTable *cht,
+             const ContinuationHistory **ch, int ply);
   MovePicker(const Position &pos, GenMove ttm, int threshold,
              const CaptureHistoryTable *cht);
 
@@ -117,7 +117,7 @@ private:
   GenMove *cur, *endCaptures, *startQuiet, *endQuiet, *endMoves;
   int stage;
   int threshold;
-  U8 depth;
+  Depth depth;
   int ply;
   bool skipQuiets;
   GenMove moves[MAX_MOVES];

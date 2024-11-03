@@ -104,6 +104,21 @@ template <> constexpr bool isValid<Colour>(Colour c) {
 
 /******************************************\
 |==========================================|
+|           Calculation Helpers            |
+|==========================================|
+\******************************************/
+
+// Calculate draw value
+constexpr Value valueDraw(U64 nodes) { return VAL_ZERO + 1 - nodes & 0x2; }
+
+// Calculated mated in n
+constexpr Value mateIn(int ply) { return VAL_MATE - ply; }
+
+// Calculated mate in n
+constexpr Value matedIn(int ply) { return -VAL_MATE + ply; }
+
+/******************************************\
+|==========================================|
 |              Board Helpers               |
 |==========================================|
 \******************************************/
@@ -177,23 +192,15 @@ inline std::string move2Str(const Move &m) {
   return move;
 }
 
-// Convert score to string
-inline std::string score2Str(const U16 score) {
-  std::stringstream result;
-
-  if (score > -VAL_MATE and score < -VAL_MATE_BOUND) {
-    result << "mate " << -(score + VAL_MATE) / 2 - 1;
-    return result.str();
-  } else if (score < VAL_MATE and score > VAL_MATE_BOUND) {
-    result << "mate " << (VAL_MATE - score) / 2 + 1;
-    return result.str();
-  }
-  result << "cp " << score / 2;
-  return result.str();
-}
-
 // Convert a piece to a char
 inline char piece2Char(Piece pce) { return pieceToChar.at(pce); }
+
+// Convert string to lower case
+inline std::string to_lower(std::string str) {
+  std::transform(str.begin(), str.end(), str.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  return str;
+}
 
 /******************************************\
 |==========================================|

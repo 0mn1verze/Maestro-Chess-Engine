@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <functional>
+#include <iostream>
 
 #include "move.hpp"
 #include "search.hpp"
@@ -94,7 +95,7 @@ ThreadPool::~ThreadPool() {
   }
 }
 
-void ThreadPool::set(size_t n, SearchState sharedState) {
+void ThreadPool::set(size_t n, SearchState &sharedState) {
   if (size() > 0) {          // Destroy existing threads
     main()->waitForThread(); // Wait for main thread to finish
     clear();
@@ -108,7 +109,7 @@ void ThreadPool::set(size_t n, SearchState sharedState) {
 
     while (size() < n)
       emplace_back(std::make_unique<Thread>(sharedState,
-                                            n)); // Create worker threads
+                                            size())); // Create worker threads
   }
 
   main()->waitForThread(); // Wait for main thread to finish
@@ -126,6 +127,36 @@ void ThreadPool::clear() {
     th->waitForThread(); // Wait for thread to finish
 }
 
+Thread *ThreadPool::getBestThread() {
+  Thread *best = main();
+  Value minScore = VAL_ZERO;
+
+  for (auto &&th : *this) {
+    const int bestDepth = best->worker->getCompletedDepth();
+    const int depth = th->worker->getCompletedDepth();
+
+    const int bestScore = best->worker->rootMoves[0].score;
+    const int score = th->worker->rootMoves[0].score;
+
+    const auto bestThreadPV = best->worker->rootMoves[0].pv;
+    const auto threadPV = th->worker->rootMoves[0].pv;
+
+    // If the depth is equal to the best depth and the score is greater, or this
+    // thread found a mate that is better than the best thread, set the best
+    // thread to the current thread
+    if ((depth == bestDepth && score > bestScore) ||
+        (score > VAL_MATE_BOUND && score > bestScore))
+      best = th.get();
+
+    // If the depth is greater than the best depth and the best score isn't
+    // mate, set the best thread to the current thread
+    if (depth > bestDepth && (score > bestScore || bestScore < VAL_MATE_BOUND))
+      best = th.get();
+  }
+
+  return best;
+}
+
 struct Limits;
 
 void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
@@ -138,7 +169,7 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
     for (const Move &m : legalMoves)
       rootMoves.emplace_back(m);
 
-  if (states.get())
+  if (s.get())
     states = std::move(s);
 
   BoardState tmp = states->back();
@@ -146,7 +177,7 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   for (auto &&th : *this) {
     th->startCustomJob([&] {
       th->worker->limits = limits;
-      th->worker->nodes = th->worker->tbHits = th->worker->bestMoveChanges = 0;
+      th->worker->nodes = 0;
       th->worker->rootDepth = 0;
       th->worker->rootMoves = rootMoves;
       th->worker->rootPos.set(pos.fen(), th->worker->rootState, th.get());
@@ -154,7 +185,7 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
     });
   }
 
-  states->back() = tmp;
+  waitForThreads(); // Wait for all threads to finish
 
   main()->startSearch(); // Start main thread
 }
@@ -182,8 +213,5 @@ void ThreadPool::waitForThreads() {
 U64 ThreadPool::nodesSearched() const {
   return accumulate(&SearchWorker::nodes);
 }
-
-// Return table hits
-U64 ThreadPool::tbHits() const { return accumulate(&SearchWorker::tbHits); }
 
 } // namespace Maestro

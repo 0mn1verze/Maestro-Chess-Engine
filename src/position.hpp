@@ -104,6 +104,9 @@ public:
   Square getEnPassantTarget(Colour side) const;
   int getNonPawnMaterial() const;
   int getNonPawnMaterial(Colour c) const;
+  Piece getCaptured() const;
+  int getFiftyMove() const;
+  Key getKey() const;
   Castling castling(Colour c) const;
   bool canCastle(Castling cr) const;
   bool isInCheck() const;
@@ -246,15 +249,17 @@ void Position::castleRook(Square from, Square to, Square &rookFrom,
 // State getter
 inline BoardState *Position::state() const { return st; }
 
+// Get previously captured piece
+inline Piece Position::getCaptured() const { return st->captured; }
+
+// Get hash key
+inline Key Position::getKey() const { return st->key; }
+
+// Get fifty move counter
+inline int Position::getFiftyMove() const { return st->fiftyMove; }
+
 // Check if the position is in check
 inline bool Position::isInCheck() const { return (st->checkMask != FULLBB); }
-
-// Check if the position is draw
-inline bool Position::isDraw(int ply) const {
-  if (st->fiftyMove > 99 and !isInCheck())
-    return true;
-  return st->repetition and st->repetition < ply;
-}
 
 // Check if move is capture
 inline bool Position::isCapture(Move move) const {

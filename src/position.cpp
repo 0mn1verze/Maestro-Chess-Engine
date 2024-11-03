@@ -415,6 +415,13 @@ Key Position::initPawnKey() const {
 |==========================================|
 \******************************************/
 
+// Check if the position is draw
+inline bool Position::isDraw(int ply) const {
+  if (st->fiftyMove > 99 and (!isInCheck() || MoveList<ALL>(*this).size()))
+    return true;
+  return st->repetition and st->repetition < ply;
+}
+
 Bitboard Position::sqAttackedByBB(Square sq, Bitboard occupied) const {
   return (pawnAttacksBB<BLACK>(sq) & getPiecesBB(WHITE, PAWN)) |
          (pawnAttacksBB<WHITE>(sq) & getPiecesBB(BLACK, PAWN)) |
