@@ -117,6 +117,11 @@ constexpr Value mateIn(int ply) { return VAL_MATE - ply; }
 // Calculated mate in n
 constexpr Value matedIn(int ply) { return -VAL_MATE + ply; }
 
+// Calculate stat bonus (From Ethreal)
+constexpr Value statBonus(int depth) {
+  return depth > 13 ? 32 : 16 * depth * depth + 128 * std::max(depth - 1, 0);
+}
+
 /******************************************\
 |==========================================|
 |              Board Helpers               |
@@ -200,6 +205,11 @@ inline std::string to_lower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(),
                  [](unsigned char c) { return std::tolower(c); });
   return str;
+}
+
+inline std::ostream &operator<<(std::ostream &os, Depth d) {
+  os << int(d);
+  return os;
 }
 
 /******************************************\

@@ -278,6 +278,25 @@ Bitboard attacksBB(Square sq, Bitboard occupied = 0ULL) {
     return Bitboard(0);
   }
 }
+
+// Attacks BB function (Non template version)
+inline Bitboard attacksBB(PieceType pt, Square sq, Bitboard occupied = 0ULL) {
+  switch (pt) {
+  case KNIGHT:
+    return pseudoAttacks[KNIGHT][sq];
+  case KING:
+    return pseudoAttacks[KING][sq];
+  case BISHOP:
+    return bishopAttacks[sq][occupied];
+  case ROOK:
+    return rookAttacks[sq][occupied];
+  case QUEEN:
+    return bishopAttacks[sq][occupied] | rookAttacks[sq][occupied];
+  default:
+    return Bitboard(0);
+  }
+}
+
 // Get pawn attacks bitboard (Entire bitboard)
 template <Colour c> Bitboard pawnAttacksBB(Bitboard bb) {
   return (c == WHITE) ? shift<NW>(bb) | shift<NE>(bb)
@@ -285,6 +304,11 @@ template <Colour c> Bitboard pawnAttacksBB(Bitboard bb) {
 }
 // Get pawn attacks bitboard (Single square)
 template <Colour c> Bitboard pawnAttacksBB(Square sq) {
+  return pawnAttacks[c][sq];
+}
+
+// Get pawn attacks bitboard
+inline Bitboard pawnAttacksBB(Colour c, Square sq) {
   return pawnAttacks[c][sq];
 }
 

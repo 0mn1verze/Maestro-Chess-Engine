@@ -14,6 +14,7 @@ namespace Maestro {
 \******************************************/
 
 template <PieceType pt> void checkBySlider(const Position &pos, Square king) {
+  const Colour us = pos.getSideToMove();
   const Colour them = ~pos.getSideToMove();
   BoardState *st = pos.state();
   Square sq;
@@ -40,7 +41,7 @@ template <PieceType pt> void checkBySlider(const Position &pos, Square king) {
     while (pinners) {
       sq = popLSB(pinners);
       Bitboard pinMask = pinBB[king][sq];
-      Bitboard pinned = pinMask & pos.getOccupiedBB(~them);
+      Bitboard pinned = pinMask & pos.getOccupiedBB(us);
 
       // Handle enpassant pin
       if constexpr (pt == BISHOP)
@@ -48,6 +49,8 @@ template <PieceType pt> void checkBySlider(const Position &pos, Square king) {
           st->enPassantPin = true;
 
       if (pinned and !moreThanOne(pinned)) {
+        st->pinned[us] |= pinned;
+        st->pinners[them] |= sq;
         if constexpr (pt == BISHOP)
           st->bishopPin |= pinBB[king][sq];
         else
@@ -70,6 +73,9 @@ void refreshMasks(const Position &pos) {
 
   st->rookPin = EMPTYBB;
   st->bishopPin = EMPTYBB;
+
+  st->pinned[us] = EMPTYBB;
+  st->pinners[them] = EMPTYBB;
 
   checkBySlider<BISHOP>(pos, kingSquare);
   checkBySlider<ROOK>(pos, kingSquare);

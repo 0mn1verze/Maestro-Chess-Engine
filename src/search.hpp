@@ -71,15 +71,15 @@ enum NodeType { PV, CUT, ROOT };
 struct SearchStack {
   Move *pv;
   ContinuationHistory *ch;
-  int ply;
-  Move currentMove;
-  Move excludedMove;
-  Value staticEval;
-  int moveCount;
-  bool inCheck;
-  bool ttPV;
-  bool ttHit;
-  int cutOffCnt;
+  int ply = 0;
+  Move currentMove = Move::none();
+  Move excludedMove = Move::none();
+  Value staticEval = 0;
+  int moveCount = 0;
+  bool inCheck = false;
+  bool ttPV = false;
+  bool ttHit = false;
+  int cutOffCnt = 0;
 };
 
 /******************************************\
@@ -94,12 +94,13 @@ struct RootMove {
   bool operator==(const Move &m) const { return pv[0] == m; }
   // Used for sorting
   bool operator<(const RootMove &m) const {
-    return score != m.score ? score < m.score : prevScore < m.prevScore;
+    return score != m.score ? score > m.score : prevScore > m.prevScore;
   }
 
   Value score = -VAL_INFINITE;
   Value prevScore = -VAL_INFINITE;
   Value averageScore = -VAL_INFINITE;
+  U64 effort = 0;
   int selDepth = 0;
   std::vector<Move> pv;
 };
@@ -157,9 +158,10 @@ private:
                          Value &delta, Value &bestValue);
 
   void getPV(SearchWorker &best, Depth depth) const;
+  void updatePV(Move *pv, Move best, const Move *childPv) const;
 
   template <NodeType nodeType>
-  Value search(Position &pos, SearchStack *ss, int depth, Value alpha,
+  Value search(Position &pos, SearchStack *ss, Depth depth, Value alpha,
                Value beta, bool cutNode);
 
   template <NodeType nodeType>
@@ -167,6 +169,19 @@ private:
 
   bool checkTM(Depth &, int &, int &) const;
   void checkTime() const;
+
+  void updateAllStats(const Position &pos, SearchStack *ss, Move bestMove,
+                      Square prevSq, std::vector<Move> &quietsSearched,
+                      std::vector<Move> &capturesSearched, Depth depth);
+  void updateQuietHistories(const Position &pos, SearchStack *ss, Move move,
+                            int bonus);
+  void updateCaptureHistories(const Position &pos, SearchStack *ss, Move move,
+                              int bonus);
+  void updateContinuationHistories(SearchStack *ss, PieceType pt, Square to,
+                                   int bonus);
+  void updateKillerMoves(Move move, int ply);
+
+  void updateCounterMoves(const Position &pos, Move move, Square prevSq);
 
   size_t threadId;
   SearchState &sharedState;
@@ -177,7 +192,7 @@ private:
   TTable &tt;
 
   size_t pvIdx, pvLast;
-  int selDepth, completedDepth, multiPV;
+  int selDepth, completedDepth;
   std::atomic<U64> nodes;
 
   Position rootPos;

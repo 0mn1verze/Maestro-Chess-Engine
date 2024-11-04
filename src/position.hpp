@@ -46,6 +46,8 @@ struct BoardState {
   int fiftyMove;
   Value nonPawnMaterial[COLOUR_N];
   Castling castling = NO_CASTLE;
+  Score psq;
+  int gamePhase;
 
   // Not copied when making new move
   Key key;
@@ -134,6 +136,8 @@ public:
   template <typename... Pieces> int count(Piece pce, Pieces... pcs) const;
   template <typename... PieceTypes>
   int count(PieceType pt, PieceTypes... pts) const;
+  int count(PieceType pt) const;
+  int count(Piece pc) const;
 
   // Board occupancy
   Bitboard getOccupiedBB() const;
@@ -149,12 +153,16 @@ public:
   // Move generation and legality
   Bitboard attackedByBB(Colour enemy) const;
   Bitboard sqAttackedByBB(Square sq, Bitboard occupied) const;
+  bool isPseudoLegal(Move move) const;
   bool isLegal(Move move) const;
   Bitboard pinners() const;
   Bitboard blockersForKing() const;
 
   // Static Exchange Evaluation
   bool SEE(Move move, int threshold) const;
+
+  // Gives check
+  bool givesCheck(Move move) const;
 
   int pliesFromStart;
 
@@ -166,6 +174,10 @@ private:
   void movePiece(Square from, Square to);
   template <bool doMove>
   void castleRook(Square from, Square to, Square &rookFrom, Square &rookTo);
+  // Set state functions
+  std::pair<int, int> initNonPawnMaterial() const;
+  Score initPSQT() const;
+  int initGamePhase() const;
   // Piece list
   Piece board[SQ_N];
   int pieceCount[PIECE_N];
@@ -323,9 +335,14 @@ inline bool Position::empty(Square sq) const {
 // Check if a castling right is legal
 inline bool Position::canCastle(Castling cr) const { return st->castling & cr; }
 
-// inline Score Position::psq() const { return st->psq; }
+inline Score Position::psq() const { return st->psq; }
 
-// inline int Position::gamePhase() const { return st->gamePhase; }
+inline int Position::gamePhase() const { return st->gamePhase; }
+
+inline int Position::count(PieceType pt) const {
+  return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)];
+}
+inline int Position::count(Piece pc) const { return pieceCount[pc]; }
 
 // Returns pinners
 inline Bitboard Position::pinners() const {

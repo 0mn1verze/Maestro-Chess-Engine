@@ -45,6 +45,7 @@ public:
   inline Square to() const {
     return Square((data >> 6) & static_cast<int>(H8));
   }
+  MoveFlag flag() const { return MoveFlag((data >> 12) & CASTLE); }
   inline PieceType promoted() const { return PieceType((data >> 14) + KNIGHT); }
   inline int raw() const { return data; }
   // Move flags
@@ -63,7 +64,6 @@ public:
   static Move null() { return Move::encode(B1, B1); }
 
 private:
-  MoveFlag flag() const { return MoveFlag((data >> 12) & CASTLE); }
   U16 data;
 };
 

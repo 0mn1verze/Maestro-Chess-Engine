@@ -70,9 +70,9 @@ using CaptureHistoryTable =
 // Continuation History [Piece][To]
 using ContinuationHistory = Stats<Value, HISTORY, PIECE_N, SQ_N>;
 
-// Continuation table [IsCapture][Piece][To][Continuation Number]
+// Continuation table [inCheck][isCapture][Piece][To]
 using ContinuationTable =
-    Stats<ContinuationHistory, NOT_USED, 2, PIECE_N, SQ_N, CONT_N>;
+    Stats<ContinuationHistory, NOT_USED, 2, 2, PIECE_N, SQ_N>;
 
 /******************************************\
 |==========================================|
@@ -90,7 +90,9 @@ public:
   MovePicker(const Position &pos, GenMove ttm, int threshold,
              const CaptureHistoryTable *cht);
 
-  Move selectNext(bool skipQuiets);
+  Move selectNext();
+
+  int stage;
 
 private:
   GenMove *begin() { return cur; }
@@ -115,7 +117,7 @@ private:
 
   GenMove ttMove, killer1, killer2, counterMove;
   GenMove *cur, *endCaptures, *startQuiet, *endQuiet, *endMoves;
-  int stage;
+
   int threshold;
   Depth depth;
   int ply;

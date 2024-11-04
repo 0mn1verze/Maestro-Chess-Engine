@@ -53,10 +53,12 @@ MovePicker::MovePicker(const Position &pos, GenMove ttm, Depth depth,
                        const HistoryTable *ht, const CaptureHistoryTable *cht,
                        const ContinuationHistory **ch, int ply)
     : kt(kt), cmt(cmt), ht(ht), cht(cht), ch(ch), pos(pos), ttMove(ttm),
-      cur(moves), endMoves(moves), depth(depth), ply(ply), skipQuiets(false) {
+      cur(moves), endMoves(moves), depth(depth), ply(ply),
+      skipQuiets(depth == 0) {
 
+  Move prevMove = ply > 0 ? pos.state()->move : Move::none();
   counterMove =
-      (*cmt)[~pos.getSideToMove()][pos.movedPiece(ttm)][ttm.move.to()];
+      (*cmt)[~pos.getSideToMove()][pos.getPiece(prevMove.to())][prevMove.to()];
   killer1 = (*kt)[ply][0];
   killer2 = (*kt)[ply][1];
 
@@ -67,14 +69,16 @@ MovePicker::MovePicker(const Position &pos, GenMove ttm, Depth depth,
   if (pos.isCapture(killer2))
     killer2 = GenMove::none();
 
-  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm.move and pos.isLegal(ttm));
+  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) +
+          !(ttm.move and pos.isPseudoLegal(ttm));
 }
 
 MovePicker::MovePicker(const Position &pos, GenMove ttm, int threshold,
                        const CaptureHistoryTable *cht)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
-  stage = PROBCUT_TT + !(ttm.move and pos.isCapture(ttm) and pos.isLegal(ttm));
+  stage = PROBCUT_TT +
+          !(ttm.move and pos.isCapture(ttm) and pos.isPseudoLegal(ttm));
 }
 
 // Assigns numerical value to each move in a list [start to end]
@@ -101,18 +105,21 @@ template <GenType Type> void MovePicker::score() {
       m.score = (*ht)[pos.getSideToMove()][threatFrom][threatTo][from][to];
       m.score += (*ch[0])[piece][to];
       m.score += (*ch[1])[piece][to];
+      m.score += (*ch[2])[piece][to];
+      m.score += (*ch[3])[piece][to];
     }
   }
 }
 
-Move MovePicker::selectNext(bool skipQuiets = false) {
+Move MovePicker::selectNext() {
 
   switch (stage) {
   case PROBCUT_TT:
   case QSEARCH_TT:
   case MAIN_TT:
     stage++;
-    return ttMove;
+    if ((pos.isCapture(ttMove) || !skipQuiets) and pos.isPseudoLegal(ttMove))
+      return ttMove;
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
   case CAPTURE_INIT:
@@ -120,34 +127,33 @@ Move MovePicker::selectNext(bool skipQuiets = false) {
     startQuiet = endMoves = generateMoves<CAPTURES>(cur, pos);
     score<CAPTURES>();
     stage++;
-    [[fallthrough]];
+    return selectNext();
   case GOOD_CAPTURE:
     if (bestMove()) {
       if (!pos.SEE(*(cur - 1), threshold)) {
         (cur - 1)->score = -1;
         *endCaptures++ = *(cur - 1);
-        selectNext(skipQuiets);
+        selectNext();
       }
-
       return *(cur - 1);
     }
     stage++;
     [[fallthrough]];
   case KILLER1:
     stage++;
-    if (!skipQuiets and killer1.move != ttMove and pos.isLegal(killer1))
+    if (!skipQuiets and killer1.move != ttMove and pos.isPseudoLegal(killer1))
       return killer1;
     [[fallthrough]];
   case KILLER2:
     stage++;
-    if (!skipQuiets and killer2.move != ttMove and pos.isLegal(killer2))
+    if (!skipQuiets and killer2.move != ttMove and pos.isPseudoLegal(killer2))
       return killer2;
     [[fallthrough]];
   case COUNTER_MOVE:
     stage++;
     if (!skipQuiets and counterMove.move != ttMove and
         counterMove.move != killer1 and counterMove.move != killer2 and
-        pos.isLegal(counterMove))
+        pos.isPseudoLegal(counterMove))
       return counterMove;
     [[fallthrough]];
   case QUIET_INIT:
@@ -176,7 +182,8 @@ Move MovePicker::selectNext(bool skipQuiets = false) {
     endMoves = endQuiet;
     [[fallthrough]];
   case BAD_QUIET:
-    return bestMove();
+    if (!skipQuiets)
+      return bestMove();
     break;
   case PROBCUT:
     while (cur < endMoves) {
@@ -186,7 +193,7 @@ Move MovePicker::selectNext(bool skipQuiets = false) {
     }
     break;
   case QCAPTURE:
-    return *cur++;
+    return bestMove();
     break;
   }
 

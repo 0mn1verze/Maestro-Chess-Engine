@@ -51,7 +51,7 @@ void initZobrist() {
 TTable TT;
 
 void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
-                   Depth gen8) {
+                   U8 gen8) {
 
   const U16 k16 = k >> 48;
   // Don't overwrite an entry with the same position, unless we have an exact
@@ -68,19 +68,18 @@ void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
   key16 = k16;
   value16 = v;
   eval16 = ev;
-  depth8 = d;
-  genFlag8 = Depth(gen8 | (pv << 2) | f);
+  genFlag8 = U8(gen8 | (pv << 2) | f);
   depth8 = Depth(d - DEPTH_OFFSET);
 }
 
-Depth TTEntry::relativeAge(Depth gen8) const {
+U8 TTEntry::relativeAge(U8 gen8) const {
   return (255 + 8 + gen8 - genFlag8) & TT_GEN_MASK;
 }
 
 bool TTEntry::isOccupied() const { return bool(depth8); }
 
 void TTWriter::write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
-                     Depth gen8) {
+                     U8 gen8) {
   entry->save(k, v, pv, f, d, m, ev, gen8);
 }
 
@@ -114,8 +113,8 @@ int TTable::hashFull(int maxAge) const {
   int cnt = 0;
   for (size_t i = 0; i < 1000; ++i) {
     for (size_t j = 0; j < bucketCount; ++j)
-      if (buckets[j].entries[i].isOccupied()) {
-        int age = (gen8 >> 3) - (buckets[j].entries[j].gen8() >> 3);
+      if (buckets[i].entries[j].isOccupied()) {
+        int age = (gen8 >> 3) - (buckets[i].entries[j].gen8() >> 3);
         if (age < 0)
           age += 1 << 5;
         cnt += age <= maxAge;

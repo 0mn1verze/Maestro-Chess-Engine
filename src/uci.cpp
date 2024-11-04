@@ -55,6 +55,8 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   initBitboards();
   // Initialize zobrist keys
   initZobrist();
+  // Initialize evaluation
+  Eval::initEval();
   // Initialize polyglot book
   initPolyBook(book, BOOK_FILE.data());
   // Initialise thread pool
@@ -106,7 +108,10 @@ void Engine::setPosition(const std::string fen,
   pos.set(fen, states->back(), threads.main());
 
   for (const std::string &move : moves) {
+    states->emplace_back();
     Move m = UCI::toMove(pos, move);
+    if (!m)
+      break;
     pos.makeMove(m, states->back());
   }
 }
@@ -141,7 +146,10 @@ void Engine::bench() { perftBench(threads, BENCH_FILE.data()); }
 
 void Engine::go(Limits &limits) { threads.startThinking(pos, states, limits); }
 
-void Engine::stop() { threads.waitForThreads(); }
+void Engine::stop() {
+  threads.stop = threads.abortedSearch = true;
+  threads.waitForThreads();
+}
 
 void Engine::clear() { threads.clear(); }
 

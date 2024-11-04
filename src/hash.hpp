@@ -42,8 +42,8 @@ void initZobrist();
 
 enum TTFlag {
   BOUND_NONE = 0,
-  BOUND_ALPHA = 1,
-  BOUND_BETA = 2,
+  BOUND_UPPER = 1,
+  BOUND_LOWER = 2,
   BOUND_EXACT = 3,
 
   TT_BOUND_MASK = 0x03,
@@ -75,10 +75,9 @@ struct TTEntry {
   Depth depth() const { return depth8; }
   bool isPV() const { return genFlag8 & TT_PV_MASK; }
   TTFlag flag() const { return TTFlag(genFlag8 & TT_BOUND_MASK); }
-  Depth gen8() const { return genFlag8 & TT_GEN_MASK; }
-  void save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
-            Depth gen8);
-  Depth relativeAge(Depth gen8) const;
+  U8 gen8() const { return genFlag8 & TT_GEN_MASK; }
+  void save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev, U8 gen8);
+  U8 relativeAge(U8 gen8) const;
   bool isOccupied() const;
 
   // Constructors
@@ -92,13 +91,12 @@ private:
   I16 value16;
   I16 eval16;
   Depth depth8;
-  Depth genFlag8;
+  U8 genFlag8;
 };
 
 struct TTWriter {
 public:
-  void write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
-             Depth gen8);
+  void write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev, U8 gen8);
   TTWriter(TTEntry *e) : entry(e) {}
 
 private:
@@ -136,13 +134,14 @@ public:
   static Value valueToTT(Value v, int ply);
   static Value valueFromTT(Value v, int ply, int r50c);
 
+  U8 gen8;
+
 private:
   friend struct TTEntry;
 
   size_t bucketCount;
   Bucket *buckets;
   Key hashMask = 0ULL;
-  Depth gen8;
 };
 
 } // namespace Maestro

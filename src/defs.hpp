@@ -25,6 +25,7 @@ using Value = int;
 using I16 = std::int16_t;
 
 using Depth = std::uint8_t;
+using U8 = std::uint8_t;
 
 /******************************************\
 |==========================================|
@@ -36,7 +37,7 @@ constexpr int MAX_DEPTH = 64;
 constexpr int MAX_MOVES = 256;
 constexpr int MAX_PLY = 128;
 constexpr Value VAL_INFINITE = 50000;
-constexpr Value VAL_MATE_BOUND = 32000;
+constexpr Value VAL_MATE_BOUND = 49000;
 constexpr Value VAL_MATE = VAL_MATE_BOUND + MAX_PLY;
 constexpr Value VAL_NONE = VAL_MATE + 1;
 
@@ -199,6 +200,9 @@ constexpr Castling &operator++(Castling &c) { return c = static_cast<Castling>(s
 using Score = std::pair<Value, Value>;
 // Score constructors
 constexpr Score _S(Value mg, Value eg) { return std::make_pair(mg, eg); }
+constexpr Score _S(Value s) { return _S(s, s); }
+// Score constants
+constexpr Score SCORE_ZERO = _S(VAL_ZERO);
 // Score addition
 inline Score operator+(Score s1, Score s2) {
   return _S(s1.first + s2.first, s1.second + s2.second);

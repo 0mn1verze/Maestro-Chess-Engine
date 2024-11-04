@@ -5,6 +5,7 @@
 #include "move.hpp"
 #include "search.hpp"
 #include "thread.hpp"
+#include "uci.hpp"
 
 namespace Maestro {
 
@@ -41,14 +42,16 @@ void Thread::clearWorker() {
 
 // Launch a function in the thread
 void Thread::startCustomJob(std::function<void()> f) {
-  std::unique_lock<std::mutex> lock(
-      mutex); // Lock mutex to gain control to the thread
-  cv.wait(lock, [&] {
-    return !searching;
-  }); // Wait until the thread is done searching
-  jobFunc = std::move(f);
-  searching = true; // Set searching flag to true
-  cv.notify_one();  // Notify the thread to start searching
+  {
+    std::unique_lock<std::mutex> lock(
+        mutex); // Lock mutex to gain control to the thread
+    cv.wait(lock, [&] {
+      return !searching;
+    }); // Wait until the thread is done searching
+    jobFunc = std::move(f);
+    searching = true; // Set searching flag to true
+  }
+  cv.notify_one(); // Notify the thread to start searching
 }
 
 void Thread::waitForThread() {
@@ -165,6 +168,11 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   RootMoves rootMoves;
   const auto legalMoves = MoveList<ALL>(pos);
 
+  for (const std::string &uciMove : limits.searchMoves) {
+    Move move = UCI::toMove(pos, uciMove);
+    rootMoves.emplace_back(move);
+  }
+
   if (rootMoves.empty())
     for (const Move &m : legalMoves)
       rootMoves.emplace_back(m);
@@ -185,7 +193,8 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
     });
   }
 
-  waitForThreads(); // Wait for all threads to finish
+  main()->waitForThread(); // Wait for main thread to finish
+  waitForThreads();        // Wait for all threads to finish
 
   main()->startSearch(); // Start main thread
 }
