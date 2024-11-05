@@ -24,7 +24,7 @@ using Value = int;
 
 using I16 = std::int16_t;
 
-using Depth = std::uint8_t;
+using Depth = std::int8_t;
 using U8 = std::uint8_t;
 
 /******************************************\

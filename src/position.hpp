@@ -7,6 +7,7 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "nnue.hpp"
 
 namespace Maestro {
 
@@ -59,6 +60,8 @@ struct BoardState {
   Bitboard rookPin, bishopPin, kingBan, kingAttacks, available, attacked,
       pinned[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
+
+  NNUEdata nnueData;
 
   // Previous pieceList state
   BoardState *previous;
@@ -133,9 +136,8 @@ public:
   template <PieceType pt> Square square(Colour us) const;
 
   // Piece count
-  template <typename... Pieces> int count(Piece pce, Pieces... pcs) const;
-  template <typename... PieceTypes>
-  int count(PieceType pt, PieceTypes... pts) const;
+  template <Piece pc> int count() const;
+  template <PieceType pt> int count() const;
   int count(PieceType pt) const;
   int count(Piece pc) const;
 
@@ -216,16 +218,11 @@ Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
 }
 
 // U32 the number of pieces of a certain type
-template <typename... Pieces>
-int Position::count(Piece pce, Pieces... pcs) const {
-  return pieceCount[pce] + count(pcs...);
-}
+template <Piece pc> int Position::count() const { return pieceCount[pc]; }
 
 // U32 the number of pieces of a certain type
-template <typename... PieceTypes>
-int Position::count(PieceType pt, PieceTypes... pts) const {
-  return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)] +
-         count(pts...);
+template <PieceType pt> int Position::count() const {
+  return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)];
 }
 
 // Get the slider blockers for a square

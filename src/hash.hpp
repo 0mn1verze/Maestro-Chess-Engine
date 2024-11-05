@@ -90,7 +90,7 @@ private:
   Move move16;
   I16 value16;
   I16 eval16;
-  Depth depth8;
+  U8 depth8;
   U8 genFlag8;
 };
 
@@ -129,6 +129,8 @@ public:
   void clear(ThreadPool &);
   // Get first entry based on hash key
   TTEntry *firstEntry(const Key key) const;
+  // Prefetch entry
+  static void prefetch(const void *addr);
 
   // Value conversions
   static Value valueToTT(Value v, int ply);

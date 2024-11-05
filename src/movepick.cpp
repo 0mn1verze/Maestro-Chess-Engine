@@ -14,10 +14,10 @@ enum GenStage {
   MAIN_TT,
   CAPTURE_INIT,
   GOOD_CAPTURE,
+  QUIET_INIT,
   KILLER1,
   KILLER2,
   COUNTER_MOVE,
-  QUIET_INIT,
   GOOD_QUIET,
   BAD_CAPTURE,
   BAD_QUIET,
@@ -46,6 +46,11 @@ GenMove MovePicker::bestMove() {
   }
 
   return GenMove::none();
+}
+
+bool MovePicker::contains(GenMove move) {
+  GenMove *m = std::find(begin(), end(), move);
+  return m != end();
 }
 
 MovePicker::MovePicker(const Position &pos, GenMove ttm, Depth depth,
@@ -139,23 +144,7 @@ Move MovePicker::selectNext() {
     }
     stage++;
     [[fallthrough]];
-  case KILLER1:
-    stage++;
-    if (!skipQuiets and killer1.move != ttMove and pos.isPseudoLegal(killer1))
-      return killer1;
-    [[fallthrough]];
-  case KILLER2:
-    stage++;
-    if (!skipQuiets and killer2.move != ttMove and pos.isPseudoLegal(killer2))
-      return killer2;
-    [[fallthrough]];
-  case COUNTER_MOVE:
-    stage++;
-    if (!skipQuiets and counterMove.move != ttMove and
-        counterMove.move != killer1 and counterMove.move != killer2 and
-        pos.isPseudoLegal(counterMove))
-      return counterMove;
-    [[fallthrough]];
+
   case QUIET_INIT:
     if (!skipQuiets) {
       cur = endCaptures;
@@ -163,6 +152,23 @@ Move MovePicker::selectNext() {
       score<QUIETS>();
     }
     stage++;
+    [[fallthrough]];
+  case KILLER1:
+    stage++;
+    if (!skipQuiets and killer1.move != ttMove and contains(killer1))
+      return killer1;
+    [[fallthrough]];
+  case KILLER2:
+    stage++;
+    if (!skipQuiets and killer2.move != ttMove and contains(killer2))
+      return killer2;
+    [[fallthrough]];
+  case COUNTER_MOVE:
+    stage++;
+    if (!skipQuiets and counterMove.move != ttMove and
+        counterMove.move != killer1 and counterMove.move != killer2 and
+        contains(counterMove))
+      return counterMove;
     [[fallthrough]];
   case GOOD_QUIET:
     if (!skipQuiets and bestMove()) {
@@ -182,8 +188,8 @@ Move MovePicker::selectNext() {
     endMoves = endQuiet;
     [[fallthrough]];
   case BAD_QUIET:
-    if (!skipQuiets)
-      return bestMove();
+    if (!skipQuiets and bestMove())
+      return *(cur - 1);
     break;
   case PROBCUT:
     while (cur < endMoves) {
@@ -193,7 +199,8 @@ Move MovePicker::selectNext() {
     }
     break;
   case QCAPTURE:
-    return bestMove();
+    if (bestMove())
+      return *(cur - 1);
     break;
   }
 

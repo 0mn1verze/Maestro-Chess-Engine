@@ -44,6 +44,14 @@ void initZobrist() {
 
 /******************************************\
 |==========================================|
+|               Memory utils               |
+|==========================================|
+\******************************************/
+
+void TTable::prefetch(const void *addr) { __builtin_prefetch(addr); }
+
+/******************************************\
+|==========================================|
 |           Transposition Table            |
 |==========================================|
 \******************************************/
@@ -54,22 +62,23 @@ void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
                    U8 gen8) {
 
   const U16 k16 = k >> 48;
-  // Don't overwrite an entry with the same position, unless we have an exact
-  // bound or depth is nearly as good as the old one
-  if (flag() != BOUND_EXACT && k16 == key16 && d < depth8 - 2)
-    return;
 
   // Don't overwrite move if we don't have a new one and the position is the
   // same
   if (m || k16 != key16)
     move16 = m;
 
+  // Don't overwrite an entry with the same position, unless we have an exact
+  // bound or depth is nearly as good as the old one
+  if (flag() != BOUND_EXACT && k16 == key16 && d < depth8 - 2)
+    return;
+
   // Overwrite less valuable entries
   key16 = k16;
   value16 = v;
   eval16 = ev;
   genFlag8 = U8(gen8 | (pv << 2) | f);
-  depth8 = Depth(d - DEPTH_OFFSET);
+  depth8 = U8(d - DEPTH_OFFSET);
 }
 
 U8 TTEntry::relativeAge(U8 gen8) const {
@@ -85,7 +94,7 @@ void TTWriter::write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
 
 // Get first entry based on hash key
 TTEntry *TTable::firstEntry(const Key key) const {
-  return &buckets[key % bucketCount].entries[0];
+  return &buckets[key & hashMask].entries[0];
 }
 
 // Probe the transposition table

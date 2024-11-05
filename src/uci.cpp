@@ -3,6 +3,7 @@
 
 #include "bitboard.hpp"
 #include "hash.hpp"
+#include "nnue.hpp"
 #include "perft.hpp"
 #include "position.hpp"
 #include "search.hpp"
@@ -23,7 +24,7 @@ void TimeManager::init(Limits &limits, Colour us, int ply,
 
   int mtg = limits.movesToGo ? std::min(limits.movesToGo, 50) : 50;
 
-  if (limits.movesToGo >= 0) {
+  if (limits.movesToGo > 0) {
     // X / Y + Z time management
     optimumTime = 1.80 * (time - MOVE_OVERHEAD) / mtg + inc;
     maximumTime = 10.00 * (time - MOVE_OVERHEAD) / mtg + inc;
@@ -34,8 +35,11 @@ void TimeManager::init(Limits &limits, Colour us, int ply,
   }
 
   // Cap time allocation using move overhead
-  optimumTime = std::max(optimumTime, time - MOVE_OVERHEAD);
-  maximumTime = std::max(maximumTime, time - MOVE_OVERHEAD);
+  optimumTime = std::min(optimumTime, time - MOVE_OVERHEAD);
+  maximumTime = std::min(maximumTime, time - MOVE_OVERHEAD);
+
+  std::cout << "Optimum: " << optimumTime << std::endl;
+  std::cout << "Maximum: " << maximumTime << std::endl;
 }
 
 void Limits::trace() const {
@@ -59,6 +63,8 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   Eval::initEval();
   // Initialize polyglot book
   initPolyBook(book, BOOK_FILE.data());
+  // Initialize nnue file
+  nnue_init(NNUE_FILE.data());
   // Initialise thread pool
   resizeThreads(config.threads);
   // Initialise transposition table
@@ -105,13 +111,14 @@ void Engine::print() const { pos.print(); }
 // Set position
 void Engine::setPosition(const std::string fen,
                          const std::vector<std::string> &moves) {
+  states = StateListPtr(new std::deque<BoardState>(1));
   pos.set(fen, states->back(), threads.main());
 
   for (const std::string &move : moves) {
-    states->emplace_back();
     Move m = UCI::toMove(pos, move);
     if (!m)
       break;
+    states->emplace_back();
     pos.makeMove(m, states->back());
   }
 }
@@ -144,7 +151,18 @@ void Engine::perft(Limits &limits) { perftTest(pos, limits.depth); }
 
 void Engine::bench() { perftBench(threads, BENCH_FILE.data()); }
 
-void Engine::go(Limits &limits) { threads.startThinking(pos, states, limits); }
+void Engine::go(Limits &limits) {
+
+  if (DEFAULT_USE_BOOK and !limits.infinite) {
+    Move bookMove = getPolyBookMove(book, pos);
+
+    if (bookMove != Move::none()) {
+      std::cout << "bestmove " << move2Str(bookMove) << std::endl;
+      return;
+    }
+  }
+  threads.startThinking(pos, states, limits);
+}
 
 void Engine::stop() {
   threads.stop = threads.abortedSearch = true;

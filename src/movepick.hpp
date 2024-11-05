@@ -101,6 +101,7 @@ private:
   template <GenType Type> void score();
 
   GenMove bestMove();
+  bool contains(GenMove move);
 
   bool isSpecial(GenMove *move) {
     return move->move == ttMove || move->move == counterMove ||

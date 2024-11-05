@@ -163,6 +163,9 @@ Thread *ThreadPool::getBestThread() {
 struct Limits;
 
 void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
+
+  stop = abortedSearch = false;
+
   main()->waitForThread(); // Wait for main thread to finish
 
   RootMoves rootMoves;
@@ -180,16 +183,14 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   if (s.get())
     states = std::move(s);
 
-  BoardState tmp = states->back();
-
   for (auto &&th : *this) {
     th->startCustomJob([&] {
       th->worker->limits = limits;
       th->worker->nodes = 0;
       th->worker->rootDepth = 0;
       th->worker->rootMoves = rootMoves;
-      th->worker->rootPos.set(pos.fen(), th->worker->rootState, th.get());
       th->worker->rootState = states->back();
+      th->worker->rootPos.set(pos.fen(), th->worker->rootState, th.get());
     });
   }
 

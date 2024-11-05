@@ -258,6 +258,8 @@ constexpr bool isShift(Square from, Square to) {
   return distance(from, to) <= 3;
 }
 
+
+
 } // namespace Maestro
 
 #endif // UTILS_HPP
