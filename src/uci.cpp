@@ -164,12 +164,14 @@ void Engine::go(Limits &limits) {
   threads.startThinking(pos, states, limits);
 }
 
-void Engine::stop() {
-  threads.stop = threads.abortedSearch = true;
-  threads.waitForThreads();
-}
+void Engine::stop() { threads.stop = threads.abortedSearch = true; }
 
-void Engine::clear() { threads.clear(); }
+void Engine::clear() {
+  waitForSearchFinish();
+
+  tt.clear(threads);
+  threads.clear();
+}
 
 // Main loop of the chess engine
 void UCI::loop() {

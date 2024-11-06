@@ -60,7 +60,7 @@ TTable TT;
 
 void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
                    U8 gen8) {
-
+  return;
   const U16 k16 = k >> 48;
 
   // Don't overwrite move if we don't have a new one and the position is the
@@ -70,15 +70,16 @@ void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
 
   // Don't overwrite an entry with the same position, unless we have an exact
   // bound or depth is nearly as good as the old one
-  if (flag() != BOUND_EXACT && k16 == key16 && d < depth8 - 2)
+  if (flag() != FLAG_EXACT && k16 == key16 &&
+      d - DEPTH_ENTRY_OFFSET + 2 * pv < depth8 - 4 && relativeAge(gen8))
     return;
 
   // Overwrite less valuable entries
   key16 = k16;
   value16 = v;
   eval16 = ev;
-  genFlag8 = U8(gen8 | (pv << 2) | f);
-  depth8 = U8(d - DEPTH_OFFSET);
+  genFlag8 = U8(gen8 | (U8(pv) << 2) | f);
+  depth8 = U8(d - DEPTH_ENTRY_OFFSET);
 }
 
 U8 TTEntry::relativeAge(U8 gen8) const {
@@ -121,7 +122,7 @@ std::tuple<bool, TTData, TTWriter> TTable::probe(Key key) const {
 int TTable::hashFull(int maxAge) const {
   int cnt = 0;
   for (size_t i = 0; i < 1000; ++i) {
-    for (size_t j = 0; j < bucketCount; ++j)
+    for (size_t j = 0; j < TT_BUCKET_N; ++j)
       if (buckets[i].entries[j].isOccupied()) {
         int age = (gen8 >> 3) - (buckets[i].entries[j].gen8() >> 3);
         if (age < 0)
@@ -130,7 +131,7 @@ int TTable::hashFull(int maxAge) const {
       }
   }
 
-  return cnt / bucketCount;
+  return cnt / TT_BUCKET_N;
 }
 // Resize the transposition table
 void TTable::resize(size_t mb, ThreadPool &threads) {
@@ -166,6 +167,7 @@ void TTable::clear(ThreadPool &threads) {
     });
   }
 
+  threads.main()->waitForThread();
   threads.waitForThreads();
 }
 

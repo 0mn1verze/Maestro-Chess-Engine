@@ -686,9 +686,6 @@ void Position::makeMove(Move move, BoardState &state) {
   // Update state pawn hash key
   st->pawnKey = pawnKey;
 
-  // Update move
-  st->move = move;
-
   // Update repetition
   st->repetition = 0;
 
@@ -710,8 +707,7 @@ void Position::makeMove(Move move, BoardState &state) {
   refreshMasks(*this);
 }
 
-void Position::unmakeMove() {
-  Move move = st->move;
+void Position::unmakeMove(Move move) {
   // Restore side to move
   sideToMove = ~sideToMove;
 
@@ -772,8 +768,6 @@ void Position::makeNullMove(BoardState &state) {
 
   // Update side to move
   sideToMove = ~sideToMove;
-
-  st->move = Move::null();
 
   // Update repetition
   st->repetition = 0;

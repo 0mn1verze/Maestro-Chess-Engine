@@ -41,18 +41,16 @@ void initZobrist();
 \******************************************/
 
 enum TTFlag {
-  BOUND_NONE = 0,
-  BOUND_UPPER = 1,
-  BOUND_LOWER = 2,
-  BOUND_EXACT = 3,
+  FLAG_NONE = 0,
+  FLAG_UPPER = 1,
+  FLAG_LOWER = 2,
+  FLAG_EXACT = 3,
 
-  TT_BOUND_MASK = 0x03,
+  TT_FLAG_MASK = 0x03,
   TT_PV_MASK = 0x04,
   TT_GEN_MASK = 0xF8,
   TT_BUCKET_N = 3,
 };
-
-constexpr int DEPTH_OFFSET = -6;
 
 struct TTData {
   Move move;
@@ -70,11 +68,11 @@ struct TTEntry {
 
   U16 key() const { return key16; }
   Move move() const { return move16; }
-  I16 value() const { return value16; }
-  I16 eval() const { return eval16; }
-  Depth depth() const { return depth8; }
+  Value value() const { return value16; }
+  Value eval() const { return eval16; }
+  Depth depth() const { return depth8 + DEPTH_ENTRY_OFFSET; }
   bool isPV() const { return genFlag8 & TT_PV_MASK; }
-  TTFlag flag() const { return TTFlag(genFlag8 & TT_BOUND_MASK); }
+  TTFlag flag() const { return TTFlag(genFlag8 & TT_FLAG_MASK); }
   U8 gen8() const { return genFlag8 & TT_GEN_MASK; }
   void save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev, U8 gen8);
   U8 relativeAge(U8 gen8) const;

@@ -24,7 +24,7 @@ using Value = int;
 
 using I16 = std::int16_t;
 
-using Depth = std::int8_t;
+using Depth = int;
 using U8 = std::uint8_t;
 
 /******************************************\
@@ -33,13 +33,13 @@ using U8 = std::uint8_t;
 |==========================================|
 \******************************************/
 
-constexpr int MAX_DEPTH = 64;
 constexpr int MAX_MOVES = 256;
 constexpr int MAX_PLY = 128;
-constexpr Value VAL_INFINITE = 50000;
-constexpr Value VAL_MATE_BOUND = 49000;
-constexpr Value VAL_MATE = VAL_MATE_BOUND + MAX_PLY;
-constexpr Value VAL_NONE = VAL_MATE + 1;
+constexpr Value VAL_NONE = 32002;
+constexpr Value VAL_INFINITE = 32001;
+constexpr Value VAL_MATE = 32000;
+constexpr Value VAL_MATE_BOUND = VAL_MATE - MAX_PLY;
+constexpr Value VAL_DRAW = 0;
 
 /******************************************\
 |==========================================|
@@ -109,7 +109,11 @@ enum Colour : int {
     WHITE, BLACK, BOTH, COLOUR_N = 2
 };
 
-constexpr int CONT_N = 2;
+enum : int {
+    DEPTH_QS = 0,
+    DEPTH_UNSEARCHED = -2,
+    DEPTH_ENTRY_OFFSET = -3
+};
 
 /******************************************\
 |==========================================|

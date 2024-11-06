@@ -8,6 +8,7 @@
 
 #include "defs.hpp"
 #include "movegen.hpp"
+#include "movepick.hpp"
 #include "position.hpp"
 #include "thread.hpp"
 #include "utils.hpp"
@@ -25,13 +26,13 @@ U32 perftDriver(Position &pos, int depth) {
   U32 nodes = 0;
   BoardState st{};
 
-  // Loop through all moves
+  // // Loop through all moves
   for (GenMove move : moves) {
     pos.makeMove(move, st);
     // Recurse if depth > 1
     nodes += perftDriver(pos, depth - 1);
 
-    pos.unmakeMove();
+    pos.unmakeMove(move);
   }
 
   return nodes;
@@ -60,7 +61,7 @@ void perftTest(Position &pos, int depth) {
     if (depth > 1)
       count = perftDriver(pos, depth - 1);
     // Unmake move
-    pos.unmakeMove();
+    pos.unmakeMove(move);
     // Print move and node count (For debugging)
     std::cout << "	Move: " << move2Str(move) << " Nodes: " << count
               << std::endl;

@@ -9,30 +9,6 @@
 
 namespace Maestro {
 
-enum GenStage {
-  // Generate main search moves
-  MAIN_TT,
-  CAPTURE_INIT,
-  GOOD_CAPTURE,
-  QUIET_INIT,
-  KILLER1,
-  KILLER2,
-  COUNTER_MOVE,
-  GOOD_QUIET,
-  BAD_CAPTURE,
-  BAD_QUIET,
-
-  // Generate qsearch moves
-  QSEARCH_TT,
-  QCAPTURE_INIT,
-  QCAPTURE,
-
-  // Probe cut search
-  PROBCUT_TT,
-  PROBCUT_INIT,
-  PROBCUT,
-};
-
 // Find the best move index in the list [start to end]
 GenMove MovePicker::bestMove() {
 
@@ -48,20 +24,20 @@ GenMove MovePicker::bestMove() {
   return GenMove::none();
 }
 
-bool MovePicker::contains(GenMove move) {
-  GenMove *m = std::find(begin(), end(), move);
+bool MovePicker::contains(Move move) {
+  GenMove *m = std::find(begin(), end(), GenMove(move));
   return m != end();
 }
 
-MovePicker::MovePicker(const Position &pos, GenMove ttm, Depth depth,
+MovePicker::MovePicker(const Position &pos, Move ttm, Depth depth,
                        const KillerTable *kt, const CounterMoveTable *cmt,
                        const HistoryTable *ht, const CaptureHistoryTable *cht,
-                       const ContinuationHistory **ch, int ply)
+                       const ContinuationHistory **ch, int ply, Move prev)
     : kt(kt), cmt(cmt), ht(ht), cht(cht), ch(ch), pos(pos), ttMove(ttm),
       cur(moves), endMoves(moves), depth(depth), ply(ply),
-      skipQuiets(depth == 0) {
+      skipQuiets(depth == DEPTH_QS) {
 
-  Move prevMove = ply > 0 ? pos.state()->move : Move::none();
+  Move prevMove = ply > 0 ? prev : Move::none();
   counterMove =
       (*cmt)[~pos.getSideToMove()][pos.getPiece(prevMove.to())][prevMove.to()];
   killer1 = (*kt)[ply][0];
@@ -74,16 +50,15 @@ MovePicker::MovePicker(const Position &pos, GenMove ttm, Depth depth,
   if (pos.isCapture(killer2))
     killer2 = GenMove::none();
 
-  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) +
-          !(ttm.move and pos.isPseudoLegal(ttm));
+  stage =
+      (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm and pos.isPseudoLegal(ttm));
 }
 
-MovePicker::MovePicker(const Position &pos, GenMove ttm, int threshold,
+MovePicker::MovePicker(const Position &pos, Move ttm, int threshold,
                        const CaptureHistoryTable *cht)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
-  stage = PROBCUT_TT +
-          !(ttm.move and pos.isCapture(ttm) and pos.isPseudoLegal(ttm));
+  stage = PROBCUT_TT + !(ttm and pos.isCapture(ttm) and pos.isPseudoLegal(ttm));
 }
 
 // Assigns numerical value to each move in a list [start to end]
@@ -93,8 +68,8 @@ template <GenType Type> void MovePicker::score() {
 
   for (auto &m : *this) {
 
-    const Square to = m.move.to();
-    const Square from = m.move.from();
+    const Square to = m.to();
+    const Square from = m.from();
 
     const PieceType captured = pos.captured(m);
     const PieceType piece = pos.movedPiece(m);
@@ -103,7 +78,7 @@ template <GenType Type> void MovePicker::score() {
     const bool threatTo = pos.state()->attacked & to;
 
     if constexpr (Type == CAPTURES)
-      m.score = 64000 + 64000 * (m.move.promoted() == QUEEN) +
+      m.score = 64000 + 64000 * (m.promoted() == QUEEN) +
                 (*cht)[piece][threatFrom][threatTo][to][captured] +
                 MVVAugment[captured];
     else if constexpr (Type == QUIETS) {
@@ -123,8 +98,7 @@ Move MovePicker::selectNext() {
   case QSEARCH_TT:
   case MAIN_TT:
     stage++;
-    if ((pos.isCapture(ttMove) || !skipQuiets) and pos.isPseudoLegal(ttMove))
-      return ttMove;
+    return ttMove;
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
   case CAPTURE_INIT:
@@ -155,19 +129,18 @@ Move MovePicker::selectNext() {
     [[fallthrough]];
   case KILLER1:
     stage++;
-    if (!skipQuiets and killer1.move != ttMove and contains(killer1))
+    if (!skipQuiets and killer1 != ttMove and contains(killer1))
       return killer1;
     [[fallthrough]];
   case KILLER2:
     stage++;
-    if (!skipQuiets and killer2.move != ttMove and contains(killer2))
+    if (!skipQuiets and killer2 != ttMove and contains(killer2))
       return killer2;
     [[fallthrough]];
   case COUNTER_MOVE:
     stage++;
-    if (!skipQuiets and counterMove.move != ttMove and
-        counterMove.move != killer1 and counterMove.move != killer2 and
-        contains(counterMove))
+    if (!skipQuiets and counterMove != ttMove and counterMove != killer1 and
+        counterMove != killer2 and contains(counterMove))
       return counterMove;
     [[fallthrough]];
   case GOOD_QUIET:

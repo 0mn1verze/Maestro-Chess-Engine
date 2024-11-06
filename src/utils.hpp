@@ -207,11 +207,6 @@ inline std::string to_lower(std::string str) {
   return str;
 }
 
-inline std::ostream &operator<<(std::ostream &os, Depth d) {
-  os << int(d);
-  return os;
-}
-
 /******************************************\
 |==========================================|
 |                   Time                   |
@@ -257,8 +252,6 @@ constexpr int distance(Square sq1, Square sq2) { return dist[sq1][sq2]; }
 constexpr bool isShift(Square from, Square to) {
   return distance(from, to) <= 3;
 }
-
-
 
 } // namespace Maestro
 

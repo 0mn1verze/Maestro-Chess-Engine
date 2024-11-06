@@ -55,7 +55,6 @@ struct BoardState {
   Key pawnKey;
   Piece captured = NO_PIECE;
   int repetition;
-  Move move = Move::none();
   Bitboard checkMask = FULLBB;
   Bitboard rookPin, bishopPin, kingBan, kingAttacks, available, attacked,
       pinned[COLOUR_N], pinners[COLOUR_N];
@@ -99,7 +98,7 @@ public:
 
   // Making and unmaking moves
   void makeMove(Move move, BoardState &state);
-  void unmakeMove();
+  void unmakeMove(Move move);
   void makeNullMove(BoardState &state);
   void unmakeNullMove();
 
@@ -112,7 +111,6 @@ public:
   Piece getCaptured() const;
   int getFiftyMove() const;
   Key getKey() const;
-  Castling castling(Colour c) const;
   bool canCastle(Castling cr) const;
   bool isInCheck() const;
   bool isDraw(int ply) const;
@@ -161,7 +159,7 @@ public:
   Bitboard blockersForKing() const;
 
   // Static Exchange Evaluation
-  bool SEE(Move move, int threshold) const;
+  bool SEE(Move move, int threshold = 0) const;
 
   // Gives check
   bool givesCheck(Move move) const;

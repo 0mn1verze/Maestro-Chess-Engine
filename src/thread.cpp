@@ -128,6 +128,10 @@ void ThreadPool::clear() {
 
   for (auto &&th : *this)
     th->waitForThread(); // Wait for thread to finish
+
+  main()->worker->bestPreviousAvgScore = VAL_INFINITE;
+  main()->worker->bestPreviousScore = VAL_INFINITE;
+  main()->worker->tm.clear(); // Clear time manager
 }
 
 Thread *ThreadPool::getBestThread() {

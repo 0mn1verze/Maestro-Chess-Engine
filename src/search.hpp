@@ -52,13 +52,17 @@ public:
 
   TimePt elapsed() const { return getTimeMs() - startTime; }
 
+  void clear() {
+    startTime = optimumTime = maximumTime = 0;
+  } // Clear time manager
+
 private:
   TimePt startTime;
   TimePt optimumTime;
   TimePt maximumTime;
 };
 
-enum NodeType { PV, CUT, ROOT };
+enum NodeType { PV, NON_PV, ROOT };
 
 /******************************************\
 |==========================================|
@@ -182,6 +186,9 @@ private:
   void updateKillerMoves(Move move, int ply);
 
   void updateCounterMoves(const Position &pos, Move move, Square prevSq);
+
+  Value getCaptureHistory(const Position &pos, Move move) const;
+  Value getQuietHistory(const Position &pos, Move move) const;
 
   size_t threadId;
   SearchState &sharedState;

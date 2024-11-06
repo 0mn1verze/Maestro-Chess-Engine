@@ -54,7 +54,7 @@ struct Stats<T, D, N> : public std::array<StatsEntry<T, D>, N> {};
 enum { NOT_USED, HISTORY = 16384 };
 
 // Killer table [Ply][Move]
-using KillerTable = Stats<Move, NOT_USED, MAX_DEPTH + 1, 2>;
+using KillerTable = Stats<Move, NOT_USED, MAX_PLY + 1, 2>;
 
 // Counter move table [Colour][PieceType][To]
 using CounterMoveTable = Stats<Move, NOT_USED, COLOUR_N, PIECE_TYPE_N, SQ_N>;
@@ -80,17 +80,42 @@ using ContinuationTable =
 |==========================================|
 \******************************************/
 
+enum GenStage {
+  // Generate main search moves
+  MAIN_TT,
+  CAPTURE_INIT,
+  GOOD_CAPTURE,
+  QUIET_INIT,
+  KILLER1,
+  KILLER2,
+  COUNTER_MOVE,
+  GOOD_QUIET,
+  BAD_CAPTURE,
+  BAD_QUIET,
+
+  // Generate qsearch moves
+  QSEARCH_TT,
+  QCAPTURE_INIT,
+  QCAPTURE,
+
+  // Probe cut search
+  PROBCUT_TT,
+  PROBCUT_INIT,
+  PROBCUT,
+};
+
 class MovePicker {
 
 public:
-  MovePicker(const Position &pos, GenMove ttm, Depth depth,
-             const KillerTable *kt, const CounterMoveTable *cmt,
-             const HistoryTable *ht, const CaptureHistoryTable *cht,
-             const ContinuationHistory **ch, int ply);
-  MovePicker(const Position &pos, GenMove ttm, int threshold,
+  MovePicker(const Position &pos, Move ttm, Depth depth, const KillerTable *kt,
+             const CounterMoveTable *cmt, const HistoryTable *ht,
+             const CaptureHistoryTable *cht, const ContinuationHistory **ch,
+             int ply, Move prev);
+  MovePicker(const Position &pos, Move ttm, int threshold,
              const CaptureHistoryTable *cht);
 
   Move selectNext();
+  void skipQuietMoves() { skipQuiets = true; }
 
   int stage;
 
@@ -101,7 +126,7 @@ private:
   template <GenType Type> void score();
 
   GenMove bestMove();
-  bool contains(GenMove move);
+  bool contains(Move move);
 
   bool isSpecial(GenMove *move) {
     return move->move == ttMove || move->move == counterMove ||
@@ -116,7 +141,7 @@ private:
 
   const Position &pos;
 
-  GenMove ttMove, killer1, killer2, counterMove;
+  Move ttMove, killer1, killer2, counterMove;
   GenMove *cur, *endCaptures, *startQuiet, *endQuiet, *endMoves;
 
   int threshold;
