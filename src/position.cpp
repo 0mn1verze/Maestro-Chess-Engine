@@ -967,40 +967,51 @@ bool Position::SEE(Move move, int threshold) const {
   return bool(res);
 }
 
-// // Check if move gives check
-// bool Position::givesCheck(Move move) const {
-//   Square from = move.from();
-//   Square to = move.to();
-//   PieceType pt = getPieceType(from);
-//   Colour us = sideToMove;
-//   Square enemyKing = square<KING>(~us);
+// Check if move gives check
+bool Position::givesCheck(Move move) const {
+  Square from = move.from();
+  Square to = move.to();
+  PieceType pt = getPieceType(from);
+  Colour us = sideToMove;
+  Square enemyKing = square<KING>(~us);
 
-//   if (attacksBB(pt, to, getOccupiedBB()) & enemyKing)
-//     return true;
-//   // Check for discovered check
-//   if (pinned[~us] & from)
-//   Square capsq, rto;
-//   Bitboard b;
+  if (attacksBB(pt, to, getOccupiedBB()) & enemyKing)
+    return true;
 
-//   switch (move.flag()) {
-//   case NORMAL:
-//     return false;
-//   case PROMOTION:
-//     return attacksBB(move.promoted(), to, getOccupiedBB() ^ from) &
-//     enemyKing;
-//   case EN_PASSANT:
-//     capsq = getEnPassantTarget(us);
-//     b = (getOccupiedBB() ^ from ^ capsq) | to;
+  Bitboard attackers =
+      attacksBB<BISHOP>(enemyKing, getPiecesBB(us, BISHOP, QUEEN)) |
+      attacksBB<ROOK>(enemyKing, getPiecesBB(us, ROOK, QUEEN));
 
-//     return (attacksBB<BISHOP>(enemyKing, b) & getPiecesBB(us, BISHOP, QUEEN))
-//     |
-//            (attacksBB<ROOK>(enemyKing, b) & getPiecesBB(us, ROOK, QUEEN));
-//   case CASTLE:
-//     rto = relativeSquare(us, to > from ? F1 : D1);
+  attackers &= lineBB[enemyKing][from];
 
-//     return attacksBB<ROOK>(rto, getOccupiedBB()) & enemyKing;
-//   default:
-//     return false;
-//   }
+  if (attackers) {
+    Square sq = popLSB(attackers);
+    Bitboard b = betweenBB[sq][enemyKing] & getOccupiedBB();
+    if (b and !moreThanOne(b))
+      return !aligned(from, to, enemyKing) || move.is<CASTLE>();
+  }
+
+  Square capsq, rto;
+  Bitboard b;
+
+  switch (move.flag()) {
+  case NORMAL:
+    return false;
+  case PROMOTION:
+    return attacksBB(move.promoted(), to, getOccupiedBB() ^ from) & enemyKing;
+  case EN_PASSANT:
+    capsq = getEnPassantTarget(us);
+    b = (getOccupiedBB() ^ from ^ capsq) | to;
+    return (attacksBB<BISHOP>(enemyKing, b) & getPiecesBB(us, BISHOP, QUEEN)) |
+           (attacksBB<ROOK>(enemyKing, b) & getPiecesBB(us, ROOK, QUEEN));
+  case CASTLE:
+    rto = relativeSquare(us, to > from ? F1 : D1);
+    return attacksBB<ROOK>(rto, getOccupiedBB()) & enemyKing;
+  default:
+    return false;
+  }
+
+  return false;
+}
 
 } // namespace Maestro

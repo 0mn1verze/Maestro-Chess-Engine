@@ -60,7 +60,6 @@ TTable TT;
 
 void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
                    U8 gen8) {
-  return;
   const U16 k16 = k >> 48;
 
   // Don't overwrite move if we don't have a new one and the position is the

@@ -5,6 +5,7 @@
 #include "move.hpp"
 #include "movepick.hpp"
 #include "position.hpp"
+#include "search.hpp"
 #include "utils.hpp"
 
 namespace Maestro {
@@ -29,17 +30,18 @@ bool MovePicker::contains(Move move) {
   return m != end();
 }
 
-MovePicker::MovePicker(const Position &pos, Move ttm, Depth depth,
-                       const KillerTable *kt, const CounterMoveTable *cmt,
-                       const HistoryTable *ht, const CaptureHistoryTable *cht,
-                       const ContinuationHistory **ch, int ply, Move prev)
-    : kt(kt), cmt(cmt), ht(ht), cht(cht), ch(ch), pos(pos), ttMove(ttm),
-      cur(moves), endMoves(moves), depth(depth), ply(ply),
+MovePicker::MovePicker(const SearchWorker &sw, const Position &pos,
+                       SearchStack *ss, Move ttm,
+                       const ContinuationHistory **ch, Depth depth)
+    : kt(&sw.killerTable), cmt(&sw.counterMoveTable), ht(&sw.historyTable),
+      cht(&sw.captureHistoryTable), ch(ch), pos(pos), ttMove(ttm), cur(moves),
+      endMoves(moves), depth(depth), ply(ss->ply),
       skipQuiets(depth == DEPTH_QS) {
+  Move prevMove = ply > 0 ? (ss - 1)->currentMove : Move::none();
 
-  Move prevMove = ply > 0 ? prev : Move::none();
   counterMove =
       (*cmt)[~pos.getSideToMove()][pos.getPiece(prevMove.to())][prevMove.to()];
+
   killer1 = (*kt)[ply][0];
   killer2 = (*kt)[ply][1];
 
@@ -54,8 +56,7 @@ MovePicker::MovePicker(const Position &pos, Move ttm, Depth depth,
       (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm and pos.isPseudoLegal(ttm));
 }
 
-MovePicker::MovePicker(const Position &pos, Move ttm, int threshold,
-                       const CaptureHistoryTable *cht)
+MovePicker::MovePicker(const Position &pos, Move ttm, int threshold)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
   stage = PROBCUT_TT + !(ttm and pos.isCapture(ttm) and pos.isPseudoLegal(ttm));
@@ -68,17 +69,17 @@ template <GenType Type> void MovePicker::score() {
 
   for (auto &m : *this) {
 
-    const Square to = m.to();
-    const Square from = m.from();
+    const Square to = m.move.to();
+    const Square from = m.move.from();
 
     const PieceType captured = pos.captured(m);
-    const PieceType piece = pos.movedPiece(m);
+    const PieceType piece = pos.movedPieceType(m);
 
     const bool threatFrom = pos.state()->attacked & from;
     const bool threatTo = pos.state()->attacked & to;
 
     if constexpr (Type == CAPTURES)
-      m.score = 64000 + 64000 * (m.promoted() == QUEEN) +
+      m.score = 64000 + 64000 * (m.move.promoted() == QUEEN) +
                 (*cht)[piece][threatFrom][threatTo][to][captured] +
                 MVVAugment[captured];
     else if constexpr (Type == QUIETS) {

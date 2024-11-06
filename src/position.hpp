@@ -116,7 +116,7 @@ public:
   bool isDraw(int ply) const;
   bool isCapture(Move move) const;
   PieceType captured(Move move) const;
-  PieceType movedPiece(Move move) const;
+  PieceType movedPieceType(Move move) const;
   Score psq() const;
   int gamePhase() const;
   bool empty(Square sq) const;
@@ -277,7 +277,7 @@ inline PieceType Position::captured(Move move) const {
   return move.is<NORMAL>() ? getPieceType(move.to()) : PAWN;
 }
 
-inline PieceType Position::movedPiece(Move move) const {
+inline PieceType Position::movedPieceType(Move move) const {
   return getPieceType(move.from());
 }
 

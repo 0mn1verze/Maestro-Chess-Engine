@@ -104,15 +104,17 @@ enum GenStage {
   PROBCUT,
 };
 
+class SearchWorker;
+struct SearchStack;
+
 class MovePicker {
 
 public:
-  MovePicker(const Position &pos, Move ttm, Depth depth, const KillerTable *kt,
-             const CounterMoveTable *cmt, const HistoryTable *ht,
-             const CaptureHistoryTable *cht, const ContinuationHistory **ch,
-             int ply, Move prev);
-  MovePicker(const Position &pos, Move ttm, int threshold,
-             const CaptureHistoryTable *cht);
+  MovePicker(const SearchWorker &sw, const Position &pos, SearchStack *ss,
+             Move ttm, const ContinuationHistory **ch, Depth depth);
+
+  MovePicker(const Position &pos, Move ttm,
+             int threshold);
 
   Move selectNext();
   void skipQuietMoves() { skipQuiets = true; }
