@@ -67,6 +67,8 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   nnue_init(NNUE_FILE.data());
   // Initialise thread pool
   resizeThreads(config.threads);
+  // Initialise LMR values
+  initLMR();
   // Initialise transposition table
   tt.resize(config.hashSize, threads);
   // Set starting position

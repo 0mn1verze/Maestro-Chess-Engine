@@ -213,6 +213,8 @@ private:
   friend class ThreadPool;
 };
 
+void initLMR();
+
 } // namespace Maestro
 
 #endif // SEARCH_HPP
