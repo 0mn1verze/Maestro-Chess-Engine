@@ -175,12 +175,12 @@ private:
   void updateAllStats(const Position &pos, SearchStack *ss, Move bestMove,
                       Square prevSq, std::vector<Move> &quietsSearched,
                       std::vector<Move> &capturesSearched, Depth depth);
-  void updateQuietHistories(const Position &pos, SearchStack *ss, Move move,
+  void updateQuietHistory(const Position &pos, SearchStack *ss, Move move,
+                          int bonus);
+  void updateCaptureHistory(const Position &pos, SearchStack *ss, Move move,
                             int bonus);
-  void updateCaptureHistories(const Position &pos, SearchStack *ss, Move move,
-                              int bonus);
-  void updateContinuationHistories(SearchStack *ss, PieceType pt, Square to,
-                                   int bonus);
+  void updateContinuationHistory(SearchStack *ss, PieceType pt, Square to,
+                                 int bonus);
   void updateKillerMoves(Move move, int ply);
 
   void updateCounterMoves(const Position &pos, Move move, Square prevSq);
@@ -207,6 +207,8 @@ private:
   Value rootDelta;
 
   Value bestPreviousScore, bestPreviousAvgScore;
+
+  int failHigh, failHighFirst;
 
   friend class ThreadPool;
 };

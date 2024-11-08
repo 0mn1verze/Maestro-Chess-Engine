@@ -60,6 +60,8 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   initZobrist();
   // Initialize evaluation
   Eval::initEval();
+  // Initialise NNUE
+  nnue_init(NNUE_FILE.data());
   // Initialize polyglot book
   initPolyBook(book, BOOK_FILE.data());
   // Initialise thread pool
@@ -151,7 +153,7 @@ void Engine::perft(Limits &limits) { perftTest(pos, limits.depth); }
 void Engine::bench() { perftBench(threads, BENCH_FILE.data()); }
 
 void Engine::go(Limits &limits) {
-
+  threads.stop = threads.abortedSearch = false;
   if (DEFAULT_USE_BOOK and !limits.infinite) {
     Move bookMove = getPolyBookMove(book, pos);
 
@@ -160,6 +162,7 @@ void Engine::go(Limits &limits) {
       return;
     }
   }
+
   threads.startThinking(pos, states, limits);
 }
 
@@ -288,6 +291,11 @@ void UCI::pos(std::istringstream &is) {
     moves.push_back(token);
 
   engine.setPosition(fen, moves);
+}
+
+void UCI::uciReportCurrentMove(Depth depth, Move move, int currmove) {
+  std::cout << "info depth " << depth << " currmove " << move2Str(move)
+            << " currmovenumber " << currmove << std::endl;
 }
 
 void UCI::uciReport(const PrintInfo &info) {

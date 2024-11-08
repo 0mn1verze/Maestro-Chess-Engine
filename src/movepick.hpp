@@ -112,8 +112,7 @@ class MovePicker {
 public:
   MovePicker(const SearchWorker &sw, const Position &pos, SearchStack *ss,
              Move ttm, const ContinuationHistory **ch, Depth depth);
-
-  MovePicker(const Position &pos, Move ttm,
+  MovePicker(const Position &pos, Move ttm, const CaptureHistoryTable *cht,
              int threshold);
 
   Move selectNext();

@@ -46,8 +46,6 @@ void SearchWorker::getPV(SearchWorker &best, Depth depth) const {
   for (size_t i = 0; i < sharedState.config.multiPV; ++i) {
     bool updated = rootMoves[i].score != -VAL_INFINITE;
 
-    std::cout << "rootMove score: " << rootMoves[i].score << std::endl;
-
     if (depth == 1 && !updated && i > 0)
       continue;
 
@@ -239,7 +237,8 @@ void SearchWorker::iterativeDeepening() {
       threads.stop = true;
 
     if (limits.useTimeManagement() && !threads.stop &&
-        checkTM(lastBestMoveDepth, pvStability, bestValue))
+        (checkTM(lastBestMoveDepth, pvStability, bestValue) ||
+         tm.elapsed() >= tm.maximum()))
       threads.stop = threads.abortedSearch = true;
   }
 }
@@ -249,6 +248,9 @@ void SearchWorker::searchPosition(SearchStack *ss, Value &bestValue) {
   // Reset length of PV
   selDepth = 0;
 
+  failHigh = 0;
+  failHighFirst = 0;
+
   bestValue =
       search<ROOT>(rootPos, ss, rootDepth, -VAL_INFINITE, VAL_INFINITE, false);
 
@@ -257,16 +259,6 @@ void SearchWorker::searchPosition(SearchStack *ss, Value &bestValue) {
     return;
 
   std::stable_sort(rootMoves.begin(), rootMoves.end());
-
-  std::cout << "Best value: " << bestValue
-            << ", Root Move Score: " << rootMoves[0].score
-            << ", Root Move Prev Score: " << rootMoves[0].prevScore
-            << std::endl;
-
-  for (auto &rm : rootMoves) {
-    std::cout << "Root Move: " << move2Str(rm.pv[0]) << ", Score: " << rm.score
-              << ", Prev Score: " << rm.prevScore << std::endl;
-  }
 
   // Print PV if its the main thread, the loop is the last one or the node
   // count exceeds 10M, && the result isn't an unproven mate search
@@ -298,9 +290,9 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
   Key hashKey;
   Move move, bestMove, excludedMove;
-  Value bestValue, value, hist;
+  Value bestValue, value, hist, probCutBeta;
   Depth newDepth, R;
-  bool givesCheck, improving, prevCapture;
+  bool givesCheck, improving, prevCapture, oppWorsening;
   bool isCapture, ttCapture;
   PieceType movedPieceType;
   Square prevSq;
@@ -321,6 +313,9 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // Check for remaining time
   if (isMainThread())
     checkTime();
+
+  // Update node count
+  nodes.fetch_add(1, std::memory_order_relaxed);
 
   // Update seldepth to sent to GUI
   if (pvNode)
@@ -364,6 +359,15 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
       ttData.value != VAL_NONE &&
       (ttData.flag & (ttData.value >= beta ? FLAG_LOWER : FLAG_UPPER)) &&
       pos.getFiftyMove() < 90) {
+
+    if (ttData.move && ttData.value >= beta) {
+      if (!ttCapture)
+        updateQuietHistory(pos, ss, ttData.move, statBonus(depth));
+      if (prevSq != NO_SQ && (ss - 1)->moveCount <= 2 && !prevCapture)
+        updateContinuationHistory(ss - 1, pos.getPieceType(prevSq), prevSq,
+                                  -statBonus(depth + 1));
+    }
+
     return ttData.value;
   }
 
@@ -384,17 +388,31 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
                    Move::none(), ss->staticEval, tt.gen8);
   }
 
+  // Set improving flag (Whether the position is better than the previous one)
+  improving = ss->staticEval > (ss - 2)->staticEval;
+
+  // Set opponent worsening flag (Whether the opponent's position is worse than)
+  oppWorsening = ss->staticEval + (ss - 1)->staticEval > 2;
+
+  // Futility pruning (If eval is well enough, assume the eval will hold above
+  // beta or cause a cutoff)
+  if (!pvNode && !ss->inCheck && !excludedMove && depth <= 8 &&
+      ss->staticEval - 65 * std::max(0, depth - improving) >= beta)
+    return ss->staticEval;
+
   // Null Move Pruning
   if (cutNode && (ss - 1)->currentMove != Move::null() && depth >= 2 &&
-      ss->staticEval >= beta && !excludedMove && pos.getNonPawnMaterial(us) &&
-      beta > VAL_MATE_BOUND) {
+      ss->staticEval >= beta - 23 * depth + 400 && !excludedMove &&
+      pos.getNonPawnMaterial(us) && beta > VAL_MATE_BOUND) {
 
-    R = 2;
+    R = std::min(int(ss->staticEval - beta) / 209, 6) + depth / 3 + 5;
 
     ss->currentMove = Move::null();
     ss->ch = &continuationTable[0][0][NO_PIECE][A1];
 
     pos.makeNullMove(st);
+    // Prefetch the next entry in the TT
+    TTable::prefetch(tt.firstEntry(pos.getKey()));
 
     Value nullValue =
         -search<NON_PV>(pos, ss + 1, depth - R, -beta, -beta + 1, false);
@@ -403,6 +421,61 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
     if (nullValue >= beta && nullValue < VAL_MATE_BOUND)
       return nullValue;
+  }
+  // Internal iterative deepening
+  if (pvNode && !ttData.move)
+    depth -= 3;
+
+  // Check for quiescence search
+  if (depth <= 0)
+    return qSearch<PV>(pos, ss, alpha, beta);
+
+  if (cutNode && depth >= 7 and (!ttData.move || ttData.flag == FLAG_UPPER))
+    depth -= 2;
+
+  // Probcut
+  // If we have a good enough capture or queen promotion, and a previoussearch
+  // returns a value a lot high than beta, we can safely prune the move
+  probCutBeta = beta + 200 - 50 * improving - 30 * oppWorsening;
+  if (!pvNode && depth > 3 && std::abs(beta) < VAL_MATE_BOUND &&
+      !(ttData.depth >= depth - 3 && ttData.value != VAL_NONE &&
+        ttData.value < probCutBeta)) {
+
+    MovePicker mp(pos, ttData.move, &captureHistoryTable,
+                  probCutBeta - ss->staticEval);
+    Piece captured;
+
+    while ((move = mp.selectNext()) != Move::none()) {
+
+      if (move == excludedMove)
+        continue;
+
+      ss->currentMove = move;
+      ss->ch = &continuationTable[ss->inCheck][true][pos.movedPieceType(move)]
+                                 [move.to()];
+
+      pos.makeMove(move, st);
+
+      // Perform a preliminary qsearch to verify that the move holds
+      value = -qSearch<NON_PV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
+
+      // If the qsearch held, perform the regular search
+      if (value >= probCutBeta)
+        value = -search<NON_PV>(pos, ss + 1, depth - 4, -probCutBeta,
+                                -probCutBeta + 1, !cutNode);
+
+      pos.unmakeMove(move);
+
+      if (value >= probCutBeta) {
+        updateCaptureHistory(pos, ss, move, statBonus(depth - 2));
+
+        ttWriter.write(hashKey, TTable::valueToTT(value, ss->ply), ss->ttPV,
+                       FLAG_LOWER, depth - 3, move, ss->staticEval, tt.gen8);
+
+        return std::abs(value) <= VAL_MATE_BOUND ? value - (probCutBeta - beta)
+                                                 : value;
+      }
+    }
   }
 
 moves_loop:
@@ -415,7 +488,6 @@ moves_loop:
   value = bestValue;
 
   while ((move = mp.selectNext()) != Move::none()) {
-
     // Skip excluded move
     if (move == excludedMove)
       continue;
@@ -443,22 +515,49 @@ moves_loop:
     // Calculate new depth
     newDepth = depth - 1;
 
+    // Late move pruning
+    if (!rootNode && pos.getNonPawnMaterial(us) && bestValue > VAL_MATE_BOUND) {
+
+      if (depth <= 8 && moveCount >= LateMovePruningCounts[improving][depth])
+        mp.skipQuietMoves();
+    }
+
     // Update current move
     ss->currentMove = move;
     ss->ch =
         &continuationTable[ss->inCheck][isCapture][movedPieceType][move.to()];
     U64 nodeCount = rootNode ? U64(nodes) : 0;
 
+    // Output current move to UCI
+    if (rootNode && isMainThread() && tm.elapsed() > 2500)
+      UCI::uciReportCurrentMove(depth, move, moveCount + pvIdx);
+
     // Make the move
-    nodes.fetch_add(1, std::memory_order_relaxed);
     pos.makeMove(move, st);
+    // Prefetch the next entry in the TT
+    TTable::prefetch(tt.firstEntry(pos.getKey()));
 
     // Late move reduction
     if (depth >= 2 && moveCount > 1) {
-      value = -search<NON_PV>(pos, ss + 1, std::max(1, newDepth - 1),
+
+      if (!isCapture) {
+        R = LMRTable[std::min(63, depth)][std::min(63, moveCount)];
+
+        R += ss->inCheck && movedPieceType == KING;
+
+        R -= mp.stage < COUNTER_MOVE;
+
+        R -= hist / 6000;
+      } else {
+        R = 2 - (hist / 5000);
+
+        R -= givesCheck;
+      }
+
+      value = -search<NON_PV>(pos, ss + 1, std::max(1, newDepth - R),
                               -alpha - 1, -alpha, true);
 
-      if (value > alpha)
+      if (value > alpha && R > 1)
         value = -search<NON_PV>(pos, ss + 1, newDepth, -alpha - 1, -alpha,
                                 !cutNode);
     } else if (!pvNode || moveCount > 1)
@@ -483,6 +582,7 @@ moves_loop:
 
     // Update best move
     if (rootNode) {
+
       RootMove &rm = *std::find(rootMoves.begin(), rootMoves.end(), move);
 
       rm.effort = nodes - nodeCount;
@@ -512,8 +612,12 @@ moves_loop:
         if (pvNode && !rootNode)
           updatePV(ss->pv, move, (ss + 1)->pv);
 
-        if (value >= beta)
+        if (value >= beta) {
+          if (moveCount == 1)
+            failHighFirst++;
+          failHigh++;
           break;
+        }
 
         alpha = value;
       }
@@ -534,7 +638,6 @@ moves_loop:
   else if (bestMove)
     updateAllStats(pos, ss, bestMove, prevSq, quietsSearched, capturesSearched,
                    depth);
-
   // Write to TT, save static eval
   if (!excludedMove && !(rootNode && pvIdx))
     ttWriter.write(hashKey, TTable::valueToTT(bestValue, ss->ply), ss->ttPV,
@@ -573,7 +676,9 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
   bestMove = Move::none();
   ss->inCheck = pos.isInCheck();
   moveCount = 0;
-
+  // Update node count
+  nodes.fetch_add(1, std::memory_order_relaxed);
+  // Update seldepth to sent to GUI
   if (pvNode)
     selDepth = std::max(selDepth, ss->ply + 1);
 
@@ -633,8 +738,9 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
                                [pos.movedPieceType(move)][move.to()];
 
     // Make the move
-    nodes.fetch_add(1, std::memory_order_relaxed);
     pos.makeMove(move, st);
+    // Prefetch the next entry in the TT
+    TTable::prefetch(tt.firstEntry(pos.getKey()));
 
     // Recursive quiescence search
     value = -qSearch<nodeType>(pos, ss + 1, -beta, -alpha);
@@ -651,8 +757,12 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
         if (pvNode && !rootNode)
           updatePV(ss->pv, move, (ss + 1)->pv);
 
-        if (value >= beta)
+        if (value >= beta) {
+          if (moveCount == 1)
+            failHighFirst++;
+          failHigh++;
           break;
+        }
 
         alpha = value;
       }
@@ -679,28 +789,30 @@ void SearchWorker::updateAllStats(const Position &pos, SearchStack *ss,
   const Square to = bestMove.to();
 
   if (!pos.isCapture(bestMove)) {
-    updateQuietHistories(pos, ss, bestMove, bonus);
+    updateQuietHistory(pos, ss, bestMove, bonus);
+    updateContinuationHistory(ss, pos.movedPieceType(bestMove), to, bonus);
 
     updateKillerMoves(bestMove, ss->ply);
     updateCounterMoves(pos, bestMove, prevSq);
 
-    for (Move m : quietsSearched)
-      updateQuietHistories(pos, ss, m, -bonus);
+    for (Move m : quietsSearched) {
+      updateQuietHistory(pos, ss, m, -bonus);
+      updateContinuationHistory(ss, pos.movedPieceType(m), to, -bonus);
+    }
   } else
-    updateCaptureHistories(pos, ss, bestMove, bonus);
+    updateCaptureHistory(pos, ss, bestMove, bonus);
 
   // Extra penalty for early quiet move that is not a tt move in previous ply
   if (prevSq != NO_SQ && (ss - 1)->moveCount == 1 + (ss - 1)->ttHit &&
       !pos.getCaptured())
-    updateContinuationHistories(ss - 1, pos.getPieceType(prevSq), prevSq,
-                                -bonus);
+    updateContinuationHistory(ss - 1, pos.getPieceType(prevSq), prevSq, -bonus);
 
   for (Move m : capturesSearched)
-    updateCaptureHistories(pos, ss, m, -bonus);
+    updateCaptureHistory(pos, ss, m, -bonus);
 }
 
-void SearchWorker::updateQuietHistories(const Position &pos, SearchStack *ss,
-                                        Move move, int bonus) {
+void SearchWorker::updateQuietHistory(const Position &pos, SearchStack *ss,
+                                      Move move, int bonus) {
 
   const Square from = move.from();
   const Square to = move.to();
@@ -711,8 +823,6 @@ void SearchWorker::updateQuietHistories(const Position &pos, SearchStack *ss,
   const bool threatTo = pos.state()->attacked & to;
 
   historyTable[us][threatFrom][threatTo][from][to] << bonus;
-
-  updateContinuationHistories(ss, pos.movedPieceType(move), to, bonus);
 }
 
 void SearchWorker::updateKillerMoves(Move move, int ply) {
@@ -730,8 +840,8 @@ void SearchWorker::updateCounterMoves(const Position &pos, Move move,
   counterMoveTable[~pos.getSideToMove()][pt][to] = move;
 }
 
-void SearchWorker::updateCaptureHistories(const Position &pos, SearchStack *ss,
-                                          Move move, int bonus) {
+void SearchWorker::updateCaptureHistory(const Position &pos, SearchStack *ss,
+                                        Move move, int bonus) {
   const Square to = move.to();
   const Square from = move.from();
 
@@ -769,8 +879,8 @@ Value SearchWorker::getQuietHistory(const Position &pos, Move move) const {
   return historyTable[us][threatFrom][threatTo][from][to];
 }
 
-void SearchWorker::updateContinuationHistories(SearchStack *ss, PieceType pt,
-                                               Square to, int bonus) {
+void SearchWorker::updateContinuationHistory(SearchStack *ss, PieceType pt,
+                                             Square to, int bonus) {
   for (int i : {1, 2, 3, 4}) {
     // Only update the first two continuation if we are in check, as
     // the continuations would be easily broken in this scenario,

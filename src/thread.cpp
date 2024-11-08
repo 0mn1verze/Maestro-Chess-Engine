@@ -168,8 +168,6 @@ struct Limits;
 
 void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
 
-  stop = abortedSearch = false;
-
   main()->waitForThread(); // Wait for main thread to finish
 
   RootMoves rootMoves;

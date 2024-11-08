@@ -7,6 +7,7 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "nnue.hpp"
 
 namespace Maestro {
 
@@ -59,6 +60,7 @@ struct BoardState {
       pinned[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
 
+  NNUEdata nnueData;
   // Previous pieceList state
   BoardState *previous;
 };
@@ -160,6 +162,9 @@ public:
 
   // Gives check
   bool givesCheck(Move move) const;
+
+  // Position has repeated
+  bool hasRepeated() const;
 
   int pliesFromStart;
 
@@ -345,6 +350,20 @@ inline Bitboard Position::pinners() const {
 inline Bitboard Position::blockersForKing() const {
   return st->bishopPin & getOccupiedBB(sideToMove) |
          st->rookPin & getOccupiedBB(sideToMove);
+}
+
+// Returns whether a position has repeated
+inline bool Position::hasRepeated() const {
+  BoardState *state = st;
+  int end = std::min(pliesFromStart, st->fiftyMove);
+  while (end-- >= 4) {
+    if (state->repetition)
+      return true;
+
+    state = state->previous;
+  }
+
+  return false;
 }
 
 } // namespace Maestro

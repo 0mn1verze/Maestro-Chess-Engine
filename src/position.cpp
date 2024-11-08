@@ -5,8 +5,10 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "eval.hpp"
 #include "hash.hpp"
 #include "movegen.hpp"
+#include "nnue.hpp"
 #include "position.hpp"
 #include "thread.hpp"
 #include "utils.hpp"
@@ -445,7 +447,8 @@ int Position::initGamePhase() const {
 bool Position::isDraw(int ply) const {
   if (st->fiftyMove > 99 and (!isInCheck() || MoveList<ALL>(*this).size()))
     return true;
-  return st->repetition and st->repetition < ply;
+
+  return hasRepeated();
 }
 
 Bitboard Position::sqAttackedByBB(Square sq, Bitboard occupied) const {
@@ -539,6 +542,10 @@ void Position::makeMove(Move move, BoardState &state) {
   state.previous = st;
   st = &state;
 
+  st->nnueData.accumulator.computedAccumulation = false;
+  auto &dp = st->nnueData.dirtyPiece;
+  dp.dirtyNum = 1;
+
   ++st->fiftyMove;
   ++st->plies;
   ++pliesFromStart;
@@ -557,6 +564,13 @@ void Position::makeMove(Move move, BoardState &state) {
     Square rookFrom, rookTo;
     Piece rook = toPiece(side, ROOK);
     castleRook<true>(from, to, rookFrom, rookTo);
+
+    auto &dp = st->nnueData.dirtyPiece;
+    dp.pc[1] = Eval::toNNUEPiece(toPiece(side, ROOK));
+    dp.from[1] = rookFrom;
+    dp.to[1] = rookTo;
+    dp.dirtyNum = 2;
+
     // Update hash key
     hashKey ^= Zobrist::pieceSquareKeys[rook][rookFrom] ^
                Zobrist::pieceSquareKeys[rook][rookTo];
@@ -581,6 +595,13 @@ void Position::makeMove(Move move, BoardState &state) {
     else
       pawnKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
+    dp.dirtyNum = 2; // 1 piece moved, 1 piece captured
+    dp.pc[1] = Eval::toNNUEPiece(cap);
+    dp.from[1] = capSq;
+    dp.to[1] = NO_SQ;
+
+    st->fiftyMove = 0;
+
     // Update board state to undo move
     st->captured = cap;
   } else
@@ -600,6 +621,10 @@ void Position::makeMove(Move move, BoardState &state) {
     hashKey ^= Zobrist::enPassantKeys[fileOf(st->enPassant)];
   }
 
+  dp.pc[0] = Eval::toNNUEPiece(piece);
+  dp.from[0] = from;
+  dp.to[0] = to;
+
   // Update board by moving piece to the destination
   movePiece(from, to);
   // Update hash key
@@ -618,6 +643,12 @@ void Position::makeMove(Move move, BoardState &state) {
       if (pieceTypeOf(promotedTo) == KNIGHT &&
           attacksBB<KNIGHT>(to, EMPTYBB) & getPiecesBB(enemy, KING))
         st->checkMask = squareBB(to);
+
+      dp.to[0] = NO_SQ;
+      dp.pc[dp.dirtyNum] = Eval::toNNUEPiece(promotedTo);
+      dp.from[dp.dirtyNum] = NO_SQ;
+      dp.to[dp.dirtyNum] = to;
+      dp.dirtyNum++;
 
       // Update hash key
       hashKey ^= Zobrist::pieceSquareKeys[piece][to] ^
@@ -663,7 +694,6 @@ void Position::makeMove(Move move, BoardState &state) {
 
   // Update repetition
   st->repetition = 0;
-
   int end = std::min(st->plies, st->fiftyMove);
   if (end >= 4) {
     // Go back 4 ply's (2 moves) to check for repetitions

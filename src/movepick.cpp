@@ -16,19 +16,10 @@ GenMove MovePicker::bestMove() {
   while (cur < endMoves) {
     std::swap(*cur, *std::max_element(cur, endMoves));
 
-    if (*cur == ttMove || (stage > QUIET_INIT && isSpecial(cur))) {
-      cur++;
-      continue;
-    }
+    if (*cur != ttMove)
+      return *cur++;
 
-    if (*cur == counterMove)
-      counterMove = GenMove::none();
-    if (*cur == killer1)
-      killer1 = GenMove::none();
-    if (*cur == killer2)
-      killer2 = GenMove::none();
-
-    return *cur++;
+    cur++;
   }
 
   return GenMove::none();
@@ -61,11 +52,18 @@ MovePicker::MovePicker(const SearchWorker &sw, const Position &pos,
   if (pos.isCapture(killer2))
     killer2 = GenMove::none();
 
+  if (ss->ply == 0) {
+    std::cout << "Counter Move: " << move2Str(counterMove) << std::endl;
+    std::cout << "Killer 1: " << move2Str(killer1) << std::endl;
+    std::cout << "Killer 2: " << move2Str(killer2) << std::endl;
+  }
+
   stage =
       (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm and pos.isPseudoLegal(ttm));
 }
 
-MovePicker::MovePicker(const Position &pos, Move ttm, int threshold)
+MovePicker::MovePicker(const Position &pos, Move ttm,
+                       const CaptureHistoryTable *cht, int threshold)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
   stage = PROBCUT_TT + !(ttm and pos.isCapture(ttm) and pos.isPseudoLegal(ttm));
@@ -156,7 +154,7 @@ Move MovePicker::selectNext() {
   case GOOD_QUIET:
     if (!skipQuiets and bestMove()) {
       if ((cur - 1)->score > -8000 || (cur - 1)->score <= -3560 * depth)
-        return *(cur - 1);
+        return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
       startQuiet = cur - 1;
     }
     cur = moves;
@@ -165,20 +163,20 @@ Move MovePicker::selectNext() {
     [[fallthrough]];
   case BAD_CAPTURE:
     if (bestMove())
-      return *(cur - 1);
+      return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
     stage++;
     cur = startQuiet;
     endMoves = endQuiet;
     [[fallthrough]];
   case BAD_QUIET:
     if (!skipQuiets and bestMove())
-      return *(cur - 1);
+      return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
     break;
   case PROBCUT:
-    while (cur < endMoves) {
-      if (pos.SEE(*cur, threshold))
-        return *cur++;
-      cur++;
+    if (bestMove()) {
+      if (!pos.SEE(*(cur - 1), threshold))
+        selectNext();
+      return *(cur - 1);
     }
     break;
   case QCAPTURE:
