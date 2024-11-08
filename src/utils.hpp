@@ -253,6 +253,23 @@ constexpr bool isShift(Square from, Square to) {
   return distance(from, to) <= 3;
 }
 
+/******************************************\
+|==========================================|
+|                 Utility                  |
+|==========================================|
+\******************************************/
+
+namespace Utility {
+
+template <typename T, typename Pred>
+void moveToFront(std::vector<T> &vec, Pred pred) {
+  auto it = std::stable_partition(vec.begin(), vec.end(), pred);
+  if (it != vec.end())
+    std::rotate(vec.begin(), it, vec.end());
+}
+
+} // namespace Utility
+
 } // namespace Maestro
 
 #endif // UTILS_HPP

@@ -46,6 +46,8 @@ void SearchWorker::getPV(SearchWorker &best, Depth depth) const {
   for (size_t i = 0; i < sharedState.config.multiPV; ++i) {
     bool updated = rootMoves[i].score != -VAL_INFINITE;
 
+    std::cout << "rootMove score: " << rootMoves[i].score << std::endl;
+
     if (depth == 1 && !updated && i > 0)
       continue;
 
@@ -121,9 +123,6 @@ void SearchWorker::startSearch() {
       rootMoves[0].pv[0] != Move::none())
     best = threads.getBestThread()->worker.get();
 
-  bestPreviousAvgScore = best->rootMoves[0].averageScore;
-  bestPreviousScore = best->rootMoves[0].score;
-
   if (best != this) {
     getPV(*best, best->completedDepth);
   }
@@ -177,7 +176,6 @@ void SearchWorker::iterativeDeepening() {
   Value lastBestMoveScore = -VAL_INFINITE;
   auto lastBestPV = std::vector<Move>{Move::none()};
 
-  Value alpha, beta;
   Value bestValue = -VAL_INFINITE;
   Colour us = rootPos.getSideToMove();
   int pvStability = 0;
@@ -211,14 +209,18 @@ void SearchWorker::iterativeDeepening() {
 
     // MultiPV loop
     for (pvIdx = 0; pvIdx < multiPV; ++pvIdx)
-      aspirationWindows(ss, alpha, beta, delta, bestValue);
+      searchPosition(ss, bestValue);
 
     if (!threads.stop)
       completedDepth = rootDepth;
 
     // If mate is unproven, revert to the last best pv && score
     if (threads.abortedSearch && rootMoves[0].score != -VAL_INFINITE &&
-        abs(rootMoves[0].score) <= VAL_MATE_BOUND) {
+        rootMoves[0].score <= VAL_MATE_BOUND) {
+      Utility::moveToFront(
+          rootMoves, [&lastBestPV = std::as_const(lastBestPV)](const auto &rm) {
+            return rm == lastBestPV[0];
+          });
       rootMoves[0].pv = lastBestPV;
       rootMoves[0].score = lastBestMoveScore;
       // If the best move has changed, update the last best move
@@ -242,61 +244,35 @@ void SearchWorker::iterativeDeepening() {
   }
 }
 
-void SearchWorker::aspirationWindows(SearchStack *ss, Value &alpha, Value &beta,
-                                     Value &delta, Value &bestValue) {
+void SearchWorker::searchPosition(SearchStack *ss, Value &bestValue) {
 
   // Reset length of PV
   selDepth = 0;
 
-  // Reset Aspiration Window starting size
-  delta = 10;
-  Value avg = rootMoves[pvIdx].averageScore;
+  bestValue =
+      search<ROOT>(rootPos, ss, rootDepth, -VAL_INFINITE, VAL_INFINITE, false);
 
-  alpha = std::max(avg - delta, -VAL_INFINITE);
-  beta = std::min(avg + delta, VAL_INFINITE);
-
-  // Start with small window size, if fail high or low, increase window size
-  int failedHighCnt = 0;
-
-  // Aspiration Window loop
-  while (true) {
-
-    // Calculate adjusted depth, if fail high, reduce depth to focus on
-    // other moves
-    Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt);
-    bestValue = search<ROOT>(rootPos, ss, adjustedDepth, alpha, beta, false);
-
-    std::stable_sort(rootMoves.begin() + pvIdx, rootMoves.end());
-
-    // If the search was stopped, break out of the loop
-    if (threads.stop)
-      break;
-
-    // Fail Low (Reduce alpha && beta for a better window)
-    if (bestValue <= alpha) {
-      beta = (alpha + beta) / 2;
-      alpha = std::max(bestValue - delta, -VAL_INFINITE);
-
-      failedHighCnt = 0;
-      // Fail High (Increase beta for a better window)
-    } else if (bestValue >= beta) {
-      beta = std::min(bestValue + delta, VAL_INFINITE);
-      ++failedHighCnt;
-      // Exact score returned, search is complete
-    } else
-      break;
-
-    // Increase window size
-    delta += delta / 3;
-  }
+  // If the search was stopped, break out of the loop
+  if (threads.stop)
+    return;
 
   std::stable_sort(rootMoves.begin(), rootMoves.end());
+
+  std::cout << "Best value: " << bestValue
+            << ", Root Move Score: " << rootMoves[0].score
+            << ", Root Move Prev Score: " << rootMoves[0].prevScore
+            << std::endl;
+
+  for (auto &rm : rootMoves) {
+    std::cout << "Root Move: " << move2Str(rm.pv[0]) << ", Score: " << rm.score
+              << ", Prev Score: " << rm.prevScore << std::endl;
+  }
 
   // Print PV if its the main thread, the loop is the last one or the node
   // count exceeds 10M, && the result isn't an unproven mate search
   if (isMainThread() &&
       (threads.stop || pvIdx + 1 == config.multiPV || nodes > 10000000) &&
-      !(threads.abortedSearch && abs(rootMoves[0].score) <= VAL_MATE_BOUND))
+      !(threads.abortedSearch && rootMoves[0].score <= VAL_MATE_BOUND))
     getPV(*this, rootDepth);
 }
 
@@ -413,7 +389,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
       ss->staticEval >= beta && !excludedMove && pos.getNonPawnMaterial(us) &&
       beta > VAL_MATE_BOUND) {
 
-    R = 4 + depth / 5;
+    R = 2;
 
     ss->currentMove = Move::null();
     ss->ch = &continuationTable[0][0][NO_PIECE][A1];
@@ -477,22 +453,12 @@ moves_loop:
     nodes.fetch_add(1, std::memory_order_relaxed);
     pos.makeMove(move, st);
 
+    // Late move reduction
     if (depth >= 2 && moveCount > 1) {
+      value = -search<NON_PV>(pos, ss + 1, std::max(1, newDepth - 1),
+                              -alpha - 1, -alpha, true);
 
-      if (!isCapture) {
-        R = LMRTable[std::min(63, int(depth))][std::min(63, int(moveCount))];
-
-        R += !pvNode + !improving;
-
-        R += ss->inCheck and movedPieceType == KING;
-      } else
-        R = 1;
-
-      Depth d = std::max(1, newDepth - R);
-
-      value = -search<NON_PV>(pos, ss + 1, d, -alpha - 1, -alpha, true);
-
-      if (value > alpha && d < newDepth)
+      if (value > alpha)
         value = -search<NON_PV>(pos, ss + 1, newDepth, -alpha - 1, -alpha,
                                 !cutNode);
     } else if (!pvNode || moveCount > 1)
@@ -521,10 +487,6 @@ moves_loop:
 
       rm.effort = nodes - nodeCount;
 
-      rm.averageScore = rm.averageScore != -VAL_INFINITE
-                            ? (rm.averageScore + value) / 2
-                            : value;
-
       // PV move or new best move
       if (moveCount == 1 || value > alpha) {
         rm.score = value;
@@ -534,9 +496,11 @@ moves_loop:
 
         for (Move *m = (ss + 1)->pv; *m != Move::none(); ++m)
           rm.pv.push_back(*m);
-      } else
+
+      } else {
         // All other moves but the PV are set to the lowest value
         rm.score = -VAL_INFINITE;
+      }
     }
 
     if (value > bestValue) {
@@ -633,24 +597,22 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
     return ttData.value;
 
   // Static Evaluation
-  if (ss->inCheck) {
-    bestValue = -VAL_INFINITE;
+  if (ss->ttHit) {
+    ss->staticEval = bestValue =
+        ttData.eval != VAL_NONE ? ttData.eval : Eval::evaluate(pos);
   } else {
-    if (ss->ttHit) {
-      ss->staticEval = bestValue =
-          ttData.eval != VAL_NONE ? ttData.eval : Eval::evaluate(pos);
-    } else {
-      ss->staticEval = bestValue = Eval::evaluate(pos);
-    }
+    ss->staticEval = bestValue = Eval::evaluate(pos);
 
-    // Stand pat
-    if (bestValue >= beta) {
-      return bestValue;
-    }
-
-    if (bestValue > alpha)
-      alpha = bestValue;
+    ttWriter.write(hashKey, VAL_NONE, false, FLAG_NONE, DEPTH_UNSEARCHED,
+                   Move::none(), ss->staticEval, tt.gen8);
   }
+
+  // Stand pat
+  if (bestValue >= beta)
+    return bestValue;
+
+  if (bestValue > alpha)
+    alpha = bestValue;
 
   // Continuation history
   const ContinuationHistory *ch[] = {(ss - 1)->ch, (ss - 2)->ch};
@@ -696,6 +658,10 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
       }
     }
   }
+
+  ttWriter.write(hashKey, TTable::valueToTT(bestValue, ss->ply), pvHit,
+                 bestValue >= beta ? FLAG_LOWER : FLAG_UPPER, DEPTH_QS,
+                 bestMove, ss->staticEval, tt.gen8);
 
   return bestValue;
 }
@@ -750,9 +716,10 @@ void SearchWorker::updateQuietHistories(const Position &pos, SearchStack *ss,
 }
 
 void SearchWorker::updateKillerMoves(Move move, int ply) {
-  if (move != killerTable[ply][0])
+  if (move != killerTable[ply][0]) {
     killerTable[ply][1] = killerTable[ply][0];
-  killerTable[ply][0] = move;
+    killerTable[ply][0] = move;
+  }
 }
 
 void SearchWorker::updateCounterMoves(const Position &pos, Move move,

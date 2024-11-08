@@ -16,10 +16,19 @@ GenMove MovePicker::bestMove() {
   while (cur < endMoves) {
     std::swap(*cur, *std::max_element(cur, endMoves));
 
-    if (!isSpecial(cur))
-      return *cur++;
+    if (*cur == ttMove || (stage > QUIET_INIT && isSpecial(cur))) {
+      cur++;
+      continue;
+    }
 
-    cur++;
+    if (*cur == counterMove)
+      counterMove = GenMove::none();
+    if (*cur == killer1)
+      killer1 = GenMove::none();
+    if (*cur == killer2)
+      killer2 = GenMove::none();
+
+    return *cur++;
   }
 
   return GenMove::none();
@@ -119,7 +128,6 @@ Move MovePicker::selectNext() {
     }
     stage++;
     [[fallthrough]];
-
   case QUIET_INIT:
     if (!skipQuiets) {
       cur = endCaptures;
@@ -135,7 +143,8 @@ Move MovePicker::selectNext() {
     [[fallthrough]];
   case KILLER2:
     stage++;
-    if (!skipQuiets and killer2 != ttMove and contains(killer2))
+    if (!skipQuiets and killer2 != ttMove and killer2 != killer1 and
+        contains(killer2))
       return killer2;
     [[fallthrough]];
   case COUNTER_MOVE:

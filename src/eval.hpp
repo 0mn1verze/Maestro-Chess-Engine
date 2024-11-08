@@ -130,13 +130,9 @@ constexpr Score bonus[PIECE_TYPE_N][SQ_N] = {
 
 extern Score psqt[PIECE_N][SQ_N];
 
-extern int nnuePieces[PIECE_N];
-
 void initEval();
 
 Value evaluate(const Position &pos);
-
-inline int toNNUEPiece(Piece piece) { return nnuePieces[piece]; }
 
 } // namespace Eval
 

@@ -3,7 +3,6 @@
 
 #include "bitboard.hpp"
 #include "hash.hpp"
-#include "nnue.hpp"
 #include "perft.hpp"
 #include "position.hpp"
 #include "search.hpp"
@@ -63,8 +62,6 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   Eval::initEval();
   // Initialize polyglot book
   initPolyBook(book, BOOK_FILE.data());
-  // Initialize nnue file
-  nnue_init(NNUE_FILE.data());
   // Initialise thread pool
   resizeThreads(config.threads);
   // Initialise LMR values
@@ -255,8 +252,6 @@ Limits UCI::parseLimits(std::istringstream &is) {
       is >> limits.depth;
     }
   }
-
-  limits.trace();
 
   return limits;
 }

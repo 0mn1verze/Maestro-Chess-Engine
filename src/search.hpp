@@ -103,7 +103,6 @@ struct RootMove {
 
   Value score = -VAL_INFINITE;
   Value prevScore = -VAL_INFINITE;
-  Value averageScore = -VAL_INFINITE;
   U64 effort = 0;
   int selDepth = 0;
   std::vector<Move> pv;
@@ -158,8 +157,7 @@ public:
 
 private:
   void iterativeDeepening();
-  void aspirationWindows(SearchStack *ss, Value &alpha, Value &beta,
-                         Value &delta, Value &bestValue);
+  void searchPosition(SearchStack *ss, Value &bestValue);
 
   void getPV(SearchWorker &best, Depth depth) const;
   void updatePV(Move *pv, Move best, const Move *childPv) const;
