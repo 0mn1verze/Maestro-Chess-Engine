@@ -83,14 +83,12 @@ Value evaluate(const Position &pos) {
 
   Value nnue = evaluate_nnue(pos);
 
-  int mat = pos.getNonPawnMaterial() + 4 * PawnValue * pos.count<PAWN>();
-
-  Value v = nnue * (580 + mat / 32 - 4 * st->fiftyMove) / 1024 + 28;
+  Value v = nnue * 5 / 4 + 28;
 
   v = v * (100 - st->fiftyMove) / 100;
 
   v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
 
-  return v;
+  return v / 2;
 }
 } // namespace Maestro::Eval

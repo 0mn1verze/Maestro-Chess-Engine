@@ -1,6 +1,8 @@
 #ifndef MOVEPICKER_HPP
 #define MOVEPICKER_HPP
 
+#include <functional>
+
 #include "defs.hpp"
 #include "move.hpp"
 #include "movegen.hpp"
@@ -91,7 +93,7 @@ enum GenStage {
   COUNTER_MOVE,
   GOOD_QUIET,
   BAD_CAPTURE,
-  BAD_QUIET,
+  // BAD_QUIET,
 
   // Generate qsearch moves
   QSEARCH_TT,
@@ -126,7 +128,7 @@ private:
 
   template <GenType Type> void score();
 
-  GenMove bestMove();
+  GenMove bestMove(std::function<bool()> predicate);
   bool contains(Move move);
 
   bool isSpecial(GenMove *move) {

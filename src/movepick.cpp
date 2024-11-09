@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <functional>
+
 #include "bitboard.hpp"
 #include "defs.hpp"
 #include "move.hpp"
@@ -11,12 +13,12 @@
 namespace Maestro {
 
 // Find the best move index in the list [start to end]
-GenMove MovePicker::bestMove() {
+GenMove MovePicker::bestMove(std::function<bool()> predicate) {
 
   while (cur < endMoves) {
     std::swap(*cur, *std::max_element(cur, endMoves));
 
-    if (*cur != ttMove)
+    if (cur->move != ttMove && predicate())
       return *cur++;
 
     cur++;
@@ -51,12 +53,6 @@ MovePicker::MovePicker(const SearchWorker &sw, const Position &pos,
     killer1 = GenMove::none();
   if (pos.isCapture(killer2))
     killer2 = GenMove::none();
-
-  if (ss->ply == 0) {
-    std::cout << "Counter Move: " << move2Str(counterMove) << std::endl;
-    std::cout << "Killer 1: " << move2Str(killer1) << std::endl;
-    std::cout << "Killer 2: " << move2Str(killer2) << std::endl;
-  }
 
   stage =
       (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm and pos.isPseudoLegal(ttm));
@@ -116,12 +112,11 @@ Move MovePicker::selectNext() {
     stage++;
     return selectNext();
   case GOOD_CAPTURE:
-    if (bestMove()) {
-      if (!pos.SEE(*(cur - 1), threshold)) {
-        (cur - 1)->score = -1;
-        *endCaptures++ = *(cur - 1);
-        selectNext();
-      }
+    if (bestMove([&]() {
+          return pos.SEE(*(cur - 1), -cur->score / 18)
+                     ? true
+                     : (*endCaptures++ = *cur);
+        })) {
       return *(cur - 1);
     }
     stage++;
@@ -136,7 +131,7 @@ Move MovePicker::selectNext() {
     [[fallthrough]];
   case KILLER1:
     stage++;
-    if (!skipQuiets and killer1 != ttMove and contains(killer1))
+    if (!skipQuiets and killer1 and killer1 != ttMove and contains(killer1))
       return killer1;
     [[fallthrough]];
   case KILLER2:
@@ -147,41 +142,30 @@ Move MovePicker::selectNext() {
     [[fallthrough]];
   case COUNTER_MOVE:
     stage++;
-    if (!skipQuiets and counterMove != ttMove and counterMove != killer1 and
-        counterMove != killer2 and contains(counterMove))
+    if (!skipQuiets and counterMove and counterMove != ttMove and
+        counterMove != killer1 and counterMove != killer2 and
+        contains(counterMove))
       return counterMove;
     [[fallthrough]];
   case GOOD_QUIET:
-    if (!skipQuiets and bestMove()) {
-      if ((cur - 1)->score > -8000 || (cur - 1)->score <= -3560 * depth)
-        return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
-      startQuiet = cur - 1;
-    }
+    if (!skipQuiets and bestMove([&] { return !isSpecial(cur); }))
+      return *(cur - 1);
     cur = moves;
     endMoves = endCaptures;
     stage++;
     [[fallthrough]];
   case BAD_CAPTURE:
-    if (bestMove())
-      return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
-    stage++;
-    cur = startQuiet;
-    endMoves = endQuiet;
-    [[fallthrough]];
-  case BAD_QUIET:
-    if (!skipQuiets and bestMove())
-      return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
-    break;
+    if (bestMove([&] { return true; }))
+      return *(cur - 1);
+    return Move::none();
   case PROBCUT:
-    if (bestMove()) {
-      if (!pos.SEE(*(cur - 1), threshold))
-        selectNext();
+    if (bestMove([&] { return !pos.SEE(*(cur - 1), threshold); })) {
       return *(cur - 1);
     }
     break;
   case QCAPTURE:
-    if (bestMove())
-      return *(cur - 1);
+    if (bestMove([&] { return true; }))
+      return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
     break;
   }
 
