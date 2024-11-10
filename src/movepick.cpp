@@ -41,28 +41,27 @@ MovePicker::MovePicker(const SearchWorker &sw, const Position &pos,
       skipQuiets(depth == DEPTH_QS) {
   Move prevMove = ply > 0 ? (ss - 1)->currentMove : Move::none();
 
-  counterMove =
-      (*cmt)[~pos.getSideToMove()][pos.getPiece(prevMove.to())][prevMove.to()];
+  counterMove = (*cmt)[~pos.getSideToMove()][pos.getPiece(prevMove.from())]
+                      [prevMove.to()];
 
   killer1 = (*kt)[ply][0];
   killer2 = (*kt)[ply][1];
 
   if (pos.isCapture(counterMove))
-    counterMove = GenMove::none();
+    counterMove = Move::none();
   if (pos.isCapture(killer1))
-    killer1 = GenMove::none();
+    killer1 = Move::none();
   if (pos.isCapture(killer2))
-    killer2 = GenMove::none();
+    killer2 = Move::none();
 
-  stage =
-      (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm and pos.isPseudoLegal(ttm));
+  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.isPseudoLegal(ttm));
 }
 
 MovePicker::MovePicker(const Position &pos, Move ttm,
                        const CaptureHistoryTable *cht, int threshold)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
-  stage = PROBCUT_TT + !(ttm and pos.isCapture(ttm) and pos.isPseudoLegal(ttm));
+  stage = PROBCUT_TT + !(ttm && pos.isCapture(ttm) && pos.isPseudoLegal(ttm));
 }
 
 // Assigns numerical value to each move in a list [start to end]
@@ -86,11 +85,20 @@ template <GenType Type> void MovePicker::score() {
                 (*cht)[piece][threatFrom][threatTo][to][captured] +
                 MVVAugment[captured];
     else if constexpr (Type == QUIETS) {
-      m.score = (*ht)[pos.getSideToMove()][threatFrom][threatTo][from][to];
-      m.score += (*ch[0])[piece][to];
-      m.score += (*ch[1])[piece][to];
-      m.score += (*ch[2])[piece][to];
-      m.score += (*ch[3])[piece][to];
+
+      if (m.move == counterMove)
+        m.score = 32000;
+      else if (m.move == killer1)
+        m.score = 64000;
+      else if (m.move == killer2)
+        m.score = 48000;
+      else {
+        m.score = (*ht)[pos.getSideToMove()][threatFrom][threatTo][from][to];
+        m.score += (*ch[0])[piece][to];
+        m.score += (*ch[1])[piece][to];
+        m.score += (*ch[2])[piece][to];
+        m.score += (*ch[3])[piece][to];
+      }
     }
   }
 }
@@ -113,9 +121,9 @@ Move MovePicker::selectNext() {
     return selectNext();
   case GOOD_CAPTURE:
     if (bestMove([&]() {
-          return pos.SEE(*(cur - 1), -cur->score / 18)
+          return pos.SEE(*cur, -cur->score / 20)
                      ? true
-                     : (*endCaptures++ = *cur);
+                     : (*endCaptures++ = *cur, false);
         })) {
       return *(cur - 1);
     }
@@ -129,26 +137,8 @@ Move MovePicker::selectNext() {
     }
     stage++;
     [[fallthrough]];
-  case KILLER1:
-    stage++;
-    if (!skipQuiets and killer1 and killer1 != ttMove and contains(killer1))
-      return killer1;
-    [[fallthrough]];
-  case KILLER2:
-    stage++;
-    if (!skipQuiets and killer2 != ttMove and killer2 != killer1 and
-        contains(killer2))
-      return killer2;
-    [[fallthrough]];
-  case COUNTER_MOVE:
-    stage++;
-    if (!skipQuiets and counterMove and counterMove != ttMove and
-        counterMove != killer1 and counterMove != killer2 and
-        contains(counterMove))
-      return counterMove;
-    [[fallthrough]];
   case GOOD_QUIET:
-    if (!skipQuiets and bestMove([&] { return !isSpecial(cur); }))
+    if (!skipQuiets && bestMove([&] { return true; }))
       return *(cur - 1);
     cur = moves;
     endMoves = endCaptures;

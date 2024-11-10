@@ -185,6 +185,8 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   if (s.get())
     states = std::move(s);
 
+  std::cout << states->back().plies << std::endl;
+
   for (auto &&th : *this) {
     th->startCustomJob([&] {
       th->worker->limits = limits;

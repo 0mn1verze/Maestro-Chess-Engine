@@ -163,14 +163,11 @@ void Position::print() const {
   // Print hash key
   std::cout << "Hash Key: " << std::hex << st->key << std::dec << std::endl;
 
-  // Print psq score
-  std::cout << "PSQ: " << st->psq.first << " " << st->psq.second << std::endl;
-
-  // Print game phase
-  std::cout << "Game Phase: " << st->gamePhase << std::endl;
-
   // Print eval
   std::cout << "Eval: " << Eval::evaluate(*this) << std::endl;
+
+  // Print game phase
+  std::cout << "Fen string: " << fen() << std::endl;
 }
 
 // Set the position based on fen string
@@ -254,7 +251,10 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
     st->enPassant = NO_SQ;
 
   // Parse halfmove clock
-  is >> std::skipws >> st->fiftyMove;
+  is >> std::skipws >> st->fiftyMove >> pliesFromStart;
+
+  pliesFromStart =
+      std::max(2 * (pliesFromStart - 1), 0) + (sideToMove == BLACK);
 
   setState();
 
@@ -448,7 +448,7 @@ bool Position::isDraw(int ply) const {
   if (st->fiftyMove > 99 and (!isInCheck() || MoveList<ALL>(*this).size()))
     return true;
 
-  return hasRepeated();
+  return st->repetition && st->repetition < ply;
 }
 
 Bitboard Position::sqAttackedByBB(Square sq, Bitboard occupied) const {

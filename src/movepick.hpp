@@ -88,12 +88,8 @@ enum GenStage {
   CAPTURE_INIT,
   GOOD_CAPTURE,
   QUIET_INIT,
-  KILLER1,
-  KILLER2,
-  COUNTER_MOVE,
   GOOD_QUIET,
   BAD_CAPTURE,
-  // BAD_QUIET,
 
   // Generate qsearch moves
   QSEARCH_TT,

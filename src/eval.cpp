@@ -64,7 +64,7 @@ inline Value evaluate_nnue(const Position &pos) {
   pieces[index] = 0;
   squares[index] = 0;
 
-  if (pos.getPliesFromStart() > 2) {
+  if (pos.state()->plies > 2) {
     // Get previous nnue accumulator data
     NNUEdata *data[3];
     data[0] = &(pos.state()->nnueData);
@@ -89,6 +89,6 @@ Value evaluate(const Position &pos) {
 
   v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
 
-  return v / 2;
+  return v;
 }
 } // namespace Maestro::Eval
