@@ -54,14 +54,14 @@ MovePicker::MovePicker(const SearchWorker &sw, const Position &pos,
   if (pos.isCapture(killer2))
     killer2 = Move::none();
 
-  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.isPseudoLegal(ttm));
+  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.isLegal(ttm));
 }
 
 MovePicker::MovePicker(const Position &pos, Move ttm,
                        const CaptureHistoryTable *cht, int threshold)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
-  stage = PROBCUT_TT + !(ttm && pos.isCapture(ttm) && pos.isPseudoLegal(ttm));
+  stage = PROBCUT_TT + !(ttm && pos.isCapture(ttm) && pos.isLegal(ttm));
 }
 
 // Assigns numerical value to each move in a list [start to end]

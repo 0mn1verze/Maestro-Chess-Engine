@@ -39,7 +39,7 @@ constexpr std::string_view repetitions =
 
 struct BoardState {
 
-  BoardState &operator=(const BoardState &bs);
+  BoardState moveCopy(const BoardState &bs);
 
   // Copied when making new move
   Square enPassant;

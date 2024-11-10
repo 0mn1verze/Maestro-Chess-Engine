@@ -28,9 +28,9 @@ constexpr std::string_view NNUE_FILE = "nn-eba324f53044.nnue";
 
 constexpr size_t DEFAULT_HASH_SIZE = 32;
 constexpr size_t DEFAULT_THREADS = 1;
-constexpr bool DEFAULT_USE_BOOK = false;
+constexpr bool DEFAULT_USE_BOOK = true;
 constexpr int DEFAULT_MULTI_PV = 1;
-constexpr int MOVE_OVERHEAD = 300;
+constexpr int MOVE_OVERHEAD = 1000;
 
 struct Config {
   size_t hashSize = DEFAULT_HASH_SIZE;
@@ -119,6 +119,8 @@ public:
   static void uciReport(const PrintInfo &info);
   // Print current move
   static void uciReportCurrentMove(Depth depth, Move move, int currmove);
+  // Print search node count, hash full and nps
+  static void uciReportNodes(U64 nodes, int hashFull, TimePt elapsed);
 
 private:
   Engine engine;

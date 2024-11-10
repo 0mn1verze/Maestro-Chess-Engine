@@ -20,7 +20,7 @@ void initLMR() {
   // Init Late Move Reductions Table
   for (int depth = 1; depth < 64; depth++)
     for (int played = 1; played < 64; played++)
-      LMRTable[depth][played] = -0.2156 + log(depth) * log(played) / 2.4696;
+      LMRTable[depth][played] = 0.7844 + log(depth) * log(played) / 2.4696;
 
   for (int depth = 1; depth <= 10; depth++) {
     LateMovePruningCounts[0][depth] = 2.0767 + 0.3743 * depth * depth;
@@ -90,8 +90,6 @@ void SearchWorker::updatePV(Move *pv, Move best, const Move *childPV) const {
 }
 
 void SearchWorker::startSearch() {
-
-  std::cout << rootPos.state()->plies << std::endl;
 
   if (!isMainThread()) {
     iterativeDeepening();
@@ -292,7 +290,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
   Key hashKey;
   Move move, bestMove, excludedMove;
-  Value bestValue, value, hist, probCutBeta, seeMargin[2];
+  Value bestValue, value, hist, probCutBeta;
   Depth newDepth, R, extensions;
   bool givesCheck, improving, prevCapture, oppWorsening;
   bool isCapture, ttCapture;
@@ -361,8 +359,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // static eval
   if (!pvNode && !excludedMove && ttData.depth > depth - 1 &&
       ttData.value != VAL_NONE &&
-      (ttData.flag & (ttData.value >= beta ? FLAG_LOWER : FLAG_UPPER)) &&
-      pos.getFiftyMove() < 90) {
+      (ttData.flag & (ttData.value >= beta ? FLAG_LOWER : FLAG_UPPER))) {
 
     if (ttData.move && ttData.value >= beta) {
       if (!ttCapture)
@@ -371,13 +368,13 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
         updateContinuationHistory(ss - 1, pos.getPieceType(prevSq), prevSq,
                                   -statBonus(depth + 1));
     }
-
-    return ttData.value;
+    if (pos.getFiftyMove() < 9)
+      return ttData.value;
   }
 
   // Static Evaluation
   if (ss->inCheck) {
-    ss->staticEval = (ss - 2)->staticEval;
+    ss->staticEval = VAL_NONE;
     improving = false;
     goto moves_loop;
   } else if (excludedMove) {
@@ -398,22 +395,12 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // Set opponent worsening flag (Whether the opponent's position is worse than)
   oppWorsening = ss->staticEval + (ss - 1)->staticEval > 2;
 
-  // Static Exchange Evaluation Pruning Margins
-  seeMargin[0] = -20 * depth * depth;
-  seeMargin[1] = -64 * depth;
-
-  // Futility pruning (If eval is well enough, assume the eval will hold above
-  // beta or cause a cutoff)
-  if (!pvNode && !ss->inCheck && !excludedMove && depth <= 8 &&
-      ss->staticEval - 65 * std::max(0, depth - improving) >= beta)
-    return ss->staticEval;
-
   // Null Move Pruning
   if (cutNode && (ss - 1)->currentMove != Move::null() && depth >= 2 &&
       ss->staticEval >= beta - 23 * depth + 400 && !excludedMove &&
       pos.getNonPawnMaterial(us) && beta > VAL_MATE_BOUND) {
 
-    R = std::min(int(ss->staticEval - beta) / 209, 6) + depth / 3 + 5;
+    R = depth / 4 + 3;
 
     ss->currentMove = Move::null();
     ss->ch = &continuationTable[0][0][NO_PIECE][A1];
@@ -431,11 +418,9 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
       return nullValue;
   }
 
-  // Internal iterative deepening
   if (pvNode && !ttData.move)
     depth -= 3;
 
-  // Check for quiescence search
   if (depth <= 0)
     return qSearch<PV>(pos, ss, alpha, beta);
 
@@ -522,88 +507,9 @@ moves_loop:
         isCapture ? getCaptureHistory(pos, move) : getQuietHistory(pos, move);
 
     // Calculate new depth
-    newDepth = depth - 1;
+    newDepth = depth;
 
-    // Late move pruning
-    if (bestValue > VAL_MATE_BOUND && depth <= 8 &&
-        moveCount >= LateMovePruningCounts[improving][depth])
-      mp.skipQuietMoves();
-
-    if (!isCapture && bestValue > -VAL_MATE_BOUND) {
-      Depth lmrDepth = std::max(
-          0, depth - LMRTable[std::min(63, depth)][std::min(63, moveCount)]);
-
-      Value fmpMargin = 77 + 52 * lmrDepth;
-
-      // Futility Pruning. Don't expect anything from a move that is
-      // significantly worse than alpha (With history)
-      if (!ss->inCheck && lmrDepth <= 8 &&
-          ss->staticEval + fmpMargin <= alpha &&
-          hist < (improving ? 14000 : 6000))
-        mp.skipQuietMoves();
-
-      // Futility Pruning. Don't expect anything from a move that is
-      // significantly worse than alpha (Without history)
-      if (!ss->inCheck && lmrDepth <= 8 &&
-          ss->staticEval + fmpMargin + 165 <= alpha)
-        mp.skipQuietMoves();
-
-      // Continuation Pruning
-      if (mp.stage > QUIET_INIT && lmrDepth <= (improving ? 3 : 2) &&
-          hist < (improving ? -1000 : -2500))
-        continue;
-    }
-
-    // Static Exchanege Evaluation Pruning. Prune moves that are unlikely to be
-    // good
-    if (bestValue > -VAL_MATE_BOUND && depth <= 10 && mp.stage > GOOD_CAPTURE &&
-        !pos.SEE(move, seeMargin[!isCapture] - hist / 100))
-      continue;
-
-    // Reset extension
-    extensions = 0;
-
-    // Singular extension search, if a move seems a lot better than other moves
-    // (Only move), then verify it and extend the search accordingly
-    if (ss->ply < rootDepth * 2) {
-      if (depth >= 4 - (completedDepth > 36) + ss->ttPV && !excludedMove &&
-          move == ttData.move && !rootNode && ttData.depth >= depth - 3 &&
-          std::abs(ttData.value) < VAL_MATE_BOUND &&
-          (ttData.flag & FLAG_LOWER)) {
-        Value singularBeta =
-            ttData.value - (50 + 80 * (ss->ttPV && !pvNode)) * depth / 64;
-        Depth singularDepth = (newDepth + 1) / 2;
-
-        ss->excludedMove = move;
-        value = -search<NON_PV>(pos, ss, singularDepth, singularBeta - 1,
-                                singularBeta, cutNode);
-        ss->excludedMove = Move::none();
-
-        bool doubleExtend = value < singularBeta &&
-                            ((!pvNode && ss->extensions <= 16) ||
-                             (pvNode && !ttCapture && ss->extensions <= 5 &&
-                              value < singularBeta - 37));
-
-        if (singularBeta >= beta)
-          return singularBeta;
-        else
-          extensions = doubleExtend            ? 2
-                       : value < singularBeta  ? 1
-                       : ttData.value >= beta  ? -3
-                       : cutNode               ? -2
-                       : ttData.value <= value ? -1
-                                               : 0;
-      } else if (pvNode && move == ttData.move && move.to() == prevSq &&
-                 getCaptureHistory(pos, move) > 4000)
-        extensions = 1;
-    }
-
-    extensions = 0;
-
-    // Update depth
-    newDepth += extensions;
-
-    ss->extensions = (ss - 1)->extensions + (extensions >= 2);
+    newDepth += ss->inCheck;
 
     // Update current move
     ss->currentMove = move;
@@ -612,8 +518,10 @@ moves_loop:
     U64 nodeCount = rootNode ? U64(nodes) : 0;
 
     // Output current move to UCI
-    if (rootNode && isMainThread() && tm.elapsed() > 2500)
+    if (rootNode && isMainThread() && tm.elapsed() > 2500) {
       UCI::uciReportCurrentMove(depth, move, moveCount + pvIdx);
+      UCI::uciReportNodes(nodes, tt.hashFull(), tm.elapsed());
+    }
 
     // Make the move
     pos.makeMove(move, st);
@@ -622,38 +530,11 @@ moves_loop:
 
     // Late move reduction
     if (depth >= 2 && moveCount > 1) {
-      // Dynamic reduction based on move count and depth
-      if (!isCapture) {
-        R = LMRTable[std::min(63, depth)][std::min(63, moveCount)];
 
-        // Decrease reduction if position is or has already been on the PV
-        // (Worth Exploring)
-        if (ss->ttPV)
-          R -= 1 + (ttData.value > alpha) + (ttData.depth >= depth);
-
-        // Decrease reduction if the move is a pv (Worth Exploring)
-        if (pvNode)
-          R--;
-
-        // Increase reduction for cut nodes
-        if (cutNode)
-          R += 2 - (ttData.depth >= depth && ss->ttPV);
-
-        // Increase reduction if ttMove is a capture but the current move is not
-        // a capture, As the ttMove is more likely to be a good tactical
-        // move
-        if (ttCapture && !isCapture)
-          R += 1 + (depth < 8);
-
-        if (move == ttData.move)
-          R -= 2;
-
-        R -= hist / 6000;
-      } else {
-        R = 2 - hist / 5000;
-
-        R += ss->inCheck;
-      }
+      if (!(isCapture || givesCheck || move.is<PROMOTION>() || ss->inCheck))
+        R = 1 + (moveCount > 8) * depth / 3;
+      else
+        R = 1;
 
       // Cap the LMR depth at newDepth;
       Depth d = std::max(1, std::min(newDepth - R, newDepth));
@@ -661,13 +542,13 @@ moves_loop:
       value = -search<NON_PV>(pos, ss + 1, d, -alpha - 1, -alpha, true);
 
       // Full depth LMR search
-      if (value > alpha && R > 1)
-        value = -search<NON_PV>(pos, ss + 1, newDepth, -alpha - 1, -alpha,
+      if (value > alpha && d < newDepth - 1)
+        value = -search<NON_PV>(pos, ss + 1, newDepth - 1, -alpha - 1, -alpha,
                                 !cutNode);
       // Full depth LMR search (If LMR is skipped)
     } else if (!pvNode || moveCount > 1)
-      value =
-          -search<NON_PV>(pos, ss + 1, newDepth, -alpha - 1, -alpha, !cutNode);
+      value = -search<NON_PV>(pos, ss + 1, newDepth - 1, -alpha - 1, -alpha,
+                              !cutNode);
 
     // Full window full depth search (PV search)
     if (pvNode && (moveCount == 1 || value > alpha)) {
@@ -675,7 +556,7 @@ moves_loop:
       (ss + 1)->pv = pv;
       (ss + 1)->pv[0] = Move::none();
       // Recursive search
-      value = -search<PV>(pos, ss + 1, newDepth, -beta, -alpha, false);
+      value = -search<PV>(pos, ss + 1, newDepth - 1, -beta, -alpha, false);
     }
 
     // Unmake the move
@@ -760,8 +641,7 @@ moves_loop:
 template <NodeType nodeType>
 Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
                             Value beta) {
-  constexpr bool pvNode = nodeType != NON_PV;
-  constexpr bool rootNode = nodeType == ROOT;
+  constexpr bool pvNode = nodeType == PV;
 
   // Initialize variables
   Move pv[MAX_PLY + 1];
@@ -848,7 +728,6 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
     pos.makeMove(move, st);
     // Prefetch the next entry in the TT
     TTable::prefetch(tt.firstEntry(pos.getKey()));
-
     // Recursive quiescence search
     value = -qSearch<nodeType>(pos, ss + 1, -beta, -alpha);
 
@@ -861,7 +740,7 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
       if (value > alpha) {
         bestMove = move;
 
-        if (pvNode && !rootNode)
+        if (pvNode)
           updatePV(ss->pv, move, (ss + 1)->pv);
 
         if (value >= beta) {
@@ -949,6 +828,7 @@ void SearchWorker::updateCounterMoves(const Position &pos, Move move,
 
 void SearchWorker::updateCaptureHistory(const Position &pos, SearchStack *ss,
                                         Move move, int bonus) {
+
   const Square to = move.to();
   const Square from = move.from();
 

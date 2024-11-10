@@ -21,7 +21,7 @@ namespace Maestro {
 |==========================================|
 \******************************************/
 
-BoardState &BoardState::operator=(const BoardState &bs) {
+BoardState BoardState::moveCopy(const BoardState &bs) {
   enPassant = bs.enPassant;
   plies = bs.plies;
   fiftyMove = bs.fiftyMove;
@@ -186,10 +186,11 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
   // Reset board state
   std::memset(this, 0, sizeof(Position));
 
-  // Reset new state
+  // Reset state
   state = {};
+
   // Set board state
-  this->st = &state;
+  st = &state;
 
   // Set no skip whitespace flag to detect white spaces
   is >> std::noskipws;
@@ -532,7 +533,7 @@ Bitboard Position::getSliderBlockers(Bitboard sliders, Square sq,
 void Position::makeMove(Move move, BoardState &state) {
   // Reset new state
   state = {};
-  state = *st;
+  state.moveCopy(*st);
   // std::memcpy(&state, st, sizeof(BoardState));
 
   // Get Hash Key (And change sides)
@@ -757,7 +758,7 @@ void Position::unmakeMove(Move move) {
 void Position::makeNullMove(BoardState &state) {
   state = {};
   // Copy current board state to new state partially
-  std::memcpy(&state, st, sizeof(BoardState));
+  state.moveCopy(*st);
 
   state.previous = st;
   st = &state;
@@ -794,6 +795,9 @@ bool Position::isLegal(Move move) const {
   Square from = move.from();
   Square to = move.to();
   Piece piece = getPiece(from);
+
+  if (!isPseudoLegal(move))
+    return false;
 
   // Handle enpassant
   if (move.is<EN_PASSANT>()) {

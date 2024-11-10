@@ -185,16 +185,14 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   if (s.get())
     states = std::move(s);
 
-  std::cout << states->back().plies << std::endl;
-
   for (auto &&th : *this) {
     th->startCustomJob([&] {
       th->worker->limits = limits;
       th->worker->nodes = 0;
       th->worker->rootDepth = 0;
       th->worker->rootMoves = rootMoves;
-      th->worker->rootState = states->back();
       th->worker->rootPos.set(pos.fen(), th->worker->rootState, th.get());
+      th->worker->rootState = states->back();
     });
   }
 

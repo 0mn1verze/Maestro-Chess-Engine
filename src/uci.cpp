@@ -25,12 +25,12 @@ void TimeManager::init(Limits &limits, Colour us, int ply,
 
   if (limits.movesToGo > 0) {
     // X / Y + Z time management
-    optimumTime = 1.80 * (time - MOVE_OVERHEAD) / mtg + inc;
-    maximumTime = 10.00 * (time - MOVE_OVERHEAD) / mtg + inc;
+    optimumTime = 1.50 * (time - MOVE_OVERHEAD) / mtg + inc;
+    maximumTime = 3.00 * (time - MOVE_OVERHEAD) / mtg + inc;
   } else {
     // X + Y time management
-    optimumTime = 2.50 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
-    maximumTime = 10.00 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
+    optimumTime = 1.50 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
+    maximumTime = 3.00 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
   }
 
   // Cap time allocation using move overhead
@@ -162,7 +162,6 @@ void Engine::go(Limits &limits) {
       return;
     }
   }
-
   threads.startThinking(pos, states, limits);
 }
 
@@ -296,6 +295,11 @@ void UCI::pos(std::istringstream &is) {
 void UCI::uciReportCurrentMove(Depth depth, Move move, int currmove) {
   std::cout << "info depth " << depth << " currmove " << move2Str(move)
             << " currmovenumber " << currmove << std::endl;
+}
+
+void UCI::uciReportNodes(U64 nodes, int hashFull, TimePt elapsed) {
+  std::cout << "info nodes " << nodes << " nps " << nodes * 1000 / elapsed
+            << " hashfull " << hashFull << std::endl;
 }
 
 void UCI::uciReport(const PrintInfo &info) {
