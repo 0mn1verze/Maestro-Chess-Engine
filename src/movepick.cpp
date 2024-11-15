@@ -54,14 +54,14 @@ MovePicker::MovePicker(const SearchWorker &sw, const Position &pos,
   if (pos.isCapture(killer2))
     killer2 = Move::none();
 
-  stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.isLegal(ttm));
+  stage = (depth > 0 ? CAPTURE_INIT : QCAPTURE_INIT);
 }
 
 MovePicker::MovePicker(const Position &pos, Move ttm,
                        const CaptureHistoryTable *cht, int threshold)
     : pos(pos), ttMove(ttm), cur(moves), endMoves(moves), threshold(threshold),
       cht(cht), skipQuiets(true) {
-  stage = PROBCUT_TT + !(ttm && pos.isCapture(ttm) && pos.isLegal(ttm));
+  stage = PROBCUT_INIT;
 }
 
 // Assigns numerical value to each move in a list [start to end]
@@ -81,12 +81,18 @@ template <GenType Type> void MovePicker::score() {
     const bool threatTo = pos.state()->attacked & to;
 
     if constexpr (Type == CAPTURES)
-      m.score = 64000 + 64000 * (m.move.promoted() == QUEEN) +
-                (*cht)[piece][threatFrom][threatTo][to][captured] +
-                MVVAugment[captured];
+
+      if (m.move == ttMove)
+        m.score = 1000000;
+      else
+        m.score = 64000 + 64000 * (m.move.promoted() == QUEEN) +
+                  (*cht)[piece][threatFrom][threatTo][to][captured] +
+                  MVVAugment[captured];
     else if constexpr (Type == QUIETS) {
 
-      if (m.move == counterMove)
+      if (m.move == ttMove)
+        m.score = 1000000;
+      else if (m.move == counterMove)
         m.score = 32000;
       else if (m.move == killer1)
         m.score = 64000;
@@ -106,11 +112,6 @@ template <GenType Type> void MovePicker::score() {
 Move MovePicker::selectNext() {
 
   switch (stage) {
-  case PROBCUT_TT:
-  case QSEARCH_TT:
-  case MAIN_TT:
-    stage++;
-    return ttMove;
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
   case CAPTURE_INIT:
@@ -152,11 +153,11 @@ Move MovePicker::selectNext() {
     if (bestMove([&] { return !pos.SEE(*(cur - 1), threshold); })) {
       return *(cur - 1);
     }
-    break;
+    return Move::none();
   case QCAPTURE:
     if (bestMove([&] { return true; }))
-      return isSpecial(cur - 1) ? selectNext() : *(cur - 1);
-    break;
+      return *(cur - 1);
+    return Move::none();
   }
 
   return Move::none();

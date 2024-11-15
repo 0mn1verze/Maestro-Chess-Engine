@@ -39,7 +39,7 @@ constexpr Value VAL_NONE = 32002;
 constexpr Value VAL_INFINITE = 32001;
 constexpr Value VAL_MATE = 32000;
 constexpr Value VAL_MATE_BOUND = VAL_MATE - MAX_PLY;
-constexpr Value VAL_DRAW = 0;
+constexpr Value VAL_ZERO = 0;
 
 /******************************************\
 |==========================================|
@@ -114,24 +114,6 @@ enum : int {
     DEPTH_UNSEARCHED = -2,
     DEPTH_ENTRY_OFFSET = -3
 };
-
-/******************************************\
-|==========================================|
-|             Piece Constants              |
-|==========================================|
-\******************************************/
-
-constexpr Value VAL_ZERO = 0;
-constexpr Value PawnValue = 126;
-constexpr Value KnightValue = 781;
-constexpr Value BishopValue = 825;
-constexpr Value RookValue = 1276;
-constexpr Value QueenValue = 2538;
-
-constexpr Value PieceValue[PIECE_N] = {
-    VAL_ZERO,  PawnValue,  KnightValue, BishopValue, RookValue,   QueenValue,
-    VAL_ZERO,  VAL_ZERO,   VAL_ZERO,    PawnValue,   KnightValue, BishopValue,
-    RookValue, QueenValue, VAL_ZERO,    VAL_ZERO};
 
 /******************************************\
 |==========================================|

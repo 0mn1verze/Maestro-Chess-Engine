@@ -61,9 +61,11 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   // Initialize evaluation
   Eval::initEval();
   // Initialise NNUE
-  nnue_init(NNUE_FILE.data());
+  if (DEFAULT_USE_NNUE)
+    nnue_init(NNUE_FILE.data());
   // Initialize polyglot book
-  initPolyBook(book, BOOK_FILE.data());
+  if (DEFAULT_USE_BOOK)
+    initPolyBook(book, BOOK_FILE.data());
   // Initialise thread pool
   resizeThreads(config.threads);
   // Initialise LMR values
@@ -75,7 +77,10 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
 }
 
 // Wait for search to finish
-void Engine::waitForSearchFinish() { threads.waitForThreads(); }
+void Engine::waitForSearchFinish() {
+  threads.main()->waitForThread();
+  threads.waitForThreads();
+}
 
 // Parse UCI move
 Move UCI::toMove(const Position &pos, const std::string &move) {
@@ -154,6 +159,7 @@ void Engine::bench() { perftBench(threads, BENCH_FILE.data()); }
 
 void Engine::go(Limits &limits) {
   threads.stop = threads.abortedSearch = false;
+
   if (DEFAULT_USE_BOOK and !limits.infinite) {
     Move bookMove = getPolyBookMove(book, pos);
 
@@ -260,6 +266,7 @@ Limits UCI::parseLimits(std::istringstream &is) {
 
 // Parse the UCI go command
 void UCI::go(std::istringstream &is) {
+
   Limits limits = parseLimits(is);
 
   if (limits.perft)

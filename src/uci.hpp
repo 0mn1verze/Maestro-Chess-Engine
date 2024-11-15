@@ -30,6 +30,7 @@ constexpr size_t DEFAULT_HASH_SIZE = 64;
 constexpr size_t DEFAULT_THREADS = 1;
 constexpr bool DEFAULT_USE_BOOK = false;
 constexpr int DEFAULT_MULTI_PV = 1;
+constexpr bool DEFAULT_USE_NNUE = false;
 constexpr int MOVE_OVERHEAD = 300;
 
 struct Config {
@@ -122,7 +123,6 @@ public:
   // Print search node count, hash full and nps
   static void uciReportNodes(U64 nodes, int hashFull, TimePt elapsed);
 
-private:
   Engine engine;
 };
 

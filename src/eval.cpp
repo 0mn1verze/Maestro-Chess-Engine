@@ -6,6 +6,7 @@
 #include "eval.hpp"
 #include "nnue.hpp"
 #include "position.hpp"
+#include "uci.hpp"
 #include "utils.hpp"
 
 namespace Maestro::Eval {
@@ -81,14 +82,28 @@ inline Value evaluate_nnue(const Position &pos) {
 Value evaluate(const Position &pos) {
   BoardState *st = pos.state();
 
-  Value nnue = evaluate_nnue(pos);
+  if constexpr (DEFAULT_USE_NNUE) {
+    Value nnue = evaluate_nnue(pos);
 
-  Value v = nnue * 5 / 4 + 28;
+    Value v = nnue * 5 / 4 + 28;
 
-  v = v * (100 - st->fiftyMove) / 100;
+    v = v * (100 - st->fiftyMove) / 100;
 
-  v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
+    v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
 
-  return v / 2;
+    return v / 2;
+  } else {
+    Score psq = pos.psq();
+
+    int mgPhase = st->gamePhase;
+    if (mgPhase > 24)
+      mgPhase = 24;
+    int egPhase = 24 - mgPhase;
+
+    Value v = (psq.first * mgPhase + psq.second * egPhase) / 24;
+
+    return pos.getSideToMove() == WHITE ? v : -v;
+  }
 }
+
 } // namespace Maestro::Eval

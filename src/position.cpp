@@ -403,8 +403,10 @@ std::pair<int, int> Position::initNonPawnMaterial() const {
   // Loop through all pieces
   for (PieceType pt = KNIGHT; pt <= KING; ++pt) {
     // Update non pawn material
-    whiteNPM += PieceValue[toPiece(WHITE, pt)] * pieceCount[toPiece(WHITE, pt)];
-    blackNPM += PieceValue[toPiece(BLACK, pt)] * pieceCount[toPiece(BLACK, pt)];
+    whiteNPM +=
+        Eval::pieceScore[toPiece(WHITE, pt)] * pieceCount[toPiece(WHITE, pt)];
+    blackNPM +=
+        Eval::pieceScore[toPiece(BLACK, pt)] * pieceCount[toPiece(BLACK, pt)];
   }
 
   return {whiteNPM, blackNPM};
@@ -592,7 +594,7 @@ void Position::makeMove(Move move, BoardState &state) {
     hashKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
     if (pieceTypeOf(cap) != PAWN)
-      st->nonPawnMaterial[enemy] -= PieceValue[cap];
+      st->nonPawnMaterial[enemy] -= Eval::pieceScore[cap];
     else
       pawnKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
@@ -657,7 +659,7 @@ void Position::makeMove(Move move, BoardState &state) {
 
       pawnKey ^= Zobrist::pieceSquareKeys[piece][to];
 
-      st->nonPawnMaterial[side] += PieceValue[promotedTo];
+      st->nonPawnMaterial[side] += Eval::pieceScore[promotedTo];
     }
     // Update fifty move rule
     st->fiftyMove = 0;
@@ -814,7 +816,7 @@ bool Position::isLegal(Move move) const {
     to = relativeSquare(us, to > from ? G1 : C1);
     Bitboard b = betweenBB[from][to] | to;
 
-    if (st->attacked & b)
+    if (attackedByBB(~us) & b)
       return false;
 
     return true;
@@ -840,16 +842,8 @@ bool Position::isPseudoLegal(Move move) const {
   if (getOccupiedBB(us) & to)
     return false;
 
-  // Handle castling
-  if (move.is<CASTLE>()) {
-    to = relativeSquare(us, to > from ? G1 : C1);
-    Bitboard b = betweenBB[from][to] | to;
-
-    if (st->attacked & b)
-      return false;
-
+  if (!move.is<NORMAL>())
     return true;
-  }
 
   // Handle pawn moves
   if (pieceTypeOf(piece) == PAWN) {
@@ -892,13 +886,13 @@ bool Position::SEE(Move move, int threshold) const {
   Square from = move.from();
   Square to = move.to();
 
-  int swap = PieceValue[getPiece(to)] - threshold;
+  int swap = Eval::pieceScore[getPiece(to)] - threshold;
 
   // If capturing enemy piece does not go beyond the threshold, the give up
   if (swap < 0)
     return false;
 
-  swap = PieceValue[getPiece(from)] - swap;
+  swap = Eval::pieceScore[getPiece(from)] - swap;
   if (swap <= 0)
     return true;
 
@@ -928,7 +922,7 @@ bool Position::SEE(Move move, int threshold) const {
     // Locate and remove the next least valuable attacker, and add to
     // the bitboard 'attackers' any X-ray attackers behind it.
     if ((bb = stmAttackers & getPiecesBB(PAWN))) {
-      if ((swap = PawnValue - swap) < res)
+      if ((swap = Eval::pieceScore[wP] - swap) < res)
         break;
       occupied ^= getLSB(bb);
 
@@ -936,13 +930,13 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & getPiecesBB(KNIGHT))) {
-      if ((swap = KnightValue - swap) < res)
+      if ((swap = Eval::pieceScore[wN] - swap) < res)
         break;
       occupied ^= getLSB(bb);
     }
 
     else if ((bb = stmAttackers & getPiecesBB(BISHOP))) {
-      if ((swap = BishopValue - swap) < res)
+      if ((swap = Eval::pieceScore[wB] - swap) < res)
         break;
       occupied ^= getLSB(bb);
 
@@ -950,7 +944,7 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & getPiecesBB(ROOK))) {
-      if ((swap = RookValue - swap) < res)
+      if ((swap = Eval::pieceScore[wR] - swap) < res)
         break;
       occupied ^= getLSB(bb);
 
@@ -958,7 +952,7 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & getPiecesBB(QUEEN))) {
-      if ((swap = QueenValue - swap) < res)
+      if ((swap = Eval::pieceScore[wQ] - swap) < res)
         break;
       occupied ^= getLSB(bb);
 

@@ -277,6 +277,9 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   constexpr bool rootNode = nodeType == ROOT;
   const bool allNode = !(pvNode || cutNode);
 
+  // Update node count
+  nodes.fetch_add(1, std::memory_order_relaxed);
+
   // Quiescence search
   if (depth <= 0)
     return qSearch < pvNode ? PV : NON_PV > (pos, ss, alpha, beta);
@@ -315,9 +318,6 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // Check for remaining time
   if (isMainThread())
     checkTime();
-
-  // Update node count
-  nodes.fetch_add(1, std::memory_order_relaxed);
 
   // Update seldepth to sent to GUI
   if (pvNode)
@@ -368,13 +368,14 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
         updateContinuationHistory(ss - 1, pos.getPieceType(prevSq), prevSq,
                                   -statBonus(depth + 1));
     }
-    if (pos.getFiftyMove() < 9)
+    if (pos.getFiftyMove() < 90)
       return ttData.value;
   }
 
   // Static Evaluation
   if (ss->inCheck) {
     ss->staticEval = VAL_NONE;
+    depth++;
     improving = false;
     goto moves_loop;
   } else if (excludedMove) {
@@ -395,8 +396,14 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // Set opponent worsening flag (Whether the opponent's position is worse than)
   oppWorsening = ss->staticEval + (ss - 1)->staticEval > 2;
 
+  // Futility pruning (If eval is well enough, assume the eval will hold above
+  // beta or cause a cutoff)
+  if (!pvNode && !ss->inCheck && !excludedMove && depth <= 8 &&
+      ss->staticEval - 65 * std::max(0, depth - improving) >= beta)
+    return ss->staticEval;
+
   // Null Move Pruning
-  if (cutNode && (ss - 1)->currentMove != Move::null() && depth >= 2 &&
+  if (cutNode && (ss - 1)->currentMove != Move::null() && depth >= 3 &&
       ss->staticEval >= beta - 23 * depth + 400 && !excludedMove &&
       pos.getNonPawnMaterial(us) && beta > VAL_MATE_BOUND) {
 
@@ -416,60 +423,6 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
     if (nullValue >= beta && nullValue < VAL_MATE_BOUND)
       return nullValue;
-  }
-
-  if (pvNode && !ttData.move)
-    depth -= 3;
-
-  if (depth <= 0)
-    return qSearch<PV>(pos, ss, alpha, beta);
-
-  if (cutNode && depth >= 7 and (!ttData.move || ttData.flag == FLAG_UPPER))
-    depth -= 2;
-
-  // Probcut
-  // If we have a good enough capture or queen promotion, and a previous search
-  // returns a value a lot high than beta, we can safely prune the move
-  probCutBeta = beta + 200 - 50 * improving - 30 * oppWorsening;
-  if (!pvNode && depth > 3 && std::abs(beta) < VAL_MATE_BOUND &&
-      !(ttData.depth >= depth - 3 && ttData.value != VAL_NONE &&
-        ttData.value < probCutBeta)) {
-
-    MovePicker mp(pos, ttData.move, &captureHistoryTable,
-                  probCutBeta - ss->staticEval);
-    Piece captured;
-
-    while ((move = mp.selectNext()) != Move::none()) {
-
-      if (move == excludedMove)
-        continue;
-
-      ss->currentMove = move;
-      ss->ch = &continuationTable[ss->inCheck][true][pos.movedPieceType(move)]
-                                 [move.to()];
-
-      pos.makeMove(move, st);
-
-      // Perform a preliminary qsearch to verify that the move holds
-      value = -qSearch<NON_PV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
-
-      // If the qsearch held, perform the regular search
-      if (value >= probCutBeta)
-        value = -search<NON_PV>(pos, ss + 1, depth - 4, -probCutBeta,
-                                -probCutBeta + 1, !cutNode);
-
-      pos.unmakeMove(move);
-
-      if (value >= probCutBeta) {
-        updateCaptureHistory(pos, ss, move, statBonus(depth - 2));
-
-        ttWriter.write(hashKey, TTable::valueToTT(value, ss->ply), ss->ttPV,
-                       FLAG_LOWER, depth - 3, move, ss->staticEval, tt.gen8);
-
-        return std::abs(value) <= VAL_MATE_BOUND ? value - (probCutBeta - beta)
-                                                 : value;
-      }
-    }
   }
 
 moves_loop:
@@ -509,8 +462,6 @@ moves_loop:
     // Calculate new depth
     newDepth = depth;
 
-    newDepth += ss->inCheck;
-
     // Update current move
     ss->currentMove = move;
     ss->ch =
@@ -528,35 +479,35 @@ moves_loop:
     // Prefetch the next entry in the TT
     TTable::prefetch(tt.firstEntry(pos.getKey()));
 
-    // Late move reduction
-    if (depth >= 2 && moveCount > 1) {
-
-      if (!(isCapture || givesCheck || move.is<PROMOTION>() || ss->inCheck))
-        R = 1 + (moveCount > 8) * depth / 3;
-      else
-        R = 1;
-
-      // Cap the LMR depth at newDepth;
-      Depth d = std::max(1, std::min(newDepth - R, newDepth));
-      // Reduced depth LMR search
-      value = -search<NON_PV>(pos, ss + 1, d, -alpha - 1, -alpha, true);
-
-      // Full depth LMR search
-      if (value > alpha && d < newDepth - 1)
-        value = -search<NON_PV>(pos, ss + 1, newDepth - 1, -alpha - 1, -alpha,
-                                !cutNode);
-      // Full depth LMR search (If LMR is skipped)
-    } else if (!pvNode || moveCount > 1)
-      value = -search<NON_PV>(pos, ss + 1, newDepth - 1, -alpha - 1, -alpha,
-                              !cutNode);
-
-    // Full window full depth search (PV search)
-    if (pvNode && (moveCount == 1 || value > alpha)) {
+    if (moveCount == 1) {
       // Set new PV
       (ss + 1)->pv = pv;
       (ss + 1)->pv[0] = Move::none();
       // Recursive search
       value = -search<PV>(pos, ss + 1, newDepth - 1, -beta, -alpha, false);
+    } else {
+      if (moveCount >= 4 && depth >= 3 && !ss->inCheck && !isCapture &&
+          !move.is<PROMOTION>() && !givesCheck) {
+
+        R = 2 + (moveCount >= 8) * depth / 3;
+
+        value = -search<NON_PV>(pos, ss + 1, newDepth - R, -alpha - 1, -alpha,
+                                true);
+      } else
+        value = alpha + 1;
+
+      if (value > alpha) {
+        value = -search<NON_PV>(pos, ss + 1, newDepth - 1, -alpha - 1, -alpha,
+                                !cutNode);
+
+        if (value > alpha && value < beta) {
+          // Set new PV
+          (ss + 1)->pv = pv;
+          (ss + 1)->pv[0] = Move::none();
+          // Recursive search
+          value = -search<PV>(pos, ss + 1, newDepth - 1, -beta, -alpha, false);
+        }
+      }
     }
 
     // Unmake the move
@@ -643,9 +594,12 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
                             Value beta) {
   constexpr bool pvNode = nodeType == PV;
 
+  // Update node count
+  nodes.fetch_add(1, std::memory_order_relaxed);
+
   // Initialize variables
   Move pv[MAX_PLY + 1];
-  BoardState st;
+  BoardState st{};
 
   Key hashKey;
   Move move, bestMove;
@@ -671,7 +625,7 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
 
   if (pos.isDraw(ss->ply) || ss->ply >= MAX_PLY)
     return (ss->ply >= MAX_PLY && !ss->inCheck) ? Eval::evaluate(pos)
-                                                : VAL_DRAW;
+                                                : VAL_ZERO;
   // Transposition Table Lookup
   hashKey = pos.getKey();
   auto [ttHit, ttData, ttWriter] = tt.probe(hashKey);
@@ -710,7 +664,7 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
   const ContinuationHistory *ch[] = {(ss - 1)->ch, (ss - 2)->ch};
 
   // MovePicker
-  MovePicker mp(*this, pos, ss, ttData.move, ch, DEPTH_QS);
+  MovePicker mp(*this, pos, ss, Move::none(), ch, DEPTH_QS);
 
   // Main loop
   while ((move = mp.selectNext()) != Move::none()) {
@@ -730,7 +684,6 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
     TTable::prefetch(tt.firstEntry(pos.getKey()));
     // Recursive quiescence search
     value = -qSearch<nodeType>(pos, ss + 1, -beta, -alpha);
-
     // Unmake the move
     pos.unmakeMove(move);
 

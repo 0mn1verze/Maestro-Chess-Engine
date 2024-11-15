@@ -84,7 +84,6 @@ using ContinuationTable =
 
 enum GenStage {
   // Generate main search moves
-  MAIN_TT,
   CAPTURE_INIT,
   GOOD_CAPTURE,
   QUIET_INIT,
@@ -92,12 +91,10 @@ enum GenStage {
   BAD_CAPTURE,
 
   // Generate qsearch moves
-  QSEARCH_TT,
   QCAPTURE_INIT,
   QCAPTURE,
 
   // Probe cut search
-  PROBCUT_TT,
   PROBCUT_INIT,
   PROBCUT,
 };
