@@ -26,11 +26,11 @@ constexpr std::string_view BENCH_FILE = "bench.csv";
 constexpr std::string_view BOOK_FILE = "OPTIMUS2403.bin";
 constexpr std::string_view NNUE_FILE = "nn-eba324f53044.nnue";
 
-constexpr size_t DEFAULT_HASH_SIZE = 32;
+constexpr size_t DEFAULT_HASH_SIZE = 64;
 constexpr size_t DEFAULT_THREADS = 1;
-constexpr bool DEFAULT_USE_BOOK = true;
+constexpr bool DEFAULT_USE_BOOK = false;
 constexpr int DEFAULT_MULTI_PV = 1;
-constexpr int MOVE_OVERHEAD = 1000;
+constexpr int MOVE_OVERHEAD = 300;
 
 struct Config {
   size_t hashSize = DEFAULT_HASH_SIZE;
