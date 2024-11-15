@@ -11,7 +11,7 @@ A chess engine project for learning c++. It has a decent search speed (Average o
 [Website](https://0mn1verze.pythonanywhere.com/)
 
 ## Performance
-* Rough estimate of 3000 elo
+* Rough estimate of 2900 - 3000 elo
 
 ## Features
 * Fast move generator (200Mnps on an i7-10750H) (Following Gigantua move generator)
