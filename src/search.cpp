@@ -313,8 +313,6 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   prevCapture = pos.getCaptured();
   bestValue = -VAL_INFINITE;
 
-  ss->extensions = (ss - 1)->extensions;
-
   // Check for remaining time
   if (isMainThread())
     checkTime();
@@ -375,11 +373,10 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // Static Evaluation
   if (ss->inCheck) {
     ss->staticEval = VAL_NONE;
-    depth++;
+    // depth++;
     improving = false;
     goto moves_loop;
   } else if (excludedMove) {
-
   } else if (ss->ttHit) {
     ss->staticEval =
         ttData.eval != VAL_NONE ? ttData.eval : Eval::evaluate(pos);
@@ -399,7 +396,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // Futility pruning (If eval is well enough, assume the eval will hold above
   // beta or cause a cutoff)
   if (!pvNode && !ss->inCheck && !excludedMove && depth <= 8 &&
-      ss->staticEval - 65 * std::max(0, depth - improving) >= beta)
+      ss->staticEval - 150 * std::max(0, depth - improving) >= beta)
     return ss->staticEval;
 
   // Null Move Pruning
@@ -407,7 +404,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
       ss->staticEval >= beta - 23 * depth + 400 && !excludedMove &&
       pos.getNonPawnMaterial(us) && beta > VAL_MATE_BOUND) {
 
-    R = depth / 4 + 3;
+    R = 3;
 
     ss->currentMove = Move::null();
     ss->ch = &continuationTable[0][0][NO_PIECE][A1];
@@ -460,7 +457,7 @@ moves_loop:
         isCapture ? getCaptureHistory(pos, move) : getQuietHistory(pos, move);
 
     // Calculate new depth
-    newDepth = depth;
+    newDepth = depth + ss->inCheck;
 
     // Update current move
     ss->currentMove = move;
@@ -486,10 +483,10 @@ moves_loop:
       // Recursive search
       value = -search<PV>(pos, ss + 1, newDepth - 1, -beta, -alpha, false);
     } else {
-      if (moveCount >= 4 && depth >= 3 && !ss->inCheck && !isCapture &&
+      if (moveCount >= 1 && depth >= 2 && !ss->inCheck && !isCapture &&
           !move.is<PROMOTION>() && !givesCheck) {
 
-        R = 2 + (moveCount >= 8) * depth / 3;
+        R = 2;
 
         value = -search<NON_PV>(pos, ss + 1, newDepth - R, -alpha - 1, -alpha,
                                 true);

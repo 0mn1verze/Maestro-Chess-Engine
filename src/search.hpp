@@ -80,7 +80,6 @@ struct SearchStack {
   Move excludedMove = Move::none();
   Value staticEval = 0;
   int moveCount = 0;
-  Depth extensions = 0;
   bool inCheck = false;
   bool ttPV = false;
   bool ttHit = false;

@@ -237,6 +237,20 @@ template <typename T, size_t N> struct Array<T, N> : public std::array<T, N> {};
 
 /******************************************\
 |==========================================|
+|               Hash Table                 |
+|==========================================|
+\******************************************/
+
+template <class Entry, int Size> class HashTable {
+public:
+  Entry *operator[](Key key) { return &table[key % Size]; }
+
+private:
+  std::vector<Entry> table = std::vector<Entry>(Size);
+};
+
+/******************************************\
+|==========================================|
 |          Distance Lookup Table           |
 |                                          |
 | dist[sq1][sq2] = max(rankDist, fileDist) |

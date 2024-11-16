@@ -28,9 +28,9 @@ constexpr std::string_view NNUE_FILE = "nn-eba324f53044.nnue";
 
 constexpr size_t DEFAULT_HASH_SIZE = 64;
 constexpr size_t DEFAULT_THREADS = 1;
-constexpr bool DEFAULT_USE_BOOK = false;
+constexpr bool DEFAULT_USE_BOOK = true;
 constexpr int DEFAULT_MULTI_PV = 1;
-constexpr bool DEFAULT_USE_NNUE = false;
+constexpr bool DEFAULT_USE_NNUE = true;
 constexpr int MOVE_OVERHEAD = 300;
 
 struct Config {
