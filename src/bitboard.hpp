@@ -302,6 +302,13 @@ template <Colour c> Bitboard pawnAttacksBB(Bitboard bb) {
   return (c == WHITE) ? shift<NW>(bb) | shift<NE>(bb)
                       : shift<SW>(bb) | shift<SE>(bb);
 }
+
+// Get double pawn attacks bitboard (Entire bitboard)
+template <Colour c> Bitboard doublePawnAttacksBB(Bitboard bb) {
+  return (c == WHITE) ? shift<NW>(bb) & shift<NE>(bb)
+                      : shift<SW>(bb) & shift<SE>(bb);
+}
+
 // Get pawn attacks bitboard (Single square)
 template <Colour c> Bitboard pawnAttacksBB(Square sq) {
   return pawnAttacks[c][sq];
@@ -312,10 +319,36 @@ inline Bitboard pawnAttacksBB(Colour c, Square sq) {
   return pawnAttacks[c][sq];
 }
 
+// Get adjacent files bitboard
+inline Bitboard adjacentFilesBB(Square sq) {
+  return shift<E>(squareBB(sq)) | shift<W>(squareBB(sq));
+}
+
+// Get forward ranks bitboard
+inline Bitboard forwardRanksBB(Colour c, Square sq) {
+  return (c == WHITE) ? ~RANK_1BB << 8 * rankOf(sq)
+                      : ~RANK_8BB >> 8 * (RANK_8 - rankOf(sq));
+}
+
+// Get forward file bitboard
+inline Bitboard forwardFileBB(Colour c, Square sq) {
+  return forwardRanksBB(c, sq) & fileBB(sq);
+}
+
+// Get passed pawn bitboard
+inline Bitboard passedPawnSpan(Colour c, Square sq) {
+  return forwardFileBB(c, sq) & (adjacentFilesBB(sq) | fileBB(sq));
+}
+
+// Check if 3 squares are collinear
 inline bool aligned(Square sq1, Square sq2, Square sq3) {
   return lineBB[sq1][sq2] & squareBB(sq3);
 }
 
+// Get front most square
+inline Square frontMostSquare(Colour c, Bitboard bb) {
+  return (c == WHITE) ? getMSB(bb) : getLSB(bb);
+}
 } // namespace Maestro
 
 #endif // BITBOARD_HPP

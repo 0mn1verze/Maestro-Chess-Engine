@@ -173,7 +173,6 @@ constexpr Castling &operator^=(Castling &c1, Castling c2) { return c1 = c1 ^ c2;
 constexpr Castling operator~(Castling c) { return c ^ ANY_SIDE; }
 // Increment Castling Rights operator
 constexpr Castling &operator++(Castling &c) { return c = static_cast<Castling>(static_cast<int>(c) + 1); }
-
 // clang-format on
 
 /******************************************\

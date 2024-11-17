@@ -282,6 +282,11 @@ void moveToFront(std::vector<T> &vec, Pred pred) {
     std::rotate(vec.begin(), it, vec.end());
 }
 
+template <typename T>
+T clamp(T val, T min, T max) {
+  return std::max(min, std::min(val, max));
+}
+
 } // namespace Utility
 
 } // namespace Maestro

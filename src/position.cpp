@@ -50,8 +50,10 @@ void Position::putPiece(Piece piece, Square sq) {
   // Update occupancy bitboards
   occupiedBB[colourOf(piece)] |= sq;
   // Update piece count list
-  pieceCount[piece]++;
   pieceCount[toPiece(colourOf(piece), ALL_PIECES)]++;
+  // Update piece list
+  index[sq] = pieceCount[piece]++;
+  pieceList[piece][index[sq]] = sq;
   // Update game phase
   st->gamePhase += Eval::gamePhaseInc[pieceTypeOf(piece)];
   // Update psq score
@@ -61,37 +63,42 @@ void Position::putPiece(Piece piece, Square sq) {
 // Remove piece on square
 void Position::popPiece(Square sq) {
   // Find piece on square
-  Piece piece = board[sq];
+  Piece pc = board[sq];
   // Update piece bitboards
   piecesBB[ALL_PIECES] ^= sq;
-  piecesBB[pieceTypeOf(piece)] ^= sq;
+  piecesBB[pieceTypeOf(pc)] ^= sq;
   // Update occupancy bitboards
-  occupiedBB[colourOf(piece)] ^= sq;
+  occupiedBB[colourOf(pc)] ^= sq;
   // Update piece list at square
-  board[sq] = NO_PIECE;
+  pieceCount[toPiece(colourOf(pc), ALL_PIECES)]--;
   // Update piece count
-  pieceCount[piece]--;
-  pieceCount[toPiece(colourOf(piece), ALL_PIECES)]--;
+  Square lastSq = pieceList[pc][--pieceCount[pc]];
+  index[lastSq] = index[sq];
+  pieceList[pc][index[lastSq]] = lastSq;
+  pieceList[pc][pieceCount[pc]] = NO_SQ;
   // Update game phase
-  st->gamePhase -= Eval::gamePhaseInc[pieceTypeOf(piece)];
+  st->gamePhase -= Eval::gamePhaseInc[pieceTypeOf(pc)];
   // Update psq score
-  st->psq -= Eval::psqt[piece][sq];
+  st->psq -= Eval::psqt[pc][sq];
 }
 
 // Move piece between two squares without updating piece counts (Quicker)
 void Position::movePiece(Square from, Square to) {
   // Find piece on square
-  Piece piece = board[from];
+  Piece pc = board[from];
   // Update piece bitboards
   piecesBB[ALL_PIECES] ^= from | to;
-  piecesBB[pieceTypeOf(piece)] ^= from | to;
+  piecesBB[pieceTypeOf(pc)] ^= from | to;
   // Update occupancy bitboards
-  occupiedBB[colourOf(piece)] ^= from | to;
+  occupiedBB[colourOf(pc)] ^= from | to;
   // Update piece list
   board[from] = NO_PIECE;
-  board[to] = piece;
+  board[to] = pc;
+  // Update piece index
+  index[to] = index[from];
+  pieceList[pc][index[to]] = to;
   // Update psq score
-  st->psq += Eval::psqt[piece][to] - Eval::psqt[piece][from];
+  st->psq += Eval::psqt[pc][to] - Eval::psqt[pc][from];
 }
 
 /******************************************\
@@ -185,6 +192,7 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
 
   // Reset board state
   std::memset(this, 0, sizeof(Position));
+  std::fill_n(&pieceList[0][0], 16 * PIECE_N, NO_SQ);
 
   // Reset state
   state = {};
@@ -264,6 +272,7 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
 }
 
 void Position::setState() const {
+
   st->key = initKey();
 
   st->pawnKey = initPawnKey();
@@ -922,7 +931,7 @@ bool Position::SEE(Move move, int threshold) const {
     // Locate and remove the next least valuable attacker, and add to
     // the bitboard 'attackers' any X-ray attackers behind it.
     if ((bb = stmAttackers & getPiecesBB(PAWN))) {
-      if ((swap = Eval::pieceScore[wP] - swap) < res)
+      if ((swap = Eval::pawnScore.first - swap) < res)
         break;
       occupied ^= getLSB(bb);
 
@@ -930,13 +939,13 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & getPiecesBB(KNIGHT))) {
-      if ((swap = Eval::pieceScore[wN] - swap) < res)
+      if ((swap = Eval::knightScore.first - swap) < res)
         break;
       occupied ^= getLSB(bb);
     }
 
     else if ((bb = stmAttackers & getPiecesBB(BISHOP))) {
-      if ((swap = Eval::pieceScore[wB] - swap) < res)
+      if ((swap = Eval::bishopScore.first - swap) < res)
         break;
       occupied ^= getLSB(bb);
 
@@ -944,7 +953,7 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & getPiecesBB(ROOK))) {
-      if ((swap = Eval::pieceScore[wR] - swap) < res)
+      if ((swap = Eval::rookScore.first - swap) < res)
         break;
       occupied ^= getLSB(bb);
 
@@ -952,7 +961,7 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & getPiecesBB(QUEEN))) {
-      if ((swap = Eval::pieceScore[wQ] - swap) < res)
+      if ((swap = Eval::queenScore.first - swap) < res)
         break;
       occupied ^= getLSB(bb);
 

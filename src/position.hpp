@@ -110,6 +110,7 @@ public:
   Piece getCaptured() const;
   int getFiftyMove() const;
   Key getKey() const;
+  Key getPawnKey() const;
   bool canCastle(Castling cr) const;
   bool isInCheck() const;
   bool isDraw(int ply) const;
@@ -119,6 +120,7 @@ public:
   Score psq() const;
   int gamePhase() const;
   bool empty(Square sq) const;
+  Thread *getThread() const;
 
   // Board piece bitboard getters
   Bitboard getPiecesBB(PieceType pt) const;
@@ -131,6 +133,8 @@ public:
   Piece getPiece(Square sq) const;
   PieceType getPieceType(Square sq) const;
   template <PieceType pt> Square square(Colour us) const;
+  template <PieceType pt> const Square *squares(Colour us) const;
+  const Square *squares(Colour us, PieceType pt) const;
 
   // Piece count
   template <Piece pc> int count() const;
@@ -144,6 +148,9 @@ public:
 
   // Side to move
   Colour getSideToMove() const;
+
+  // Castling
+  Castling getCastlingRights() const;
 
   // Slider blockers
   Bitboard getSliderBlockers(Bitboard sliders, Square sq,
@@ -183,6 +190,8 @@ private:
   // Piece list
   Piece board[SQ_N];
   int pieceCount[PIECE_N];
+  int index[SQ_N];
+  Square pieceList[PIECE_N][16];
   // Bitboard representation
   Bitboard piecesBB[PIECE_TYPE_N];
   Bitboard occupiedBB[COLOUR_N];
@@ -200,35 +209,43 @@ private:
 |==========================================|
 \******************************************/
 
-// Get square of a piece type with the lowest index
+// Get square of a piece type
 template <PieceType pt> Square Position::square(Colour us) const {
-  return getLSB(getPiecesBB(us, pt));
+  return pieceList[toPiece(us, pt)][0];
+}
+
+// Get squares of a piece type
+template <PieceType pt>
+inline const Square *Position::squares(Colour us) const {
+  return pieceList[toPiece(us, pt)];
 }
 
 // Get the bitboard of pieces of certain types
 template <typename... PieceTypes>
-Bitboard Position::getPiecesBB(PieceType pt, PieceTypes... pts) const {
+inline Bitboard Position::getPiecesBB(PieceType pt, PieceTypes... pts) const {
   return piecesBB[pt] | getPiecesBB(pts...);
 }
 
 // Get the bitboard of pieces of certain types for a colour
 template <typename... PieceTypes>
-Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
+inline Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
   return occupiedBB[us] & getPiecesBB(pts...);
 }
 
 // U32 the number of pieces of a certain type
-template <Piece pc> int Position::count() const { return pieceCount[pc]; }
+template <Piece pc> inline int Position::count() const {
+  return pieceCount[pc];
+}
 
 // U32 the number of pieces of a certain type
-template <PieceType pt> int Position::count() const {
+template <PieceType pt> inline int Position::count() const {
   return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)];
 }
 
 // Get the slider blockers for a square
 template <bool doMove>
-void Position::castleRook(Square from, Square to, Square &rookFrom,
-                          Square &rookTo) {
+inline void Position::castleRook(Square from, Square to, Square &rookFrom,
+                                 Square &rookTo) {
   bool kingSide = to > from;
   // Define the square that the rook is from
   rookFrom = kingSide ? H1 : A1;
@@ -258,11 +275,22 @@ void Position::castleRook(Square from, Square to, Square &rookFrom,
 // State getter
 inline BoardState *Position::state() const { return st; }
 
+// Get squares of a piece type
+inline const Square *Position::squares(Colour c, PieceType pt) const {
+  return pieceList[toPiece(c, pt)];
+}
+
 // Get previously captured piece
 inline Piece Position::getCaptured() const { return st->captured; }
 
 // Get hash key
 inline Key Position::getKey() const { return st->key; }
+
+// Get pawn hash key
+inline Key Position::getPawnKey() const { return st->pawnKey; }
+
+// Get thread
+inline Thread *Position::getThread() const { return thisThread; }
 
 // Get fifty move counter
 inline int Position::getFiftyMove() const { return st->fiftyMove; }
@@ -310,6 +338,9 @@ inline Bitboard Position::getOccupiedBB(Colour us) const {
 }
 // Returns side to move
 inline Colour Position::getSideToMove() const { return sideToMove; }
+
+// Returns castling rights
+inline Castling Position::getCastlingRights() const { return st->castling; }
 
 // Returns the square the enPassant pawn is on
 inline Square Position::getEnPassantTarget(Colour side) const {
