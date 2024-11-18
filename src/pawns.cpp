@@ -105,8 +105,6 @@ template <Colour us> Score evaluate(const Position &pos, Entry *entry) {
     neighbours = ourPawns & adjacentFilesBB(sq);
     // Blocked pawns
     blocked = theirPawns & (sq + up);
-    // Backup pawns
-    backup = ourPawns & passedPawnSpan(them, sq);
     // Opposed pawns
     opposed = theirPawns & forwardFileBB(us, sq);
     // Stopper pawns
@@ -127,13 +125,16 @@ template <Colour us> Score evaluate(const Position &pos, Entry *entry) {
     backward =
         !(neighbours & forwardRanksBB(them, sq + up)) && (leverPush | blocked);
 
+    if (!backward && !blocked)
+      entry->_pawnAttacksSpan[us] |= pawnAttacksBB(us, sq);
+    
     // Pawn is passed if one of the following conditions is true:
     // 1. No stoppers except some levers (Can push through to be a passed pawn)
     // 2. Lever push but we outnumber the stoppers
     // 3. One front stopper that can be levered
     passed = !(stoppers ^ lever) ||
              (!(stoppers ^ leverPush) &&
-              countBits(phalanx) > countBits(leverPush)) ||
+              countBits(phalanx) >= countBits(leverPush)) ||
              (stoppers == blocked && r >= RANK_5 &&
               (shift<up>(support) & ~(theirPawns | doubleAttacksThem)));
 
@@ -174,7 +175,7 @@ template <Colour us> Score evaluate(const Position &pos, Entry *entry) {
 
 // Evaluate the pawn shelter for king safety
 template <Colour us>
-Score Entry::eval_shelter(const Position &pos, Square king) const {
+Score Entry::evalShelter(const Position &pos, Square king) const {
   constexpr Colour them = ~us;
   Score bonus;
 
@@ -213,21 +214,21 @@ Score Entry::eval_shelter(const Position &pos, Square king) const {
 }
 
 // Evaluate the king safety for a colour
-template <Colour us> Score Entry::eval_king_safety(const Position &pos) {
+template <Colour us> Score Entry::evalKingSafety(const Position &pos) {
   Square ksq = pos.square<KING>(us);
   _kingSquare[us] = ksq;
   _castlingRights[us] = pos.getCastlingRights();
 
-  Score shelter = eval_shelter<us>(pos, ksq);
+  Score shelter = evalShelter<us>(pos, ksq);
 
   Castling queenSide = (us == WHITE) ? WQ_SIDE : BQ_SIDE;
   Castling kingSide = (us == WHITE) ? WK_SIDE : BK_SIDE;
 
   // If we can castle use the bonus after castling
   if (pos.canCastle(kingSide))
-    shelter = std::max(shelter, eval_shelter<us>(pos, relativeSquare(us, G1)));
+    shelter = std::max(shelter, evalShelter<us>(pos, relativeSquare(us, G1)));
   if (pos.canCastle(queenSide))
-    shelter = std::max(shelter, eval_shelter<us>(pos, relativeSquare(us, C1)));
+    shelter = std::max(shelter, evalShelter<us>(pos, relativeSquare(us, C1)));
 
   // Bring king near the closest pawn (In the endgame stage)
   Bitboard pawns = pos.getPiecesBB(us, PAWN);
@@ -245,8 +246,8 @@ template <Colour us> Score Entry::eval_king_safety(const Position &pos) {
   return shelter - _S(0, 16 * minPawnDist);
 }
 
-template Score Entry::eval_king_safety<WHITE>(const Position &pos);
-template Score Entry::eval_king_safety<BLACK>(const Position &pos);
+template Score Entry::evalKingSafety<WHITE>(const Position &pos);
+template Score Entry::evalKingSafety<BLACK>(const Position &pos);
 
 /******************************************\
 |==========================================|

@@ -106,6 +106,10 @@ constexpr Bitboard QueenSide = FILE_ABB | FILE_BBB | FILE_CBB | FILE_DBB;
 constexpr Bitboard CenterFiles = FILE_CBB | FILE_DBB | FILE_EBB | FILE_FBB;
 constexpr Bitboard KingSide = FILE_EBB | FILE_FBB | FILE_GBB | FILE_HBB;
 constexpr Bitboard Center = (FILE_EBB | FILE_FBB) & (RANK_4BB | RANK_5BB);
+// King flank bitboards
+constexpr Bitboard KingFlank[FILE_N] = {
+    QueenSide ^ FILE_DBB, QueenSide, QueenSide, CenterFiles,
+    CenterFiles,          KingSide,  KingSide,  KingSide ^ FILE_EBB};
 
 /******************************************\
 |==========================================|
@@ -298,13 +302,17 @@ inline Bitboard attacksBB(PieceType pt, Square sq, Bitboard occupied = 0ULL) {
 }
 
 // Get pawn attacks bitboard (Entire bitboard)
-template <Colour c> Bitboard pawnAttacksBB(Bitboard bb) {
+template <Colour c> inline Bitboard pawnAttacksBB(Bitboard bb) {
   return (c == WHITE) ? shift<NW>(bb) | shift<NE>(bb)
                       : shift<SW>(bb) | shift<SE>(bb);
 }
 
+inline Bitboard pawnAttacksBB(Colour c, Bitboard bb) {
+  return (c == WHITE) ? pawnAttacksBB<WHITE>(bb) : pawnAttacksBB<BLACK>(bb);
+}
+
 // Get double pawn attacks bitboard (Entire bitboard)
-template <Colour c> Bitboard doublePawnAttacksBB(Bitboard bb) {
+template <Colour c> inline Bitboard doublePawnAttacksBB(Bitboard bb) {
   return (c == WHITE) ? shift<NW>(bb) & shift<NE>(bb)
                       : shift<SW>(bb) & shift<SE>(bb);
 }
@@ -320,35 +328,40 @@ inline Bitboard pawnAttacksBB(Colour c, Square sq) {
 }
 
 // Get adjacent files bitboard
-inline Bitboard adjacentFilesBB(Square sq) {
+constexpr Bitboard adjacentFilesBB(Square sq) {
   return shift<E>(squareBB(sq)) | shift<W>(squareBB(sq));
 }
 
 // Get forward ranks bitboard
-inline Bitboard forwardRanksBB(Colour c, Square sq) {
+constexpr Bitboard forwardRanksBB(Colour c, Square sq) {
   return (c == WHITE) ? ~RANK_1BB << 8 * rankOf(sq)
                       : ~RANK_8BB >> 8 * (RANK_8 - rankOf(sq));
 }
 
 // Get forward file bitboard
-inline Bitboard forwardFileBB(Colour c, Square sq) {
+constexpr Bitboard forwardFileBB(Colour c, Square sq) {
   return forwardRanksBB(c, sq) & fileBB(sq);
 }
 
 // Get passed pawn bitboard
-inline Bitboard passedPawnSpan(Colour c, Square sq) {
+constexpr Bitboard passedPawnSpan(Colour c, Square sq) {
   return forwardFileBB(c, sq) & (adjacentFilesBB(sq) | fileBB(sq));
 }
 
 // Check if 3 squares are collinear
-inline bool aligned(Square sq1, Square sq2, Square sq3) {
+constexpr bool aligned(Square sq1, Square sq2, Square sq3) {
   return lineBB[sq1][sq2] & squareBB(sq3);
 }
 
 // Get front most square
-inline Square frontMostSquare(Colour c, Bitboard bb) {
+constexpr Square frontMostSquare(Colour c, Bitboard bb) {
   return (c == WHITE) ? getMSB(bb) : getLSB(bb);
 }
+
+constexpr Bitboard sameColourSquares(Square sq) {
+  return (DarkSquares & sq) ? DarkSquares : ~DarkSquares;
+}
+
 } // namespace Maestro
 
 #endif // BITBOARD_HPP

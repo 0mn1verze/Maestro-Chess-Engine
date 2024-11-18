@@ -19,5 +19,11 @@ int main() {
 
   uci.loop();
 
+  // Limits limits;
+
+  // limits.depth = 8;
+
+  // uci.engine.perft(limits);
+
   return 0;
 }

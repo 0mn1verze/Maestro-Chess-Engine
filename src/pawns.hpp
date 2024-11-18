@@ -18,11 +18,11 @@ struct Entry {
   Bitboard passedPawns(Colour c) const { return _passedPawns[c]; }
   int passedCount(Colour c) const { return _passedPawns[c]; }
 
-  template <Colour us> Score king_safety(const Position &pos) const {
+  template <Colour us> Score kingSafety(const Position &pos) {
     return _kingSquare[us] == pos.square<KING>(us) &&
                    _castlingRights[us] == pos.getCastlingRights()
                ? _kingSafety[us]
-               : eval_king_safety<us>(pos);
+               : evalKingSafety<us>(pos);
   }
 
   // Variables
@@ -36,15 +36,15 @@ struct Entry {
   Castling _castlingRights[COLOUR_N];
 
 private:
-  template <Colour us> Score eval_king_safety(const Position &pos);
+  template <Colour us> Score evalKingSafety(const Position &pos);
 
   template <Colour us>
-  Score eval_shelter(const Position &pos, Square king) const;
+  Score evalShelter(const Position &pos, Square king) const;
 };
 
 using Table = HashTable<Entry, 131072>;
 
-Entry *probe(const Position &pos, Pawns::Table &table);
+Entry *probe(const Position &pos);
 
 } // namespace Pawns
 

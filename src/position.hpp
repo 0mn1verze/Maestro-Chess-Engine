@@ -151,6 +151,7 @@ public:
 
   // Castling
   Castling getCastlingRights() const;
+  Castling getCastlingRights(Colour us) const;
 
   // Slider blockers
   Bitboard getSliderBlockers(Bitboard sliders, Square sq,
@@ -341,6 +342,11 @@ inline Colour Position::getSideToMove() const { return sideToMove; }
 
 // Returns castling rights
 inline Castling Position::getCastlingRights() const { return st->castling; }
+
+// Returns castling rights for a side
+inline Castling Position::getCastlingRights(Colour us) const {
+  return st->castling & ((us == WHITE) ? WHITE_SIDE : BLACK_SIDE);
+}
 
 // Returns the square the enPassant pawn is on
 inline Square Position::getEnPassantTarget(Colour side) const {

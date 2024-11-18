@@ -8,7 +8,6 @@
 
 #include "defs.hpp"
 #include "move.hpp"
-#include "utils.hpp"
 
 namespace Maestro {
 
@@ -157,6 +156,10 @@ constexpr int fileDist(Square sq1, Square sq2) {
   return static_cast<File>(std::abs(fileOf(sq1) - fileOf(sq2)));
 }
 
+constexpr int fileDistToEdge(Square sq) {
+  return fileOf(sq) >= FILE_E ? FILE_H - fileOf(sq) : fileOf(sq);
+}
+
 constexpr Rank EPRank(Colour side) { return (side == WHITE) ? RANK_4 : RANK_5; }
 
 constexpr Direction pawnPush(Colour side) { return (side == WHITE) ? N : S; }
@@ -205,6 +208,11 @@ inline std::string to_lower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(),
                  [](unsigned char c) { return std::tolower(c); });
   return str;
+}
+
+// Convert score to a string (Format: {first} {second})
+inline std::string score2Str(Score score) {
+  return std::to_string(score.first) + " " + std::to_string(score.second);
 }
 
 /******************************************\
@@ -282,8 +290,7 @@ void moveToFront(std::vector<T> &vec, Pred pred) {
     std::rotate(vec.begin(), it, vec.end());
 }
 
-template <typename T>
-T clamp(T val, T min, T max) {
+template <typename T> T clamp(T val, T min, T max) {
   return std::max(min, std::min(val, max));
 }
 

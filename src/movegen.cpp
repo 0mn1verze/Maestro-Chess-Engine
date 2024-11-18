@@ -19,43 +19,56 @@ template <PieceType pt> void checkBySlider(const Position &pos, Square king) {
   BoardState *st = pos.state();
   Square sq;
   Bitboard enemyPieces = pos.getPiecesBB(them, pt, QUEEN);
-  // Pieces that attack the king (Could be through enemy pieces)
-  Bitboard pinners = attacksBB<pt>(king, pos.getOccupiedBB(them)) & enemyPieces;
+  // Pieces that attack the king (Could be through our pieces)
+  // Bitboard pinners = attacksBB<pt>(king, pos.getOccupiedBB(them)) &
+  // enemyPieces;
+
+  // Blockers (could be pieces on both sides that could be blocking an attack to
+  // the king)
+  Bitboard blockers =
+      attacksBB<pt>(king, pos.getOccupiedBB()) & pos.getOccupiedBB();
+  if (!blockers) return;
+  // Pieces that directly attack the king
+  Bitboard attackers = blockers & enemyPieces;
+
+  while (attackers) {
+    sq = popLSB(attackers);
+    Bitboard pinMask = pinBB[king][sq];
+    // Update check mask
+    if (st->checkMask == FULLBB)
+      st->checkMask = pinMask;
+    // Double check
+    else
+      st->checkMask = EMPTYBB;
+    st->kingBan |= checkBB[king][sq];
+  }
+
+  // Pieces that pins pieces to the king
+  Bitboard pins =
+      attacksBB<pt>(king, pos.getOccupiedBB() ^ (blockers & ~enemyPieces));
+  if (!pins)
+    return;
+  // Pinners = pins & enemyPieces
+  Bitboard pinners = pins & enemyPieces;
+  // Pinned = pins & blockers
+  Bitboard pinned = pins & blockers;
 
   if (pinners) {
-    Bitboard attacks = attacksBB<pt>(king, pos.getOccupiedBB()) & enemyPieces;
-    pinners &= ~attacks;
-
-    while (attacks) {
-      sq = popLSB(attacks);
-      // If there are no pieces in between the attacker and the king,
-      // update the check mask
-      if (st->checkMask == FULLBB)
-        st->checkMask = pinBB[king][sq];
-      else
-        // Double check = king has to move
-        st->checkMask = EMPTYBB;
-      st->kingBan |= checkBB[king][sq];
-    }
+    st->pinned[us] |= pinned;
+    st->pinners[them] = pinners;
 
     while (pinners) {
       sq = popLSB(pinners);
       Bitboard pinMask = pinBB[king][sq];
-      Bitboard pinned = pinMask & pos.getOccupiedBB(us);
 
-      // Handle enpassant pin
       if constexpr (pt == BISHOP)
-        if (pinBB[king][sq] & pos.getEnPassantTarget(them))
+        if (pinMask & pos.getEnPassantTarget(them))
           st->enPassantPin = true;
 
-      if (pinned and !moreThanOne(pinned)) {
-        st->pinned[us] |= pinned;
-        st->pinners[them] |= sq;
-        if constexpr (pt == BISHOP)
-          st->bishopPin |= pinBB[king][sq];
-        else
-          st->rookPin |= pinBB[king][sq];
-      }
+      if constexpr (pt == BISHOP)
+        st->bishopPin |= pinMask;
+      else
+        st->rookPin |= pinMask;
     }
   }
 }

@@ -70,6 +70,7 @@ void Position::popPiece(Square sq) {
   // Update occupancy bitboards
   occupiedBB[colourOf(pc)] ^= sq;
   // Update piece list at square
+  board[sq] = NO_PIECE;
   pieceCount[toPiece(colourOf(pc), ALL_PIECES)]--;
   // Update piece count
   Square lastSq = pieceList[pc][--pieceCount[pc]];
@@ -172,6 +173,9 @@ void Position::print() const {
 
   // Print eval
   std::cout << "Eval: " << Eval::evaluate(*this) << std::endl;
+
+  // Print eval trace
+  Eval::trace(*this);
 
   // Print game phase
   std::cout << "Fen string: " << fen() << std::endl;
