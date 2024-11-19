@@ -10,7 +10,6 @@
 #include "defs.hpp"
 #include "move.hpp"
 #include "movepick.hpp"
-#include "pawns.hpp"
 #include "position.hpp"
 #include "search.hpp"
 #include "utils.hpp"
@@ -34,9 +33,6 @@ public:
   void startSearch();
   void waitForThread();
   void startCustomJob(std::function<void()> f);
-
-  // Pawn table
-  Pawns::Table pawns;
 
   std::unique_ptr<SearchWorker> worker;
   std::function<void()> jobFunc;

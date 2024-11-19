@@ -11,7 +11,6 @@ set(SOURCES src/bitboard.cpp
             src/hash.cpp
             src/polyglot.cpp
             src/search.cpp
-            src/pawns.cpp
             src/eval.cpp
             src/thread.cpp
             src/uci.cpp
@@ -30,7 +29,6 @@ set(HEADERS src/defs.hpp
             src/perft.hpp
             src/polyglot.hpp
             src/search.hpp
-            src/pawns.hpp
             src/eval.hpp
             src/thread.hpp
             src/movepick.hpp

@@ -32,11 +32,7 @@ extern Score psqt[PIECE_N][SQ_N];
 
 void initEval();
 
-std::string traceEval(const Position &pos);
-
 Value evaluate(const Position &pos);
-
-void trace(const Position &pos);
 
 int toNNUEPiece(Piece piece);
 

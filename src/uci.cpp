@@ -61,8 +61,7 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   // Initialize evaluation
   Eval::initEval();
   // Initialise NNUE
-  if (DEFAULT_USE_NNUE)
-    nnue_init(NNUE_FILE.data());
+  nnue_init(NNUE_FILE.data());
   // Initialize polyglot book
   if (DEFAULT_USE_BOOK)
     initPolyBook(book, BOOK_FILE.data());

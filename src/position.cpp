@@ -174,9 +174,6 @@ void Position::print() const {
   // Print eval
   std::cout << "Eval: " << Eval::evaluate(*this) << std::endl;
 
-  // Print eval trace
-  Eval::trace(*this);
-
   // Print game phase
   std::cout << "Fen string: " << fen() << std::endl;
 }
