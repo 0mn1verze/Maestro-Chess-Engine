@@ -160,7 +160,7 @@ Value evaluate(const Position &pos) {
 
   v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
 
-  return v / 2;
+  return v;
 }
 
 } // namespace Maestro::Eval

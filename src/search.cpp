@@ -404,7 +404,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
       ss->staticEval >= beta - 23 * depth + 400 && !excludedMove &&
       pos.getNonPawnMaterial(us) && beta > VAL_MATE_BOUND) {
 
-    R = 3;
+    R = 3 + depth / 5 + std::min(3, (ss->staticEval - beta) / 200);
 
     ss->currentMove = Move::null();
     ss->ch = &continuationTable[0][0][NO_PIECE][A1];
