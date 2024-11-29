@@ -1,14 +1,8 @@
 #include <cstring>
 #include <iostream>
 
-#include "bitboard.hpp"
-#include "defs.hpp"
-#include "hash.hpp"
-#include "movegen.hpp"
-#include "movepick.hpp"
 #include "perft.hpp"
-#include "position.hpp"
-#include "thread.hpp"
+#include "polyglot.hpp"
 #include "uci.hpp"
 
 using namespace Maestro;
@@ -19,11 +13,26 @@ int main() {
 
   uci.loop();
 
-  // Limits limits;
+  // std::istringstream cmd1(
+  //     "fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0
+  //     " "1 ");
+  // std::istringstream cmd2("perft 6");
 
-  // limits.depth = 8;
+  // uci.pos(cmd1);
 
-  // uci.engine.perft(limits);
+  // uci.go(cmd2);
+
+  // initBitboards();
+  // Zobrist::init();
+
+  // Position pos;
+  // BoardState st{};
+  // const std::string fen(startPos);
+  // pos.set(fen, st);
+
+  // perftTest(pos, 7);
+
+  // perftBench("bench.csv");
 
   return 0;
 }

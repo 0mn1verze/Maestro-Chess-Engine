@@ -46,7 +46,7 @@ Array<Castling, SQ_N> castlingRights;
 \******************************************/
 
 // Bitboard print function
-void printBitboard(Bitboard bb) {
+void Bitboards::print(Bitboard bb) {
   std::string sep{"\n     +---+---+---+---+---+---+---+---+\n"};
   std::cout << sep;
   for (Rank r = RANK_8; r >= RANK_1; --r) {
@@ -146,7 +146,7 @@ constexpr void initMagics(Bitboard table[], Array<Magic, SQ_N> &magics) {
 \******************************************/
 
 // initialize bitboards lookup tables
-void initBitboards() {
+void Bitboards::init() {
   // Init square distances
   for (Square sq1 = A1; sq1 <= H8; ++sq1)
     for (Square sq2 = A1; sq2 <= H8; ++sq2)
@@ -226,4 +226,4 @@ void initBitboards() {
   castlingRights[A8] &= ~BQ_SIDE;
 }
 
-}; // namespace Maestro
+} // namespace Maestro

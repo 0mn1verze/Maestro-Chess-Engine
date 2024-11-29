@@ -8,9 +8,7 @@
 #include "eval.hpp"
 #include "hash.hpp"
 #include "movegen.hpp"
-#include "nnue.hpp"
 #include "position.hpp"
-#include "thread.hpp"
 #include "utils.hpp"
 
 namespace Maestro {
@@ -21,7 +19,7 @@ namespace Maestro {
 |==========================================|
 \******************************************/
 
-BoardState BoardState::moveCopy(const BoardState &bs) {
+BoardState BoardState::copy(const BoardState &bs) {
   enPassant = bs.enPassant;
   plies = bs.plies;
   fiftyMove = bs.fiftyMove;
@@ -44,16 +42,16 @@ BoardState BoardState::moveCopy(const BoardState &bs) {
 // Put piece on square
 void Position::putPiece(Piece piece, Square sq) {
   // Put piece in piece list
-  board[sq] = piece;
+  _board[sq] = piece;
   // Update piece bitboards
-  piecesBB[ALL_PIECES] |= piecesBB[pieceTypeOf(piece)] |= sq;
+  _piecesBB[ALL_PIECES] |= _piecesBB[pieceTypeOf(piece)] |= sq;
   // Update occupancy bitboards
-  occupiedBB[colourOf(piece)] |= sq;
+  _occupiedBB[colourOf(piece)] |= sq;
   // Update piece count list
-  pieceCount[toPiece(colourOf(piece), ALL_PIECES)]++;
+  _pieceCount[toPiece(colourOf(piece), ALL_PIECES)]++;
   // Update piece list
-  index[sq] = pieceCount[piece]++;
-  pieceList[piece][index[sq]] = sq;
+  _index[sq] = _pieceCount[piece]++;
+  _pieceList[piece][_index[sq]] = sq;
   // Update game phase
   st->gamePhase += Eval::gamePhaseInc[pieceTypeOf(piece)];
   // Update psq score
@@ -63,20 +61,20 @@ void Position::putPiece(Piece piece, Square sq) {
 // Remove piece on square
 void Position::popPiece(Square sq) {
   // Find piece on square
-  Piece pc = board[sq];
+  Piece pc = _board[sq];
   // Update piece bitboards
-  piecesBB[ALL_PIECES] ^= sq;
-  piecesBB[pieceTypeOf(pc)] ^= sq;
+  _piecesBB[ALL_PIECES] ^= sq;
+  _piecesBB[pieceTypeOf(pc)] ^= sq;
   // Update occupancy bitboards
-  occupiedBB[colourOf(pc)] ^= sq;
+  _occupiedBB[colourOf(pc)] ^= sq;
   // Update piece list at square
-  board[sq] = NO_PIECE;
-  pieceCount[toPiece(colourOf(pc), ALL_PIECES)]--;
+  _board[sq] = NO_PIECE;
+  _pieceCount[toPiece(colourOf(pc), ALL_PIECES)]--;
   // Update piece count
-  Square lastSq = pieceList[pc][--pieceCount[pc]];
-  index[lastSq] = index[sq];
-  pieceList[pc][index[lastSq]] = lastSq;
-  pieceList[pc][pieceCount[pc]] = NO_SQ;
+  Square lastSq = _pieceList[pc][--_pieceCount[pc]];
+  _index[lastSq] = _index[sq];
+  _pieceList[pc][_index[lastSq]] = lastSq;
+  _pieceList[pc][_pieceCount[pc]] = NO_SQ;
   // Update game phase
   st->gamePhase -= Eval::gamePhaseInc[pieceTypeOf(pc)];
   // Update psq score
@@ -86,18 +84,18 @@ void Position::popPiece(Square sq) {
 // Move piece between two squares without updating piece counts (Quicker)
 void Position::movePiece(Square from, Square to) {
   // Find piece on square
-  Piece pc = board[from];
+  Piece pc = _board[from];
   // Update piece bitboards
-  piecesBB[ALL_PIECES] ^= from | to;
-  piecesBB[pieceTypeOf(pc)] ^= from | to;
+  _piecesBB[ALL_PIECES] ^= from | to;
+  _piecesBB[pieceTypeOf(pc)] ^= from | to;
   // Update occupancy bitboards
-  occupiedBB[colourOf(pc)] ^= from | to;
+  _occupiedBB[colourOf(pc)] ^= from | to;
   // Update piece list
-  board[from] = NO_PIECE;
-  board[to] = pc;
+  _board[from] = NO_PIECE;
+  _board[to] = pc;
   // Update piece index
-  index[to] = index[from];
-  pieceList[pc][index[to]] = to;
+  _index[to] = _index[from];
+  _pieceList[pc][_index[to]] = to;
   // Update psq score
   st->psq += Eval::psqt[pc][to] - Eval::psqt[pc][from];
 }
@@ -126,7 +124,7 @@ void Position::print() const {
       // Get square
       Square square = toSquare(file, rank);
       // Print bit on that square
-      std::cout << "| " << piece2Str(getPiece(square)) << " ";
+      std::cout << "| " << piece2Str(pieceOn(square)) << " ";
     }
 
     // Print bit on that square
@@ -137,7 +135,7 @@ void Position::print() const {
   std::cout << "    a   b   c   d   e   f   g   h\n\n";
 
   // Print side to move
-  std::cout << "Side to move: " << (sideToMove == WHITE ? "White" : "Black")
+  std::cout << "Side to move: " << (_sideToMove == WHITE ? "White" : "Black")
             << "\n";
 
   // Print castling rights
@@ -171,15 +169,12 @@ void Position::print() const {
   // Print hash key
   std::cout << "Hash Key: " << std::hex << st->key << std::dec << std::endl;
 
-  // Print eval
-  std::cout << "Eval: " << Eval::evaluate(*this) << std::endl;
-
-  // Print game phase
+  // Print fen
   std::cout << "Fen string: " << fen() << std::endl;
 }
 
 // Set the position based on fen string
-void Position::set(const std::string &fen, BoardState &state, Thread *th) {
+void Position::set(const std::string &fen, BoardState &state) {
   // Initialize square and piece index
   Square square = A8;
   size_t pieceIdx;
@@ -193,7 +188,7 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
 
   // Reset board state
   std::memset(this, 0, sizeof(Position));
-  std::fill_n(&pieceList[0][0], 16 * PIECE_N, NO_SQ);
+  std::fill_n(&_pieceList[0][0], 16 * PIECE_N, NO_SQ);
 
   // Reset state
   state = {};
@@ -226,7 +221,7 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
 
   // Parse side to move
   is >> token;
-  sideToMove = (token == 'w') ? WHITE : BLACK;
+  _sideToMove = (token == 'w') ? WHITE : BLACK;
   is >> token;
 
   // Parse castling rights
@@ -253,7 +248,7 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
   unsigned char file, rank;
 
   if (((is >> file) && (file >= 'a' && file <= 'h')) &&
-      ((is >> rank) && (rank == (sideToMove == WHITE ? '6' : '3'))))
+      ((is >> rank) && (rank == (_sideToMove == WHITE ? '6' : '3'))))
     // Set enpassant square
     st->enPassant = toSquare(File(file - 'a'), Rank(rank - '1'));
   else
@@ -261,15 +256,11 @@ void Position::set(const std::string &fen, BoardState &state, Thread *th) {
     st->enPassant = NO_SQ;
 
   // Parse halfmove clock
-  is >> std::skipws >> st->fiftyMove >> pliesFromStart;
+  is >> std::skipws >> st->fiftyMove >> _gamePlies;
 
-  pliesFromStart =
-      std::max(2 * (pliesFromStart - 1), 0) + (sideToMove == BLACK);
+  _gamePlies = std::max(2 * (_gamePlies - 1), 0) + (_sideToMove == BLACK);
 
   setState();
-
-  // Set thread
-  thisThread = th;
 }
 
 void Position::setState() const {
@@ -278,29 +269,29 @@ void Position::setState() const {
 
   st->pawnKey = initPawnKey();
 
-  auto [whiteNPM, blackNPM] = initNonPawnMaterial();
+  // auto [whiteNPM, blackNPM] = initNonPawnMaterial();
 
-  st->nonPawnMaterial[WHITE] = whiteNPM;
-  st->nonPawnMaterial[BLACK] = blackNPM;
+  // st->nonPawnMaterial[WHITE] = whiteNPM;
+  // st->nonPawnMaterial[BLACK] = blackNPM;
 
-  st->psq = initPSQT();
+  // st->psq = initPSQT();
 
-  st->gamePhase = initGamePhase();
+  // st->gamePhase = initGamePhase();
 
-  Bitboard pawns = getPiecesBB(~sideToMove, PAWN);
-  Bitboard knights = getPiecesBB(~sideToMove, KNIGHT);
+  Bitboard pawns = pieces(~_sideToMove, PAWN);
+  Bitboard knights = pieces(~_sideToMove, KNIGHT);
 
   Bitboard attacks;
 
   while (pawns) {
     Square sq = popLSB(pawns);
-    if (~sideToMove == WHITE) {
+    if (~_sideToMove == WHITE) {
       attacks = pawnAttacksBB<WHITE>(sq);
     } else {
       attacks = pawnAttacksBB<BLACK>(sq);
     }
 
-    if (attacks & getPiecesBB(sideToMove, KING)) {
+    if (attacks & pieces(_sideToMove, KING)) {
       st->checkMask = squareBB(sq);
     }
   }
@@ -308,7 +299,7 @@ void Position::setState() const {
   while (knights) {
     Square sq = popLSB(knights);
     attacks = attacksBB<KNIGHT>(sq, EMPTYBB);
-    if (attacks & getPiecesBB(sideToMove, KING)) {
+    if (attacks & pieces(_sideToMove, KING)) {
       st->checkMask = squareBB(sq);
     }
   }
@@ -331,7 +322,7 @@ std::string Position::fen() const {
         os << emptyCount;
 
       if (f <= FILE_H) {
-        os << piece2Char(getPiece(toSquare(f, r)));
+        os << piece2Char(pieceOn(toSquare(f, r)));
       }
     }
 
@@ -339,7 +330,7 @@ std::string Position::fen() const {
       os << '/';
   }
 
-  os << (sideToMove == WHITE ? " w " : " b ");
+  os << (_sideToMove == WHITE ? " w " : " b ");
 
   if (canCastle(WK_SIDE))
     os << 'K';
@@ -357,8 +348,7 @@ std::string Position::fen() const {
     os << '-';
 
   os << (st->enPassant == NO_SQ ? " - " : " " + sq2Str(st->enPassant) + " ")
-     << st->fiftyMove << " "
-     << 1 + (pliesFromStart - (sideToMove == BLACK)) / 2;
+     << st->fiftyMove << " " << 1 + (_gamePlies - (_sideToMove == BLACK)) / 2;
 
   return os.str();
 }
@@ -375,13 +365,13 @@ Key Position::initKey() const {
   // Loop through all squares
   for (Square square = A1; square <= H8; ++square) {
     // Get piece on the square
-    Piece piece = getPiece(square);
+    Piece piece = pieceOn(square);
     // If there is a piece on the square, update hash key
     if (piece != NO_PIECE)
       key ^= Zobrist::pieceSquareKeys[piece][square];
   }
   // Update hash key with side to move
-  if (sideToMove == BLACK)
+  if (_sideToMove == BLACK)
     key ^= Zobrist::sideKey;
   // Update hash key with castling rights
   key ^= Zobrist::castlingKeys[st->castling];
@@ -398,7 +388,7 @@ Key Position::initPawnKey() const {
   // Loop through all squares
   for (Square square = A1; square <= H8; ++square) {
     // Get piece on the square
-    Piece piece = getPiece(square);
+    Piece piece = pieceOn(square);
     // If there is a pawn on the square, update hash key
     if (pieceTypeOf(piece) == PAWN)
       key ^= Zobrist::pieceSquareKeys[piece][square];
@@ -413,10 +403,8 @@ std::pair<int, int> Position::initNonPawnMaterial() const {
   // Loop through all pieces
   for (PieceType pt = KNIGHT; pt <= KING; ++pt) {
     // Update non pawn material
-    whiteNPM +=
-        Eval::pieceScore[toPiece(WHITE, pt)] * pieceCount[toPiece(WHITE, pt)];
-    blackNPM +=
-        Eval::pieceScore[toPiece(BLACK, pt)] * pieceCount[toPiece(BLACK, pt)];
+    whiteNPM += Eval::pieceValue[pt] * count(toPiece(WHITE, pt));
+    blackNPM += Eval::pieceValue[pt] * count(toPiece(BLACK, pt));
   }
 
   return {whiteNPM, blackNPM};
@@ -428,7 +416,7 @@ Score Position::initPSQT() const {
   // Loop through all squares
   for (Square square = A1; square <= H8; ++square) {
     // Get piece on the square
-    Piece piece = getPiece(square);
+    Piece piece = pieceOn(square);
     // If there is a piece on the square, update piece square value
     if (piece != NO_PIECE) {
       psq += Eval::psqt[piece][square];
@@ -442,11 +430,10 @@ int Position::initGamePhase() const {
   // Initialize game phase
   int gamePhase = 0;
   // Loop through all pieces
-  for (PieceType pt = KNIGHT; pt <= KING; ++pt) {
+  for (PieceType pt = KNIGHT; pt <= KING; ++pt)
     // Update game phase
-    gamePhase += Eval::gamePhaseInc[pt] * pieceCount[toPiece(WHITE, pt)];
-    gamePhase += Eval::gamePhaseInc[pt] * pieceCount[toPiece(BLACK, pt)];
-  }
+    gamePhase += Eval::gamePhaseInc[pt] * count(pt);
+
   return gamePhase;
 }
 
@@ -465,61 +452,61 @@ bool Position::isDraw(int ply) const {
 }
 
 Bitboard Position::sqAttackedByBB(Square sq, Bitboard occupied) const {
-  return (pawnAttacksBB<BLACK>(sq) & getPiecesBB(WHITE, PAWN)) |
-         (pawnAttacksBB<WHITE>(sq) & getPiecesBB(BLACK, PAWN)) |
-         (attacksBB<KNIGHT>(sq, occupied) & getPiecesBB(KNIGHT)) |
-         (attacksBB<BISHOP>(sq, occupied) & getPiecesBB(BISHOP, QUEEN)) |
-         (attacksBB<ROOK>(sq, occupied) & getPiecesBB(ROOK, QUEEN)) |
-         (attacksBB<KING>(sq, occupied) & getPiecesBB(KING));
+  return (pawnAttacksBB<BLACK>(sq) & pieces(WHITE, PAWN)) |
+         (pawnAttacksBB<WHITE>(sq) & pieces(BLACK, PAWN)) |
+         (attacksBB<KNIGHT>(sq, occupied) & pieces(KNIGHT)) |
+         (attacksBB<BISHOP>(sq, occupied) & pieces(BISHOP, QUEEN)) |
+         (attacksBB<ROOK>(sq, occupied) & pieces(ROOK, QUEEN)) |
+         (attacksBB<KING>(sq, occupied) & pieces(KING));
 }
 
 // Private functions
 Bitboard Position::attackedByBB(Colour enemy) const {
   Square attacker;
   Bitboard attacks = EMPTYBB;
+  const Bitboard occ = occupied();
 
   // Knight attacks
-  Bitboard knights = getPiecesBB(enemy, KNIGHT);
+  Bitboard knights = pieces(enemy, KNIGHT);
   while (knights) {
     attacker = popLSB(knights);
-    attacks |= attacksBB<KNIGHT>(attacker, EMPTYBB);
+    attacks |= attacksBB<KNIGHT>(attacker);
   }
 
   // Pawn attacks
-  Bitboard pawns = getPiecesBB(enemy, PAWN);
+  Bitboard pawns = pieces(enemy, PAWN);
   attacks |= (enemy == WHITE) ? pawnAttacksBB<WHITE>(pawns)
                               : pawnAttacksBB<BLACK>(pawns);
 
   // King attacks
-  Bitboard kings = getPiecesBB(enemy, KING);
-  attacks |= attacksBB<KING>(popLSB(kings), EMPTYBB);
+  attacks |= attacksBB<KING>(square<KING>(enemy));
 
   // Bishop and Queen attacks
-  Bitboard bishops = getPiecesBB(enemy, BISHOP, QUEEN);
+  Bitboard bishops = pieces(enemy, BISHOP, QUEEN);
   while (bishops) {
     attacker = popLSB(bishops);
-    attacks |= attacksBB<BISHOP>(attacker, getOccupiedBB());
+    attacks |= attacksBB<BISHOP>(attacker, occ);
   }
 
   // Rook and Queen attacks
-  Bitboard rooks = getPiecesBB(enemy, ROOK, QUEEN);
+  Bitboard rooks = pieces(enemy, ROOK, QUEEN);
   while (rooks) {
     attacker = popLSB(rooks);
-    attacks |= attacksBB<ROOK>(attacker, getOccupiedBB());
+    attacks |= attacksBB<ROOK>(attacker, occ);
   }
 
   return attacks;
 }
 
-Bitboard Position::getSliderBlockers(Bitboard sliders, Square sq,
-                                     Bitboard &pinners) const {
+Bitboard Position::sliderBlockers(Bitboard sliders, Square sq,
+                                  Bitboard &pinners) const {
   Bitboard blockers = EMPTYBB;
   pinners = 0;
 
-  Bitboard snipers = ((attacksBB<BISHOP>(sq) & getPiecesBB(BISHOP, QUEEN)) |
-                      (attacksBB<ROOK>(sq) & getPiecesBB(ROOK, QUEEN))) &
+  Bitboard snipers = ((attacksBB<BISHOP>(sq) & pieces(BISHOP, QUEEN)) |
+                      (attacksBB<ROOK>(sq) & pieces(ROOK, QUEEN))) &
                      sliders;
-  Bitboard occupancy = getOccupiedBB() ^ snipers;
+  Bitboard occupancy = occupied() ^ snipers;
 
   while (snipers) {
     Square sniperSq = popLSB(snipers);
@@ -527,7 +514,7 @@ Bitboard Position::getSliderBlockers(Bitboard sliders, Square sq,
 
     if (b && !moreThanOne(b)) {
       blockers |= b;
-      if (b & getOccupiedBB(colourOf(getPiece(sq)))) {
+      if (b & occupied(colourOf(pieceOn(sq)))) {
         pinners |= sniperSq;
       }
     }
@@ -545,8 +532,7 @@ Bitboard Position::getSliderBlockers(Bitboard sliders, Square sq,
 void Position::makeMove(Move move, BoardState &state) {
   // Reset new state
   state = {};
-  state.moveCopy(*st);
-  // std::memcpy(&state, st, sizeof(BoardState));
+  state.copy(*st);
 
   // Get Hash Key (And change sides)
   Key hashKey = st->key ^ Zobrist::sideKey;
@@ -555,21 +541,21 @@ void Position::makeMove(Move move, BoardState &state) {
   state.previous = st;
   st = &state;
 
-  st->nnueData.accumulator.computedAccumulation = false;
-  auto &dp = st->nnueData.dirtyPiece;
-  dp.dirtyNum = 1;
+  // st->nnueData.accumulator.computedAccumulation = false;
+  // auto &dp = st->nnueData.dirtyPiece;
+  // dp.dirtyNum = 1;
 
   ++st->fiftyMove;
   ++st->plies;
-  ++pliesFromStart;
+  ++_gamePlies;
 
   // Get move variables
-  const Colour side = sideToMove;
+  const Colour side = _sideToMove;
   const Colour enemy = ~side;
   const Square from = move.from();
   const Square to = move.to();
-  const Piece piece = getPiece(from);
-  const Piece cap = move.is<EN_PASSANT>() ? toPiece(enemy, PAWN) : getPiece(to);
+  const Piece piece = pieceOn(from);
+  const Piece cap = move.is<EN_PASSANT>() ? toPiece(enemy, PAWN) : pieceOn(to);
 
   // Handle castling
   if (move.is<CASTLE>()) {
@@ -578,11 +564,11 @@ void Position::makeMove(Move move, BoardState &state) {
     Piece rook = toPiece(side, ROOK);
     castleRook<true>(from, to, rookFrom, rookTo);
 
-    auto &dp = st->nnueData.dirtyPiece;
-    dp.pc[1] = Eval::toNNUEPiece(toPiece(side, ROOK));
-    dp.from[1] = rookFrom;
-    dp.to[1] = rookTo;
-    dp.dirtyNum = 2;
+    // auto &dp = st->nnueData.dirtyPiece;
+    // dp.pc[1] = Eval::toNNUEPiece(toPiece(side, ROOK));
+    // dp.from[1] = rookFrom;
+    // dp.to[1] = rookTo;
+    // dp.dirtyNum = 2;
 
     // Update hash key
     hashKey ^= Zobrist::pieceSquareKeys[rook][rookFrom] ^
@@ -595,23 +581,23 @@ void Position::makeMove(Move move, BoardState &state) {
     // Handle enpassant
     if (move.is<EN_PASSANT>()) {
       // Change captured square to the enpassant square
-      capSq += (sideToMove == WHITE ? S : N);
+      capSq += (_sideToMove == WHITE ? S : N);
     }
     // Update board by removing piece on the destination
     popPiece(capSq);
-    occupiedBB[enemy] &= ~squareBB(capSq);
+    _occupiedBB[enemy] &= ~squareBB(capSq);
     // Update hash key
     hashKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
     if (pieceTypeOf(cap) != PAWN)
-      st->nonPawnMaterial[enemy] -= Eval::pieceScore[cap];
+      st->nonPawnMaterial[enemy] -= Eval::pieceValue[cap];
     else
       pawnKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
-    dp.dirtyNum = 2; // 1 piece moved, 1 piece captured
-    dp.pc[1] = Eval::toNNUEPiece(cap);
-    dp.from[1] = capSq;
-    dp.to[1] = NO_SQ;
+    // dp.dirtyNum = 2; // 1 piece moved, 1 piece captured
+    // dp.pc[1] = Eval::toNNUEPiece(cap);
+    // dp.from[1] = capSq;
+    // dp.to[1] = NO_SQ;
 
     st->fiftyMove = 0;
 
@@ -629,14 +615,14 @@ void Position::makeMove(Move move, BoardState &state) {
   }
   // Enpassant Square update
   if (std::abs(to - from) == 16 && pieceTypeOf(piece) == PAWN) [[likely]] {
-    st->enPassant = from + ((sideToMove == WHITE) ? N : S);
+    st->enPassant = from + ((_sideToMove == WHITE) ? N : S);
     // Update hash key
     hashKey ^= Zobrist::enPassantKeys[fileOf(st->enPassant)];
   }
 
-  dp.pc[0] = Eval::toNNUEPiece(piece);
-  dp.from[0] = from;
-  dp.to[0] = to;
+  // dp.pc[0] = Eval::toNNUEPiece(piece);
+  // dp.from[0] = from;
+  // dp.to[0] = to;
 
   // Update board by moving piece to the destination
   movePiece(from, to);
@@ -654,14 +640,14 @@ void Position::makeMove(Move move, BoardState &state) {
 
       // Update check mask for promotions
       if (pieceTypeOf(promotedTo) == KNIGHT &&
-          attacksBB<KNIGHT>(to, EMPTYBB) & getPiecesBB(enemy, KING))
+          attacksBB<KNIGHT>(to, EMPTYBB) & pieces(enemy, KING))
         st->checkMask = squareBB(to);
 
-      dp.to[0] = NO_SQ;
-      dp.pc[dp.dirtyNum] = Eval::toNNUEPiece(promotedTo);
-      dp.from[dp.dirtyNum] = NO_SQ;
-      dp.to[dp.dirtyNum] = to;
-      dp.dirtyNum++;
+      // dp.to[0] = NO_SQ;
+      // dp.pc[dp.dirtyNum] = Eval::toNNUEPiece(promotedTo);
+      // dp.from[dp.dirtyNum] = NO_SQ;
+      // dp.to[dp.dirtyNum] = to;
+      // dp.dirtyNum++;
 
       // Update hash key
       hashKey ^= Zobrist::pieceSquareKeys[piece][to] ^
@@ -669,7 +655,7 @@ void Position::makeMove(Move move, BoardState &state) {
 
       pawnKey ^= Zobrist::pieceSquareKeys[piece][to];
 
-      st->nonPawnMaterial[side] += Eval::pieceScore[promotedTo];
+      st->nonPawnMaterial[side] += Eval::pieceValue[promotedTo];
     }
     // Update fifty move rule
     st->fiftyMove = 0;
@@ -678,15 +664,12 @@ void Position::makeMove(Move move, BoardState &state) {
                Zobrist::pieceSquareKeys[piece][to];
 
     // Handle pawn checks to update check mask
-    Bitboard pawnAttack =
-        (side == WHITE) ? pawnAttacksBB<WHITE>(to) : pawnAttacksBB<BLACK>(to);
-    if (pawnAttack & getPiecesBB(enemy, KING))
+    Bitboard pawnAttack = pawnAttacksBB(side, to);
+    if (pawnAttack & pieces(enemy, KING))
       st->checkMask = squareBB(to);
-  }
-
-  // Update checkmask for piece moves
-  if (pieceTypeOf(piece) == KNIGHT &&
-      attacksBB<KNIGHT>(to, EMPTYBB) & getPiecesBB(enemy, KING))
+    // Update checkmask for piece moves
+  } else if (pieceTypeOf(piece) == KNIGHT &&
+             attacksBB<KNIGHT>(to, EMPTYBB) & pieces(enemy, KING))
     st->checkMask = squareBB(to);
 
   // Update hash key (Remove previous castling rights)
@@ -697,7 +680,7 @@ void Position::makeMove(Move move, BoardState &state) {
   hashKey ^= Zobrist::castlingKeys[st->castling];
 
   // Update side to move
-  sideToMove = ~sideToMove;
+  _sideToMove = ~_sideToMove;
 
   // Update state hash key
   st->key = hashKey;
@@ -727,14 +710,14 @@ void Position::makeMove(Move move, BoardState &state) {
 
 void Position::unmakeMove(Move move) {
   // Restore side to move
-  sideToMove = ~sideToMove;
+  _sideToMove = ~_sideToMove;
 
   // Get move variables
-  const Colour side = sideToMove;
+  const Colour side = _sideToMove;
   const Colour enemy = ~side;
   Square from = move.from();
   Square to = move.to();
-  Piece piece = getPiece(to);
+  Piece piece = pieceOn(to);
 
   // Restore promotions
   if (move.is<PROMOTION>()) {
@@ -756,7 +739,7 @@ void Position::unmakeMove(Move move) {
     Square capSq = to;
     // Restore enpassant
     if (move.is<EN_PASSANT>()) {
-      capSq += (sideToMove ? N : S);
+      capSq += (_sideToMove ? N : S);
     }
 
     // Restore captured piece
@@ -764,13 +747,13 @@ void Position::unmakeMove(Move move) {
   }
 
   st = st->previous;
-  --pliesFromStart;
+  --_gamePlies;
 }
 
 void Position::makeNullMove(BoardState &state) {
   state = {};
   // Copy current board state to new state partially
-  state.moveCopy(*st);
+  state.copy(*st);
 
   state.previous = st;
   st = &state;
@@ -785,7 +768,7 @@ void Position::makeNullMove(BoardState &state) {
   st->plies = 0;
 
   // Update side to move
-  sideToMove = ~sideToMove;
+  _sideToMove = ~_sideToMove;
 
   // Update repetition
   st->repetition = 0;
@@ -799,14 +782,14 @@ void Position::unmakeNullMove() {
   st = st->previous;
 
   // Restore side to move
-  sideToMove = ~sideToMove;
+  _sideToMove = ~_sideToMove;
 }
 
 bool Position::isLegal(Move move) const {
-  Colour us = sideToMove;
+  Colour us = _sideToMove;
   Square from = move.from();
   Square to = move.to();
-  Piece piece = getPiece(from);
+  Piece piece = pieceOn(from);
 
   if (!isPseudoLegal(move))
     return false;
@@ -815,10 +798,10 @@ bool Position::isLegal(Move move) const {
   if (move.is<EN_PASSANT>()) {
     Square ksq = square<KING>(us);
     Square capSq = to - pawnPush(us);
-    Bitboard occ = getOccupiedBB() ^ from ^ capSq | to;
+    Bitboard occ = occupied() ^ from ^ capSq | to;
 
-    return !(attacksBB<ROOK>(ksq, occ) & getPiecesBB(~us, ROOK, QUEEN)) &&
-           !(attacksBB<BISHOP>(ksq, occ) & getPiecesBB(~us, BISHOP, QUEEN));
+    return !(attacksBB<ROOK>(ksq, occ) & pieces(~us, ROOK, QUEEN)) &&
+           !(attacksBB<BISHOP>(ksq, occ) & pieces(~us, BISHOP, QUEEN));
   }
 
   // Handle castling
@@ -839,17 +822,17 @@ bool Position::isLegal(Move move) const {
 }
 
 bool Position::isPseudoLegal(Move move) const {
-  Colour us = sideToMove;
+  Colour us = _sideToMove;
   Square from = move.from();
   Square to = move.to();
-  Piece piece = getPiece(from);
+  Piece piece = pieceOn(from);
 
   // If from square is not occupied by a piece belonging to the side to move
   if (piece == NO_PIECE || colourOf(piece) != us)
     return false;
 
   // If destination cannot be occupied by the piece
-  if (getOccupiedBB(us) & to)
+  if (occupied(us) & to)
     return false;
 
   if (!move.is<NORMAL>())
@@ -857,12 +840,12 @@ bool Position::isPseudoLegal(Move move) const {
 
   // Handle pawn moves
   if (pieceTypeOf(piece) == PAWN) {
-    bool isCapture = pawnAttacksBB(us, from) & getOccupiedBB(~us) & to;
-    bool isSinglePush = (from + pawnPush(us) == to) && !(getOccupiedBB() & to);
+    bool isCapture = pawnAttacksBB(us, from) & occupied(~us) & to;
+    bool isSinglePush = (from + pawnPush(us) == to) && !(occupied() & to);
     bool isDoublePush = (from + 2 * pawnPush(us) == to) &&
                         (rankOf(from) == relativeRank(us, RANK_2)) &&
-                        !(getOccupiedBB() & to) &&
-                        !(getOccupiedBB() & (to - pawnPush(us)));
+                        !(occupied() & to) &&
+                        !(occupied() & (to - pawnPush(us)));
 
     if (move.is<PROMOTION>() and move.promoted() == NO_PIECE_TYPE)
       return false;
@@ -874,7 +857,7 @@ bool Position::isPseudoLegal(Move move) const {
       return false;
   }
   // If destination square is unreachable by the piece
-  else if (!(attacksBB(pieceTypeOf(piece), from, getOccupiedBB()) & to))
+  else if (!(attacksBB(pieceTypeOf(piece), from, occupied()) & to))
     return false;
 
   if (isInCheck()) {
@@ -896,31 +879,31 @@ bool Position::SEE(Move move, int threshold) const {
   Square from = move.from();
   Square to = move.to();
 
-  int swap = Eval::pieceScore[getPiece(to)] - threshold;
+  int swap = Eval::pieceValue[pieceTypeOn(to)] - threshold;
 
   // If capturing enemy piece does not go beyond the threshold, the give up
   if (swap < 0)
     return false;
 
-  swap = Eval::pieceScore[getPiece(from)] - swap;
+  swap = Eval::pieceValue[pieceTypeOn(from)] - swap;
   if (swap <= 0)
     return true;
 
-  Bitboard occupied = getOccupiedBB() ^ from ^ to;
-  Colour stm = sideToMove;
-  Bitboard attackers = sqAttackedByBB(to, occupied);
+  Bitboard occ = occupied() ^ from ^ to;
+  Colour stm = _sideToMove;
+  Bitboard attackers = sqAttackedByBB(to, occ);
   Bitboard stmAttackers, bb;
   int res = 1;
 
   while (true) {
     stm = ~stm;
 
-    attackers &= occupied; // Remove pieces that are already captured
+    attackers &= occ; // Remove pieces that are already captured
 
-    if (!(stmAttackers = attackers & getOccupiedBB(stm)))
+    if (!(stmAttackers = attackers & occupied(stm)))
       break;
 
-    if (pinners() & occupied) {
+    if (pinners(stm) & occ) {
       stmAttackers &= ~blockersForKing();
 
       if (!stmAttackers)
@@ -931,50 +914,49 @@ bool Position::SEE(Move move, int threshold) const {
 
     // Locate and remove the next least valuable attacker, and add to
     // the bitboard 'attackers' any X-ray attackers behind it.
-    if ((bb = stmAttackers & getPiecesBB(PAWN))) {
+    if ((bb = stmAttackers & pieces(PAWN))) {
       if ((swap = Eval::pawnScore.first - swap) < res)
         break;
-      occupied ^= getLSB(bb);
+      occ ^= getLSB(bb);
 
-      attackers |= attacksBB<BISHOP>(to, occupied) & getPiecesBB(BISHOP, QUEEN);
+      attackers |= attacksBB<BISHOP>(to, occ) & pieces(BISHOP, QUEEN);
     }
 
-    else if ((bb = stmAttackers & getPiecesBB(KNIGHT))) {
+    else if ((bb = stmAttackers & pieces(KNIGHT))) {
       if ((swap = Eval::knightScore.first - swap) < res)
         break;
-      occupied ^= getLSB(bb);
+      occ ^= getLSB(bb);
     }
 
-    else if ((bb = stmAttackers & getPiecesBB(BISHOP))) {
+    else if ((bb = stmAttackers & pieces(BISHOP))) {
       if ((swap = Eval::bishopScore.first - swap) < res)
         break;
-      occupied ^= getLSB(bb);
+      occ ^= getLSB(bb);
 
-      attackers |= attacksBB<BISHOP>(to, occupied) & getPiecesBB(BISHOP, QUEEN);
+      attackers |= attacksBB<BISHOP>(to, occ) & pieces(BISHOP, QUEEN);
     }
 
-    else if ((bb = stmAttackers & getPiecesBB(ROOK))) {
+    else if ((bb = stmAttackers & pieces(ROOK))) {
       if ((swap = Eval::rookScore.first - swap) < res)
         break;
-      occupied ^= getLSB(bb);
+      occ ^= getLSB(bb);
 
-      attackers |= attacksBB<ROOK>(to, occupied) & getPiecesBB(ROOK, QUEEN);
+      attackers |= attacksBB<ROOK>(to, occ) & pieces(ROOK, QUEEN);
     }
 
-    else if ((bb = stmAttackers & getPiecesBB(QUEEN))) {
+    else if ((bb = stmAttackers & pieces(QUEEN))) {
       if ((swap = Eval::queenScore.first - swap) < res)
         break;
-      occupied ^= getLSB(bb);
+      occ ^= getLSB(bb);
 
-      attackers |=
-          (attacksBB<BISHOP>(to, occupied) & getPiecesBB(BISHOP, QUEEN)) |
-          (attacksBB<ROOK>(to, occupied) & getPiecesBB(ROOK, QUEEN));
+      attackers |= (attacksBB<BISHOP>(to, occ) & pieces(BISHOP, QUEEN)) |
+                   (attacksBB<ROOK>(to, occ) & pieces(ROOK, QUEEN));
     }
 
     else // KING
          // If we "capture" with the king but the opponent still has attackers,
          // reverse the result.
-      return (attackers & ~getOccupiedBB(stm)) ? res ^ 1 : res;
+      return (attackers & ~occupied(stm)) ? res ^ 1 : res;
   }
 
   return bool(res);
@@ -984,22 +966,21 @@ bool Position::SEE(Move move, int threshold) const {
 bool Position::givesCheck(Move move) const {
   Square from = move.from();
   Square to = move.to();
-  PieceType pt = getPieceType(from);
-  Colour us = sideToMove;
+  PieceType pt = pieceTypeOn(from);
+  Colour us = _sideToMove;
   Square enemyKing = square<KING>(~us);
 
-  if (attacksBB(pt, to, getOccupiedBB()) & enemyKing)
+  if (attacksBB(pt, to, occupied()) & enemyKing)
     return true;
 
-  Bitboard attackers =
-      attacksBB<BISHOP>(enemyKing, getPiecesBB(us, BISHOP, QUEEN)) |
-      attacksBB<ROOK>(enemyKing, getPiecesBB(us, ROOK, QUEEN));
+  Bitboard attackers = attacksBB<BISHOP>(enemyKing, pieces(us, BISHOP, QUEEN)) |
+                       attacksBB<ROOK>(enemyKing, pieces(us, ROOK, QUEEN));
 
   attackers &= lineBB[enemyKing][from];
 
   if (attackers) {
     Square sq = popLSB(attackers);
-    Bitboard b = betweenBB[sq][enemyKing] & getOccupiedBB();
+    Bitboard b = betweenBB[sq][enemyKing] & occupied();
     if (b and !moreThanOne(b))
       return !aligned(from, to, enemyKing) || move.is<CASTLE>();
   }
@@ -1011,15 +992,15 @@ bool Position::givesCheck(Move move) const {
   case NORMAL:
     return false;
   case PROMOTION:
-    return attacksBB(move.promoted(), to, getOccupiedBB() ^ from) & enemyKing;
+    return attacksBB(move.promoted(), to, occupied() ^ from) & enemyKing;
   case EN_PASSANT:
-    capsq = getEnPassantTarget(us);
-    b = (getOccupiedBB() ^ from ^ capsq) | to;
-    return (attacksBB<BISHOP>(enemyKing, b) & getPiecesBB(us, BISHOP, QUEEN)) |
-           (attacksBB<ROOK>(enemyKing, b) & getPiecesBB(us, ROOK, QUEEN));
+    capsq = enPassantTarget(us);
+    b = (occupied() ^ from ^ capsq) | to;
+    return (attacksBB<BISHOP>(enemyKing, b) & pieces(us, BISHOP, QUEEN)) |
+           (attacksBB<ROOK>(enemyKing, b) & pieces(us, ROOK, QUEEN));
   case CASTLE:
     rto = relativeSquare(us, to > from ? F1 : D1);
-    return attacksBB<ROOK>(rto, getOccupiedBB()) & enemyKing;
+    return attacksBB<ROOK>(rto, occupied()) & enemyKing;
   default:
     return false;
   }

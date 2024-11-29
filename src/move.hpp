@@ -1,4 +1,5 @@
 #ifndef MOVE_HPP
+#pragma once
 #define MOVE_HPP
 
 #include <cstdint>

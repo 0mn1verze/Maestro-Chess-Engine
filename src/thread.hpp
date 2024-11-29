@@ -9,7 +9,6 @@
 
 #include "defs.hpp"
 #include "move.hpp"
-#include "movepick.hpp"
 #include "position.hpp"
 #include "search.hpp"
 #include "utils.hpp"
@@ -32,7 +31,7 @@ public:
   void idleLoop();
   void startSearch();
   void waitForThread();
-  void startCustomJob(std::function<void()> f);
+  void startJob(std::function<void()> f);
 
   std::unique_ptr<SearchWorker> worker;
   std::function<void()> jobFunc;
@@ -51,7 +50,7 @@ private:
 |==========================================|
 \******************************************/
 
-class ThreadPool : public std::vector<std::unique_ptr<Thread>> {
+class ThreadPool {
 public:
   ThreadPool(){};
   ~ThreadPool();
@@ -64,25 +63,27 @@ public:
 
   void startThinking(Position &pos, StateListPtr &states, Limits limits);
   void clear();
+  size_t size() const { return threads.size(); }
   void set(size_t n, SearchState &sharedState);
 
-  void startCustomJob(size_t threadId, std::function<void()> f);
+  void startJob(size_t threadId, std::function<void()> f);
   void waitForThread(size_t threadId);
   void startSearch();
   void waitForThreads();
   Thread *getBestThread();
 
-  Thread *main() const { return front().get(); }
+  Thread *main() const { return threads.front().get(); }
   U64 nodesSearched() const;
 
   std::atomic_bool stop, abortedSearch;
 
 private:
   StateListPtr states;
+  std::vector<std::unique_ptr<Thread>> threads;
 
   U64 accumulate(std::atomic<U64> SearchWorker::*member) const {
     U64 sum = 0;
-    for (auto &&t : *this)
+    for (auto &&t : threads)
       sum += (t->worker.get()->*member).load(std::memory_order_relaxed);
     return sum;
   }

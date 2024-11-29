@@ -1,4 +1,5 @@
 #ifndef BITBOARD_HPP
+
 #define BITBOARD_HPP
 
 #include <immintrin.h>
@@ -15,11 +16,15 @@ namespace Maestro {
 |==========================================|
 \******************************************/
 
+namespace Bitboards {
+
 // Bitboard initialization function
-void initBitboards();
+void init();
 
 // Bitboard print function
-void printBitboard(Bitboard bb);
+void print(Bitboard bb);
+
+} // namespace Bitboards
 
 // U32 the number of set bits in a bitboard
 inline int countBits(Bitboard bb) { return _mm_popcnt_u64(bb); }

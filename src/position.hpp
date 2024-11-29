@@ -7,7 +7,6 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
-#include "nnue.hpp"
 
 namespace Maestro {
 
@@ -39,7 +38,7 @@ constexpr std::string_view repetitions =
 
 struct BoardState {
 
-  BoardState moveCopy(const BoardState &bs);
+  BoardState copy(const BoardState &bs);
 
   // Copied when making new move
   Square enPassant;
@@ -59,17 +58,12 @@ struct BoardState {
   Bitboard rookPin, bishopPin, kingBan, kingAttacks, available, attacked,
       pinned[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
-
-  NNUEdata nnueData;
   // Previous pieceList state
   BoardState *previous;
 };
 
 // Move history (Ideas from Stockfish)
 using StateListPtr = std::unique_ptr<std::deque<BoardState>>;
-
-// Define thread for use in function
-class Thread;
 
 /******************************************\
 |==========================================|
@@ -84,7 +78,7 @@ public:
   Position &operator=(const Position &pos) = default;
 
   // Init Position
-  void set(const std::string &fen, BoardState &state, Thread *th);
+  void set(const std::string &fen, BoardState &state);
 
   std::string fen() const;
 
@@ -101,37 +95,46 @@ public:
   void makeNullMove(BoardState &state);
   void unmakeNullMove();
 
-  // Boardstate getters
+  // Board State getters
   BoardState *state() const;
-  int getPliesFromStart() const;
-  Square getEnPassantTarget(Colour side) const;
-  int getNonPawnMaterial() const;
-  int getNonPawnMaterial(Colour c) const;
-  Piece getCaptured() const;
-  int getFiftyMove() const;
-  Key getKey() const;
-  Key getPawnKey() const;
+  Square enPassantTarget(Colour side) const;
+  int nonPawnMaterial() const;
+  int nonPawnMaterial(Colour c) const;
+  Piece captured() const;
+  int fiftyMove() const;
+  Key key() const;
+  Key pawnKey() const;
+  Score psq() const;
+  int gamePhase() const;
+  template <Colour us> Bitboard pinners() const;
+  Bitboard pinners(Colour us) const;
+  template <Colour us> Bitboard pinned() const;
+  Bitboard pinned(Colour us) const;
+
+  // Position getters
+  int gamePlies() const;
+
+  // Board helper functions
+  bool empty(Square sq) const;
   bool canCastle(Castling cr) const;
   bool isInCheck() const;
   bool isDraw(int ply) const;
   bool isCapture(Move move) const;
+
+  // Move helper functions
   PieceType captured(Move move) const;
   PieceType movedPieceType(Move move) const;
-  Score psq() const;
-  int gamePhase() const;
-  bool empty(Square sq) const;
-  Thread *getThread() const;
 
   // Board piece bitboard getters
-  Bitboard getPiecesBB(PieceType pt) const;
+  Bitboard pieces(PieceType pt) const;
   template <typename... PieceTypes>
-  Bitboard getPiecesBB(PieceType pt, PieceTypes... pts) const;
+  Bitboard pieces(PieceType pt, PieceTypes... pts) const;
   template <typename... PieceTypes>
-  Bitboard getPiecesBB(Colour us, PieceTypes... pts) const;
+  Bitboard pieces(Colour us, PieceTypes... pts) const;
 
   // Get piece information from square
-  Piece getPiece(Square sq) const;
-  PieceType getPieceType(Square sq) const;
+  Piece pieceOn(Square sq) const;
+  PieceType pieceTypeOn(Square sq) const;
   template <PieceType pt> Square square(Colour us) const;
   template <PieceType pt> const Square *squares(Colour us) const;
   const Square *squares(Colour us, PieceType pt) const;
@@ -143,30 +146,28 @@ public:
   int count(Piece pc) const;
 
   // Board occupancy
-  Bitboard getOccupiedBB() const;
-  Bitboard getOccupiedBB(Colour us) const;
+  Bitboard occupied() const;
+  Bitboard occupied(Colour us) const;
 
   // Side to move
-  Colour getSideToMove() const;
+  Colour sideToMove() const;
 
   // Castling
-  Castling getCastlingRights() const;
-  Castling getCastlingRights(Colour us) const;
+  Castling castling() const;
+  Castling castling(Colour us) const;
 
   // Slider blockers
-  Bitboard getSliderBlockers(Bitboard sliders, Square sq,
-                             Bitboard &pinners) const;
+  Bitboard sliderBlockers(Bitboard sliders, Square sq, Bitboard &pinners) const;
 
-  // Move generation and legality
+  // Move generation and legality helper functions
   Bitboard attackedByBB(Colour enemy) const;
   Bitboard sqAttackedByBB(Square sq, Bitboard occupied) const;
   bool isPseudoLegal(Move move) const;
   bool isLegal(Move move) const;
-  Bitboard pinners() const;
   Bitboard blockersForKing() const;
 
-  // Static Exchange Evaluation
-  bool SEE(Move move, int threshold = 0) const;
+  // SEE function
+  bool SEE(Move move, int threshold) const;
 
   // Gives check
   bool givesCheck(Move move) const;
@@ -174,7 +175,7 @@ public:
   // Position has repeated
   bool hasRepeated() const;
 
-  int pliesFromStart;
+  int _gamePlies;
 
 private:
   void setState() const;
@@ -189,19 +190,16 @@ private:
   Score initPSQT() const;
   int initGamePhase() const;
   // Piece list
-  Piece board[SQ_N];
-  int pieceCount[PIECE_N];
-  int index[SQ_N];
-  Square pieceList[PIECE_N][16];
+  Piece _board[SQ_N];
+  int _pieceCount[PIECE_N];
+  int _index[SQ_N];
+  Square _pieceList[PIECE_N][16];
   // Bitboard representation
-  Bitboard piecesBB[PIECE_TYPE_N];
-  Bitboard occupiedBB[COLOUR_N];
+  Bitboard _piecesBB[PIECE_TYPE_N];
+  Bitboard _occupiedBB[COLOUR_N];
   // Board state
   BoardState *st;
-  Colour sideToMove;
-
-  // Thread
-  Thread *thisThread;
+  Colour _sideToMove;
 };
 
 /******************************************\
@@ -210,37 +208,53 @@ private:
 |==========================================|
 \******************************************/
 
+// Get the pinners of a colour
+template <Colour us> Bitboard Position::pinners() const {
+  return st->pinners[us];
+}
+
+// Get the pinners of a colour
+inline Bitboard Position::pinners(Colour us) const { return st->pinners[us]; }
+
+// Get the pinned pieces of a colour
+template <Colour us> Bitboard Position::pinned() const {
+  return st->pinned[us];
+}
+
+// Get the pinned pieces of a colour
+inline Bitboard Position::pinned(Colour us) const { return st->pinned[us]; }
+
 // Get square of a piece type
 template <PieceType pt> Square Position::square(Colour us) const {
-  return pieceList[toPiece(us, pt)][0];
+  return _pieceList[toPiece(us, pt)][0];
 }
 
 // Get squares of a piece type
 template <PieceType pt>
 inline const Square *Position::squares(Colour us) const {
-  return pieceList[toPiece(us, pt)];
+  return _pieceList[toPiece(us, pt)];
 }
 
 // Get the bitboard of pieces of certain types
 template <typename... PieceTypes>
-inline Bitboard Position::getPiecesBB(PieceType pt, PieceTypes... pts) const {
-  return piecesBB[pt] | getPiecesBB(pts...);
+inline Bitboard Position::pieces(PieceType pt, PieceTypes... pts) const {
+  return _piecesBB[pt] | pieces(pts...);
 }
 
 // Get the bitboard of pieces of certain types for a colour
 template <typename... PieceTypes>
-inline Bitboard Position::getPiecesBB(Colour us, PieceTypes... pts) const {
-  return occupiedBB[us] & getPiecesBB(pts...);
+inline Bitboard Position::pieces(Colour us, PieceTypes... pts) const {
+  return _occupiedBB[us] & pieces(pts...);
 }
 
 // U32 the number of pieces of a certain type
 template <Piece pc> inline int Position::count() const {
-  return pieceCount[pc];
+  return _pieceCount[pc];
 }
 
 // U32 the number of pieces of a certain type
 template <PieceType pt> inline int Position::count() const {
-  return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)];
+  return _pieceCount[toPiece(WHITE, pt)] + _pieceCount[toPiece(BLACK, pt)];
 }
 
 // Get the slider blockers for a square
@@ -251,12 +265,12 @@ inline void Position::castleRook(Square from, Square to, Square &rookFrom,
   // Define the square that the rook is from
   rookFrom = kingSide ? H1 : A1;
   // Flip the rank if the side to move is black
-  rookFrom = (sideToMove == BLACK) ? flipRank(rookFrom) : rookFrom;
+  rookFrom = (_sideToMove == BLACK) ? flipRank(rookFrom) : rookFrom;
 
   // Define the square that the rook is going to
   rookTo = kingSide ? F1 : D1;
   // Flip the rank if the side to move is black
-  rookTo = (sideToMove == BLACK) ? flipRank(rookTo) : rookTo;
+  rookTo = (_sideToMove == BLACK) ? flipRank(rookTo) : rookTo;
 
   // Move the rook
   if constexpr (doMove)
@@ -278,94 +292,85 @@ inline BoardState *Position::state() const { return st; }
 
 // Get squares of a piece type
 inline const Square *Position::squares(Colour c, PieceType pt) const {
-  return pieceList[toPiece(c, pt)];
+  return _pieceList[toPiece(c, pt)];
 }
 
 // Get previously captured piece
-inline Piece Position::getCaptured() const { return st->captured; }
+inline Piece Position::captured() const { return st->captured; }
 
 // Get hash key
-inline Key Position::getKey() const { return st->key; }
+inline Key Position::key() const { return st->key; }
 
 // Get pawn hash key
-inline Key Position::getPawnKey() const { return st->pawnKey; }
-
-// Get thread
-inline Thread *Position::getThread() const { return thisThread; }
+inline Key Position::pawnKey() const { return st->pawnKey; }
 
 // Get fifty move counter
-inline int Position::getFiftyMove() const { return st->fiftyMove; }
+inline int Position::fiftyMove() const { return st->fiftyMove; }
 
 // Check if the position is in check
 inline bool Position::isInCheck() const { return (st->checkMask != FULLBB); }
 
 // Check if move is capture
 inline bool Position::isCapture(Move move) const {
-  return move and getPiece(move.to());
+  return move and pieceOn(move.to());
 }
 
 inline PieceType Position::captured(Move move) const {
-  return move.is<NORMAL>() ? getPieceType(move.to()) : PAWN;
+  return move.is<NORMAL>() ? pieceTypeOn(move.to()) : PAWN;
 }
 
 inline PieceType Position::movedPieceType(Move move) const {
-  return getPieceType(move.from());
+  return pieceTypeOn(move.from());
 }
 
 // Returns bitboard for piece type
-inline Bitboard Position::getPiecesBB(PieceType pt) const {
-  return piecesBB[pt];
-}
+inline Bitboard Position::pieces(PieceType pt) const { return _piecesBB[pt]; }
 
 // Returns piece on square
-inline Piece Position::getPiece(Square sq) const { return board[sq]; }
+inline Piece Position::pieceOn(Square sq) const { return _board[sq]; }
 
 // Returns piece type on square
-inline PieceType Position::getPieceType(Square sq) const {
-  return pieceTypeOf(board[sq]);
+inline PieceType Position::pieceTypeOn(Square sq) const {
+  return pieceTypeOf(_board[sq]);
 }
 
 // Returns the number of plies from the start
-inline int Position::getPliesFromStart() const { return pliesFromStart; }
+inline int Position::gamePlies() const { return _gamePlies; }
 
 // Returns the occupany of one colour
-inline Bitboard Position::getOccupiedBB() const {
-  return occupiedBB[WHITE] | occupiedBB[BLACK];
+inline Bitboard Position::occupied() const {
+  return _occupiedBB[WHITE] | _occupiedBB[BLACK];
 }
 
 // Returns the total occupancy
-inline Bitboard Position::getOccupiedBB(Colour us) const {
-  return occupiedBB[us];
-}
+inline Bitboard Position::occupied(Colour us) const { return _occupiedBB[us]; }
 // Returns side to move
-inline Colour Position::getSideToMove() const { return sideToMove; }
+inline Colour Position::sideToMove() const { return _sideToMove; }
 
 // Returns castling rights
-inline Castling Position::getCastlingRights() const { return st->castling; }
+inline Castling Position::castling() const { return st->castling; }
 
 // Returns castling rights for a side
-inline Castling Position::getCastlingRights(Colour us) const {
+inline Castling Position::castling(Colour us) const {
   return st->castling & ((us == WHITE) ? WHITE_SIDE : BLACK_SIDE);
 }
 
 // Returns the square the enPassant pawn is on
-inline Square Position::getEnPassantTarget(Colour side) const {
+inline Square Position::enPassantTarget(Colour side) const {
   return st->enPassant + ((side == WHITE) ? N : S);
 }
 
 // Returns the non pawn material
-inline int Position::getNonPawnMaterial() const {
+inline int Position::nonPawnMaterial() const {
   return st->nonPawnMaterial[WHITE] + st->nonPawnMaterial[BLACK];
 }
 
 // Returns the non pawn material for a colour
-inline int Position::getNonPawnMaterial(Colour c) const {
+inline int Position::nonPawnMaterial(Colour c) const {
   return st->nonPawnMaterial[c];
 }
 // Check if square is empty
-inline bool Position::empty(Square sq) const {
-  return getPiece(sq) == NO_PIECE;
-}
+inline bool Position::empty(Square sq) const { return pieceOn(sq) == NO_PIECE; }
 // Check if a castling right is legal
 inline bool Position::canCastle(Castling cr) const { return st->castling & cr; }
 
@@ -374,25 +379,20 @@ inline Score Position::psq() const { return st->psq; }
 inline int Position::gamePhase() const { return st->gamePhase; }
 
 inline int Position::count(PieceType pt) const {
-  return pieceCount[toPiece(WHITE, pt)] + pieceCount[toPiece(BLACK, pt)];
+  return _pieceCount[toPiece(WHITE, pt)] + _pieceCount[toPiece(BLACK, pt)];
 }
-inline int Position::count(Piece pc) const { return pieceCount[pc]; }
+inline int Position::count(Piece pc) const { return _pieceCount[pc]; }
 
-// Returns pinners
-inline Bitboard Position::pinners() const {
-  return st->bishopPin & getPiecesBB(~sideToMove, BISHOP, QUEEN) |
-         st->rookPin & getPiecesBB(~sideToMove, ROOK, QUEEN);
-}
 // Returns blockers for king
 inline Bitboard Position::blockersForKing() const {
-  return st->bishopPin & getOccupiedBB(sideToMove) |
-         st->rookPin & getOccupiedBB(sideToMove);
+  return st->bishopPin & occupied(_sideToMove) |
+         st->rookPin & occupied(_sideToMove);
 }
 
 // Returns whether a position has repeated
 inline bool Position::hasRepeated() const {
   BoardState *state = st;
-  int end = std::min(pliesFromStart, st->fiftyMove);
+  int end = std::min(_gamePlies, st->fiftyMove);
   while (end-- >= 4) {
     if (state->repetition)
       return true;

@@ -21,10 +21,9 @@ Key pieceSquareKeys[PIECE_N][SQ_N]{};
 Key enPassantKeys[FILE_N]{};
 Key castlingKeys[CASTLING_N]{};
 Key sideKey{};
-} // namespace Zobrist
 
 // Initialize zobrist keys
-void initZobrist() {
+void init() {
   // Initialize piece square keys
   for (Piece pce : {wP, wN, wB, wR, wQ, wK, bP, bN, bB, bR, bR, bQ, bK})
     for (Square sq = A1; sq <= H8; ++sq)
@@ -42,21 +41,24 @@ void initZobrist() {
   Zobrist::sideKey = PRNG::getRandom<Key>();
 }
 
-/******************************************\
-|==========================================|
-|               Memory utils               |
-|==========================================|
-\******************************************/
-
-void TTable::prefetch(const void *addr) { __builtin_prefetch(addr); }
+} // namespace Zobrist
 
 /******************************************\
 |==========================================|
-|           Transposition Table            |
+|           Interface functions            |
 |==========================================|
 \******************************************/
 
-TTable TT;
+void TTWriter::write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
+                     U8 gen8) {
+  entry->save(k, v, pv, f, d, m, ev, gen8);
+}
+
+/******************************************\
+|==========================================|
+|               Save Entry                 |
+|==========================================|
+\******************************************/
 
 void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
                    U8 gen8) {
@@ -64,41 +66,31 @@ void TTEntry::save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
 
   // Don't overwrite move if we don't have a new one and the position is the
   // same
-  if (m || k16 != key16)
-    move16 = m;
+  if (m || k16 != _key)
+    _move = m;
 
   // Don't overwrite an entry with the same position, unless we have an exact
   // bound or depth is nearly as good as the old one
-  if (flag() != FLAG_EXACT && k16 == key16 &&
-      d - DEPTH_ENTRY_OFFSET + 2 * pv < depth8 - 4 && relativeAge(gen8))
+  if (flag() != FLAG_EXACT && k16 == _key &&
+      d - DEPTH_ENTRY_OFFSET + 2 * pv < _depth - 4 && relativeAge(gen8))
     return;
 
   // Overwrite less valuable entries
-  key16 = k16;
-  value16 = v;
-  eval16 = ev;
-  genFlag8 = U8(gen8 | (U8(pv) << 2) | f);
-  depth8 = U8(d - DEPTH_ENTRY_OFFSET);
+  _key = k16;
+  _value = v;
+  _eval = ev;
+  _genFlag = U8(gen8 | (U8(pv) << 2) | f);
+  _depth = U8(d - DEPTH_ENTRY_OFFSET);
 }
 
-U8 TTEntry::relativeAge(U8 gen8) const {
-  return (255 + 8 + gen8 - genFlag8) & TT_GEN_MASK;
-}
-
-bool TTEntry::isOccupied() const { return bool(depth8); }
-
-void TTWriter::write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev,
-                     U8 gen8) {
-  entry->save(k, v, pv, f, d, m, ev, gen8);
-}
-
-// Get first entry based on hash key
-TTEntry *TTable::firstEntry(const Key key) const {
-  return &buckets[key & hashMask].entries[0];
-}
+/******************************************\
+|==========================================|
+|               Probe table                |
+|==========================================|
+\******************************************/
 
 // Probe the transposition table
-std::tuple<bool, TTData, TTWriter> TTable::probe(Key key) const {
+std::tuple<bool, TTData, TTWriter> TTable::probe(Key key) {
   // Get entry
   TTEntry *entry = firstEntry(key);
   // Calculate truncated key
@@ -111,19 +103,37 @@ std::tuple<bool, TTData, TTWriter> TTable::probe(Key key) const {
   // Find an entry to be replaced according to the replacement strategy
   TTEntry *replace = entry;
   for (int i = 1; i < TT_BUCKET_N; ++i)
-    if (replace->depth() - replace->relativeAge(gen8) * 2 >
-        entry[i].depth() - entry[i].relativeAge(gen8) * 2)
+    if (replace->depth() - replace->relativeAge(_gen) * 2 >
+        entry[i].depth() - entry[i].relativeAge(_gen) * 2)
       replace = &entry[i];
 
   return {false, TTData(), TTWriter(replace)};
 }
+
+/******************************************\
+|==========================================|
+|             Helper functions             |
+|==========================================|
+\******************************************/
+
+U8 TTEntry::relativeAge(U8 gen8) const {
+  return (255 + 8 + gen8 - _genFlag) & TT_GEN_MASK;
+}
+
+bool TTEntry::isOccupied() const { return bool(_depth); }
+
+// Get first entry based on hash key
+TTEntry *TTable::firstEntry(const Key key) {
+  return &_buckets[key & _hashMask].entries[0];
+}
+
 // Estimate the utilization of the transposition table
 int TTable::hashFull(int maxAge) const {
   int cnt = 0;
   for (size_t i = 0; i < 1000; ++i) {
     for (size_t j = 0; j < TT_BUCKET_N; ++j)
-      if (buckets[i].entries[j].isOccupied()) {
-        int age = (gen8 >> 3) - (buckets[i].entries[j].gen8() >> 3);
+      if (_buckets[i].entries[j].isOccupied()) {
+        int age = (_gen >> 3) - (_buckets[i].entries[j].gen8() >> 3);
         if (age < 0)
           age += 1 << 5;
         cnt += age <= maxAge;
@@ -137,32 +147,41 @@ void TTable::resize(size_t mb, ThreadPool &threads) {
   constexpr size_t MB = 1ULL << 20;
   U64 keySize = 16ULL;
 
-  if (hashMask)
-    delete[] buckets;
-
-  while ((1ULL << keySize) * sizeof(Bucket) < mb * MB / 2)
+  while ((1ULL << keySize) * sizeof(Bucket) <= mb * MB / 2)
     ++keySize;
 
-  bucketCount = (1ULL << keySize);
+  _count = (1ULL << keySize);
 
-  buckets = new Bucket[bucketCount];
+  // std::cout << "info string Resizing hash table to " << _count << " entries"
+  //           << std::endl;
 
-  hashMask = bucketCount - 1;
+  // std::cout << "info string Hash table size: " << _count * sizeof(Bucket) /
+  // MB
+  //           << " MB" << std::endl;
+
+  // std::cout << "info string Hash table bucket size: " << sizeof(Bucket)
+  //           << " Bytes" << std::endl;
+
+  _buckets.reserve(_count);
+
+  _hashMask = _count - 1;
+
+  _mb = mb;
 
   clear(threads);
 }
 // Clear the transposition table
 void TTable::clear(ThreadPool &threads) {
-  gen8 = 0;
+  _gen = 0;
   const size_t n = threads.size();
 
   for (size_t i = 0; i < n; ++i) {
-    threads.startCustomJob(i, [this, i, n] {
-      const size_t stride = bucketCount / n;
+    threads.startJob(i, [this, i, n] {
+      const size_t stride = _count / n;
       const size_t begin = i * stride;
-      const size_t len = (i + 1 == n) ? bucketCount - begin : stride;
+      const size_t len = (i + 1 == n) ? _count - begin : stride;
 
-      std::fill_n(buckets + begin, len, Bucket{});
+      std::fill_n(_buckets.begin() + begin, len, Bucket{});
     });
   }
 

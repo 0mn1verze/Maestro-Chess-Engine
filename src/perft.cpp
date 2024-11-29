@@ -1,4 +1,4 @@
-#include "perft.hpp"
+
 
 #include <fstream>
 #include <iostream>
@@ -8,14 +8,13 @@
 
 #include "defs.hpp"
 #include "movegen.hpp"
-#include "movepick.hpp"
+#include "perft.hpp"
 #include "position.hpp"
-#include "thread.hpp"
 #include "utils.hpp"
 
 namespace Maestro {
 
-U32 perftDriver(Position &pos, int depth) {
+U64 perftDriver(Position &pos, int depth) {
   // Generate all moves
   MoveList<ALL> moves(pos);
 
@@ -23,11 +22,12 @@ U32 perftDriver(Position &pos, int depth) {
   if (depth == 1)
     return moves.size();
 
-  U32 nodes = 0;
+  U64 nodes = 0;
   BoardState st{};
 
   // // Loop through all moves
-  for (GenMove move : moves) {
+  for (Move move : moves) {
+
     pos.makeMove(move, st);
     // Recurse if depth > 1
     nodes += perftDriver(pos, depth - 1);
@@ -43,17 +43,17 @@ void perftTest(Position &pos, int depth) {
   // Print depth
   std::cout << "\n\n	Perft Test: Depth " << depth << std::endl;
   std::cout << "\n\n";
-  U64 start = getTimeMs();
+  TimePt start = getTimeMs();
   // Init node variable
-  U32 nodes = 0;
+  U64 nodes = 0;
 
   // Generate all moves
   MoveList<ALL> moves(pos);
   // Init node count
-  U32 count = 1;
+  U64 count = 1;
   BoardState st{};
   // Loop through all moves
-  for (GenMove move : moves) {
+  for (Move move : moves) {
     // Make move
     pos.makeMove(move, st);
     // Recurse if depth > 1
@@ -121,7 +121,7 @@ std::vector<PerftPosition> readBenchFile(std::string filePath) {
   return positions;
 }
 
-void perftBench(ThreadPool &threads, std::string filePath) {
+void perftBench(std::string filePath) {
   // Read bench file
   std::vector<PerftPosition> positions = readBenchFile(filePath);
   // Init position and nodes variable
@@ -131,7 +131,7 @@ void perftBench(ThreadPool &threads, std::string filePath) {
   // Loop through all positions
   for (PerftPosition p : positions) {
     // Set position
-    pos.set(p.fen, st, threads.main());
+    pos.set(p.fen, st);
     // Get time
     U64 start = getTimeMs();
     // Run perft test

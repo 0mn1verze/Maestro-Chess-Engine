@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "move.hpp"
+#include "movegen.hpp"
 #include "search.hpp"
 #include "thread.hpp"
 #include "uci.hpp"
@@ -19,7 +20,7 @@ Thread::Thread(SearchState &sharedState, size_t idx)
     : idx(idx), thread(&Thread::idleLoop, this) {
   waitForThread();
 
-  startCustomJob([this, &sharedState, idx] {
+  startJob([this, &sharedState, idx] {
     worker = std::make_unique<SearchWorker>(sharedState, idx);
   });
 
@@ -33,15 +34,15 @@ Thread::~Thread() {
 }
 
 void Thread::startSearch() {
-  startCustomJob([this] { worker->startSearch(); });
+  startJob([this] { worker->startSearch(); });
 }
 
 void Thread::clearWorker() {
-  startCustomJob([this] { worker->clear(); });
+  startJob([this] { worker->clear(); });
 }
 
 // Launch a function in the thread
-void Thread::startCustomJob(std::function<void()> f) {
+void Thread::startJob(std::function<void()> f) {
   {
     std::unique_lock<std::mutex> lock(
         mutex); // Lock mutex to gain control to the thread
@@ -92,41 +93,42 @@ void Thread::idleLoop() {
 \******************************************/
 
 ThreadPool::~ThreadPool() {
-  if (size()) {
+  if (threads.size()) {
     main()->waitForThread();
     this->clear();
   }
 }
 
 void ThreadPool::set(size_t n, SearchState &sharedState) {
-  if (size() > 0) {          // Destroy existing threads
+  if (threads.size() > 0) {  // Destroy existing threads
     main()->waitForThread(); // Wait for main thread to finish
-    clear();
-
-    for (auto &&th : *this)
-      delete th.get(); // Delete thread
+    clear();                 // Clear threads
+    threads.clear();         // Clear thread vector
   }
 
   if (n > 0) {
-    reserve(n); // Reserve space for n threads
+    threads.reserve(n); // Reserve space for n threads
 
-    while (size() < n)
-      emplace_back(std::make_unique<Thread>(sharedState,
-                                            size())); // Create worker threads
+    while (threads.size() < n)
+      threads.emplace_back(
+          std::make_unique<Thread>(sharedState,
+                                   threads.size())); // Create worker threads
   }
+
+  clear();
 
   main()->waitForThread(); // Wait for main thread to finish
 }
 
 void ThreadPool::clear() {
 
-  if (size() == 0)
+  if (threads.size() == 0)
     return; // If no threads, return
 
-  for (auto &&th : *this)
+  for (auto &&th : threads)
     th->clearWorker(); // Clear thread
 
-  for (auto &&th : *this)
+  for (auto &&th : threads)
     th->waitForThread(); // Wait for thread to finish
 
   main()->worker->bestPreviousAvgScore = VAL_INFINITE;
@@ -138,7 +140,7 @@ Thread *ThreadPool::getBestThread() {
   Thread *best = main();
   Value minScore = VAL_ZERO;
 
-  for (auto &&th : *this) {
+  for (auto &&th : threads) {
     const int bestDepth = best->worker->getCompletedDepth();
     const int depth = th->worker->getCompletedDepth();
 
@@ -173,26 +175,22 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   RootMoves rootMoves;
   const auto legalMoves = MoveList<ALL>(pos);
 
-  for (const std::string &uciMove : limits.searchMoves) {
-    Move move = UCI::toMove(pos, uciMove);
-    rootMoves.emplace_back(move);
-  }
-
-  if (rootMoves.empty())
-    for (const Move &m : legalMoves)
-      rootMoves.emplace_back(m);
+  for (const Move &m : legalMoves)
+    rootMoves.emplace_back(m);
 
   if (s.get())
     states = std::move(s);
 
-  for (auto &&th : *this) {
-    th->startCustomJob([&] {
+  std::cout << states->back().plies << std::endl;
+
+  for (auto &&th : threads) {
+    th->startJob([&] {
       th->worker->limits = limits;
       th->worker->nodes = 0;
       th->worker->rootDepth = 0;
       th->worker->rootMoves = rootMoves;
-      th->worker->rootPos.set(pos.fen(), th->worker->rootState, th.get());
       th->worker->rootState = states->back();
+      th->worker->rootPos.set(pos.fen(), th->worker->rootState);
     });
   }
 
@@ -202,21 +200,21 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
   main()->startSearch(); // Start main thread
 }
 
-void ThreadPool::startCustomJob(size_t threadId, std::function<void()> f) {
-  at(threadId)->startCustomJob(std::move(f));
+void ThreadPool::startJob(size_t threadId, std::function<void()> f) {
+  threads.at(threadId)->startJob(std::move(f));
 }
 
 void ThreadPool::waitForThread(size_t threadId) {
-  at(threadId)->waitForThread();
+  threads.at(threadId)->waitForThread();
 }
 
 void ThreadPool::startSearch() {
-  for (auto &&th : *this)
+  for (auto &&th : threads)
     if (th.get() != main())
       th->startSearch();
 }
 void ThreadPool::waitForThreads() {
-  for (auto &&th : *this)
+  for (auto &&th : threads)
     if (th.get() != main())
       th->waitForThread();
 }

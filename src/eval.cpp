@@ -4,9 +4,7 @@
 
 #include "defs.hpp"
 #include "eval.hpp"
-#include "nnue.hpp"
 #include "position.hpp"
-#include "uci.hpp"
 #include "utils.hpp"
 
 namespace Maestro::Eval {
@@ -90,75 +88,17 @@ void initEval() {
   }
 }
 
-/******************************************\
-|==========================================|
-|              NNUE Evaluation             |
-|             (Stockfish NNUE)             |
-|==========================================|
-\******************************************/
-
-// convert BBC piece code to Stockfish piece codes
-int nnuePieces[PIECE_N] = {blank, wpawn,  wknight, wbishop, wrook,   wqueen,
-                           wking, blank,  blank,   bpawn,   bknight, bbishop,
-                           brook, bqueen, bking,   blank};
-
-int toNNUEPiece(Piece piece) { return nnuePieces[piece]; }
-
-inline Value evaluate_nnue(const Position &pos) {
-  Bitboard bitboard;
-  Square sq;
-  int pieces[33];
-  int squares[33];
-  int index = 0;
-
-  // Set king squares
-  pieces[index] = nnuePieces[wK];
-  squares[index++] = pos.square<KING>(WHITE);
-
-  pieces[index] = nnuePieces[bK];
-  squares[index++] = pos.square<KING>(BLACK);
-
-  for (PieceType pt = PAWN; pt <= QUEEN; ++pt) {
-    const Square *wpl = pos.squares(WHITE, pt);
-    while (*wpl != NO_SQ) {
-      pieces[index] = nnuePieces[toPiece(WHITE, pt)];
-      squares[index++] = *wpl++;
-    }
-
-    const Square *bpl = pos.squares(BLACK, pt);
-    while (*bpl != NO_SQ) {
-      pieces[index] = nnuePieces[toPiece(BLACK, pt)];
-      squares[index++] = *bpl++;
-    }
-  }
-
-  pieces[index] = 0;
-  squares[index] = 0;
-
-  if (pos.state()->plies > 2) {
-    // Get previous nnue accumulator data
-    NNUEdata *data[3];
-    data[0] = &(pos.state()->nnueData);
-    data[1] = &(pos.state()->previous->nnueData);
-    data[2] = &(pos.state()->previous->previous->nnueData);
-
-    return nnue_evaluate_incremental(pos.getSideToMove(), pieces, squares,
-                                     data);
-  } else
-    return nnue_evaluate(pos.getSideToMove(), pieces, squares);
-}
-
 // Evaluate the position
 Value evaluate(const Position &pos) {
-  BoardState *st = pos.state();
+  // Get the piece square table score
+  Score psq = pos.psq();
 
-  Value nnue = evaluate_nnue(pos);
+  // Get the game phase
+  int mgPhase = std::min(pos.gamePhase(), 24);
+  int egPhase = 24 - mgPhase;
 
-  Value v = nnue * 5 / 4 + 28;
-
-  v = v * (100 - st->fiftyMove) / 100;
-
-  v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
+  // Adjust score
+  Value v = (mgPhase * psq.first + egPhase * psq.second) / 24;
 
   return v;
 }

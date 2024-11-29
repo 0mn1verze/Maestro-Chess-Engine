@@ -1,9 +1,12 @@
 #ifndef HASH_HPP
+#pragma once
 #define HASH_HPP
+
+#include <array>
+#include <vector>
 
 #include "defs.hpp"
 #include "move.hpp"
-#include "thread.hpp"
 
 namespace Maestro {
 
@@ -20,10 +23,12 @@ extern Key pieceSquareKeys[PIECE_N][SQ_N];
 extern Key enPassantKeys[FILE_N];
 extern Key castlingKeys[CASTLING_N];
 extern Key sideKey;
+
+void init();
+
 } // namespace Zobrist
 
-// Init zobrist hashing
-void initZobrist();
+class ThreadPool;
 
 /******************************************\
 |==========================================|
@@ -52,6 +57,7 @@ enum TTFlag {
   TT_BUCKET_N = 3,
 };
 
+// Transposition table entry data store (Interface)
 struct TTData {
   Move move;
   Value value, eval;
@@ -60,89 +66,104 @@ struct TTData {
   bool isPV;
 };
 
-struct TTEntry {
+struct TTEntry;
 
-  TTData read() const {
-    return {move(), value(), eval(), depth(), flag(), isPV()};
-  }
-
-  U16 key() const { return key16; }
-  Move move() const { return move16; }
-  Value value() const { return value16; }
-  Value eval() const { return eval16; }
-  Depth depth() const { return depth8 + DEPTH_ENTRY_OFFSET; }
-  bool isPV() const { return genFlag8 & TT_PV_MASK; }
-  TTFlag flag() const { return TTFlag(genFlag8 & TT_FLAG_MASK); }
-  U8 gen8() const { return genFlag8 & TT_GEN_MASK; }
-  void save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev, U8 gen8);
-  U8 relativeAge(U8 gen8) const;
-  bool isOccupied() const;
-
-  // Constructors
-  TTEntry() = default;
-  TTEntry(const TTEntry &) = default;
-
-private:
-  // Key
-  U16 key16;
-  Move move16;
-  I16 value16;
-  I16 eval16;
-  U8 depth8;
-  U8 genFlag8;
-};
-
+// Transposition table entry writer (Interface)
 struct TTWriter {
 public:
   void write(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev, U8 gen8);
   TTWriter(TTEntry *e) : entry(e) {}
 
 private:
-  friend class TranspositionTable;
+  friend class TTable;
   TTEntry *entry;
 };
 
-// Transposition Table
+/******************************************\
+|==========================================|
+|           Transposition Entry            |
+|==========================================|
+\******************************************/
 
-// - Contains 2^n buckets and each bucket contains TT_BUCKET_N entries.
-// - Each entry contains information for a unique position.
+// Transposition table entry
+struct TTEntry {
+
+  TTData read() const {
+    return {move(), value(), eval(), depth(), flag(), isPV()};
+  }
+
+  // Getter functions
+  U16 key() const { return _key; }
+  Move move() const { return _move; }
+  Value value() const { return _value; }
+  Value eval() const { return _eval; }
+  Depth depth() const { return _depth + DEPTH_ENTRY_OFFSET; }
+  bool isPV() const { return _genFlag & TT_PV_MASK; }
+  TTFlag flag() const { return TTFlag(_genFlag & TT_FLAG_MASK); }
+  U8 gen8() const { return _genFlag & TT_GEN_MASK; }
+
+  // Save entry (key, value, is pv, flag, depth, move, static eval, gen8)
+  void save(Key k, I16 v, bool pv, TTFlag f, Depth d, Move m, I16 ev, U8 gen8);
+
+  // Get relative age of entry
+  U8 relativeAge(U8 gen8) const;
+
+  // Check if entry is valid
+  bool isOccupied() const;
+
+private:
+  // Key
+  U16 _key;
+  Move _move;
+  I16 _value;
+  I16 _eval;
+  U8 _depth;
+  U8 _genFlag;
+};
+
+/******************************************\
+|==========================================|
+|           Transposition Table            |
+|==========================================|
+\******************************************/
 
 class TTable {
   struct Bucket {
-    TTEntry entries[TT_BUCKET_N];
-    char padding[2];
+    std::array<TTEntry, TT_BUCKET_N> entries;
+    char padding[2]; // Padding for alignment
   };
 
 public:
-  ~TTable() { delete[] buckets; }
   // Increment generation (last 5 bits of genFlag8)
-  void newSearch() { gen8 += 8; }
+  void newSearch() { _gen += 8; }
   // Probe the transposition table
-  std::tuple<bool, TTData, TTWriter> probe(Key key) const;
+  std::tuple<bool, TTData, TTWriter> probe(Key key);
   // Estimate the utilization of the transposition table
   int hashFull(int maxAge = 0) const;
   // Resize the transposition table
   void resize(size_t mb, ThreadPool &);
+  // Return size of transposition table
+  size_t size() const { return _mb; }
   // Clear the transposition table
   void clear(ThreadPool &);
   // Get first entry based on hash key
-  TTEntry *firstEntry(const Key key) const;
+  TTEntry *firstEntry(const Key key);
   // Prefetch entry
   static void prefetch(const void *addr);
-
   // Value conversions
   static Value valueToTT(Value v, int ply);
   static Value valueFromTT(Value v, int ply, int r50c);
 
-  U8 gen8;
+  U8 _gen;
 
 private:
-  friend struct TTEntry;
-
-  size_t bucketCount;
-  Bucket *buckets;
-  Key hashMask = 0ULL;
+  size_t _count = 0;
+  size_t _mb = 0;
+  std::vector<Bucket> _buckets;
+  Key _hashMask = 0ULL;
 };
+
+// Init zobrist hashing
 
 } // namespace Maestro
 

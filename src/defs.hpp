@@ -1,4 +1,5 @@
 #ifndef DEFS_HPP
+#pragma once
 #define DEFS_HPP
 
 #include <cstdint>
@@ -9,23 +10,21 @@ namespace Maestro {
 
 /******************************************\
 |==========================================|
-|             Board U16 Types              |
+|               Board Types                |
 |==========================================|
 \******************************************/
 
 using Bitboard = std::uint64_t;
-using U64 = std::uint64_t;
 using Key = std::uint64_t;
-
-using U32 = std::uint32_t;
-
-using U16 = std::uint16_t;
 using Value = int;
+using Depth = int;
+
+using U64 = std::uint64_t;
+using U32 = std::uint32_t;
+using U16 = std::uint16_t;
+using U8 = std::uint8_t;
 
 using I16 = std::int16_t;
-
-using Depth = int;
-using U8 = std::uint8_t;
 
 /******************************************\
 |==========================================|
