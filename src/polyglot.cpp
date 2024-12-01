@@ -509,7 +509,7 @@ Move PolyBook::polyMoveToEngineMove(const Position &pos, U16 polyMove) const {
   return Move::none();
 }
 
-Move PolyBook::probe(const Position &pos, Key key) const {
+Move PolyBook::probe(const Position &pos) const {
   srand(getTimeMs());
 
   Key pKey = polyKey(pos);

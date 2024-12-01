@@ -97,7 +97,6 @@ struct SearchStack {
   Move excludedMove = Move::none();
   Value staticEval = 0;
   int moveCount = 0;
-  Depth extensions = 0;
   bool inCheck = false;
   bool ttPV = false;
   bool ttHit = false;
@@ -127,6 +126,17 @@ struct SearchState {
 enum NodeType { PV, NON_PV, ROOT };
 
 class SearchWorker {
+
+  struct MoveArray {
+    int index = 0;
+    Move moves[32]{};
+    Move *begin() { return moves; }
+    Move *end() { return moves + index; }
+    bool empty() const { return index == 0; }
+    size_t size() const { return index; }
+    void pushBack(Move m) { moves[index++] = m; }
+  };
+
 public:
   SearchWorker(SearchState &sharedState, size_t threadId)
       : sharedState(sharedState), threadId(threadId), tt(sharedState.tt),
@@ -138,8 +148,8 @@ public:
 
   bool isMainThread() const { return threadId == 0; }
 
-  int getCompletedDepth() const { return completedDepth; }
-  int getSelDepth() const { return selDepth; }
+  int completedDepth() const { return _completedDepth; }
+  int selDepth() const { return _selDepth; }
 
   TimeManager tm;
 
@@ -165,6 +175,9 @@ private:
   template <NodeType nodeType>
   Value qSearch(Position &pos, SearchStack *ss, Value alpha, Value beta);
 
+  void updateAllStats(const Position &pos, Move bestMove, MoveArray &captures,
+                      MoveArray &quiets, Depth depth, int ply);
+
   size_t threadId;
   SearchState &sharedState;
   Limits limits;
@@ -172,7 +185,7 @@ private:
   ThreadPool &threads;
   TTable &tt;
 
-  int selDepth, completedDepth;
+  Depth _selDepth, _completedDepth;
   std::atomic<U64> nodes;
 
   Position rootPos;
@@ -183,7 +196,7 @@ private:
 
   Value bestPreviousScore, bestPreviousAvgScore;
 
-  int failHigh, failHighFirst;
+  int failHigh, failHighFirst, ttCutOff;
 
   friend class ThreadPool;
 };

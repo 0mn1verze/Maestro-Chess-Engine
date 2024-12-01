@@ -57,7 +57,7 @@ struct KillerTable : public Heuristic<Move, NOT_USED, MAX_PLY + 1, 2> {
   void clear() { Heuristic::clear(Move::none()); }
 
   // Get killer move entry (const)
-  Move probe(int ply, int moveN) const { return _table[ply][moveN]; }
+  Move &probe(int ply, int moveN) { return _table[ply][moveN]; }
 };
 
 // History table

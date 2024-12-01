@@ -1,9 +1,12 @@
-#include "engine.hpp"
+#include <iostream>
+
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "engine.hpp"
 #include "eval.hpp"
 #include "hash.hpp"
 #include "movegen.hpp"
+#include "nnue.hpp"
 #include "perft.hpp"
 #include "polyglot.hpp"
 #include "position.hpp"
@@ -30,6 +33,9 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   // Initialize polyglot book
   if (USE_BOOK)
     book.init(BOOK_FILE);
+  // Initialize nnue
+  if (USE_NNUE)
+    nnue_init(NNUE_FILE.data());
 }
 
 // Wait for search to finish
@@ -73,6 +79,15 @@ void Engine::bench() { perftBench(BENCH_FILE.data()); }
 
 void Engine::go(Limits &limits) {
   threads.stop = threads.abortedSearch = false;
+
+  if constexpr (USE_BOOK) {
+    Move move = book.probe(pos);
+    if (move) {
+      std::cout << "bestmove " << move2Str(move) << std::endl;
+      return;
+    }
+  }
+
   threads.startThinking(pos, states, limits);
 }
 

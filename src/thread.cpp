@@ -141,8 +141,8 @@ Thread *ThreadPool::getBestThread() {
   Value minScore = VAL_ZERO;
 
   for (auto &&th : threads) {
-    const int bestDepth = best->worker->getCompletedDepth();
-    const int depth = th->worker->getCompletedDepth();
+    const int bestDepth = best->worker->completedDepth();
+    const int depth = th->worker->completedDepth();
 
     const int bestScore = best->worker->rootMoves[0].score;
     const int score = th->worker->rootMoves[0].score;
@@ -189,8 +189,8 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
       th->worker->nodes = 0;
       th->worker->rootDepth = 0;
       th->worker->rootMoves = rootMoves;
-      th->worker->rootState = states->back();
       th->worker->rootPos.set(pos.fen(), th->worker->rootState);
+      th->worker->rootState = states->back();
     });
   }
 

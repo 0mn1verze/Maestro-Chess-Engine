@@ -3,6 +3,7 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "eval.hpp"
 #include "move.hpp"
 #include "movepicker.hpp"
 #include "position.hpp"
@@ -12,25 +13,50 @@ namespace Maestro {
 
 // Main Move Picker constructor
 MovePicker::MovePicker(const Position &pos, const Move ttMove,
-                       const Depth depth, const int ply,
-                       const HistoryTable &historyTable,
-                       const KillerTable &killerTable,
-                       const CaptureHistoryTable &captureHistoryTable)
-    : _pos(pos), _ttMove(ttMove), _depth(depth), _history(&historyTable),
-      _killer(&killerTable), _captureHistory(&captureHistoryTable),
+                       const Depth depth, const int ply, HistoryTable &ht,
+                       KillerTable &kt, CaptureHistoryTable &cht)
+    : _pos(pos), _ttMove(ttMove), _depth(depth), _ht(&ht), _cht(&cht),
       _skipQuiets(depth == DEPTH_QS), _ply(ply), _cur(0), _end(0) {
-  _killer1 = _killer->probe(ply, depth);
-  _killer2 = _killer->probe(ply, depth);
+  _killer1 = kt.probe(ply, 0);
+  _killer2 = kt.probe(ply, 1);
 
   if (pos.isCapture(_killer1))
     _killer1 = Move::none();
   if (pos.isCapture(_killer2))
     _killer2 = Move::none();
 
-  _stage = (depth > DEPTH_QS ? CAPTURE_INIT : QCAPTURE_INIT);
+  _stage = (depth > DEPTH_QS ? MAIN_TT : Q_TT) +
+           !(pos.isLegal(_ttMove) && (!_skipQuiets || pos.isCapture(_ttMove)));
 }
 
-template <GenType Type> void MovePicker::score() {}
+// Probe Cut Move Picker Constructor
+MovePicker::MovePicker(const Position &pos, const Move ttMove,
+                       CaptureHistoryTable &cht, int threshold)
+    : _pos(pos), _ttMove(ttMove), _cur(0), _end(0), _threshold(threshold),
+      _cht(&cht), _skipQuiets(true) {
+  _stage = PROBCUT_TT + !(pos.isLegal(_ttMove) && pos.isCapture(_ttMove));
+}
+
+template <GenType Type> void MovePicker::score() {
+  for (int i = _cur; i < _end; i++) {
+    Move m = _moves[i];
+
+    if constexpr (Type == CAPTURES) {
+      _values[i] =
+          7 * Eval::pieceValue[_pos.capturedPiece(m)] + _cht->probe(_pos, m);
+    }
+
+    if constexpr (Type == QUIETS) {
+
+      if (m == _killer1)
+        _values[i] = 10000;
+      else if (m == _killer2)
+        _values[i] = 9000;
+      else
+        _values[i] = _ht->probe(_pos, m);
+    }
+  }
+}
 
 size_t MovePicker::argMax() {
   return std::distance(_values,
@@ -57,9 +83,24 @@ Move MovePicker::best(std::function<bool()> predicate) {
   return Move::none();
 }
 
+bool MovePicker::goodCaptureFilter() {
+  if (!_pos.SEE(_moves[_cur], -_values[_cur] / 20)) {
+    _moves[_endBadCap] = _moves[_cur];
+    _values[_endBadCap++] = _values[_cur];
+    return false;
+  }
+  return true;
+}
+
 Move MovePicker::next() {
 
   switch (_stage) {
+  case PROBCUT_TT:
+  case Q_TT:
+  case MAIN_TT:
+    _stage++;
+    return _ttMove;
+  // Capture generation stage
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
   case CAPTURE_INIT:
@@ -68,11 +109,13 @@ Move MovePicker::next() {
     score<CAPTURES>();
     _stage++;
     return next();
+  // Good capture stage
   case GOOD_CAPTURE:
-    if (best([&]() { return true; }))
+    if (best([&]() { return goodCaptureFilter(); }))
       return _moves[_cur - 1];
     _stage++;
     [[fallthrough]];
+  // Quiet generation stage
   case QUIET_INIT:
     if (!_skipQuiets) {
       _cur = _endBadCap;
@@ -81,6 +124,7 @@ Move MovePicker::next() {
     }
     _stage++;
     [[fallthrough]];
+  // Quiet move stage
   case QUIET:
     if (!_skipQuiets && best([&]() { return true; }))
       return _moves[_cur - 1];
@@ -88,12 +132,19 @@ Move MovePicker::next() {
     _end = _endBadCap;
     _stage++;
     [[fallthrough]];
+  // Bad capture stage
   case BAD_CAPTURE:
     if (best([&]() { return true; }))
       return _moves[_cur - 1];
     return Move::none();
+  // Quiescence capture stage
   case QCAPTURE:
     if (best([&]() { return true; }))
+      return _moves[_cur - 1];
+    return Move::none();
+  // Probe cut stage
+  case PROBCUT:
+    if (best([&]() { return !_pos.SEE(_moves[_cur], _threshold); }))
       return _moves[_cur - 1];
     return Move::none();
   }

@@ -38,6 +38,8 @@ void initEval();
 
 Value evaluate(const Position &pos);
 
+int toNNUEPiece(Piece piece);
+
 } // namespace Eval
 
 } // namespace Maestro

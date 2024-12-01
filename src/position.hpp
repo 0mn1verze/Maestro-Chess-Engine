@@ -8,6 +8,7 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
+#include "nnue.hpp"
 
 namespace Maestro {
 
@@ -59,7 +60,10 @@ struct BoardState {
   Bitboard rookPin, bishopPin, kingBan, kingAttacks, available, attacked,
       pinned[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
-  // Previous pieceList state
+
+  // NNUE data
+  NNUEdata nnueData;
+  // Previous Board state
   BoardState *previous;
 };
 
@@ -404,7 +408,6 @@ inline bool Position::hasRepeated() const {
 
     state = state->previous;
   }
-
   return false;
 }
 

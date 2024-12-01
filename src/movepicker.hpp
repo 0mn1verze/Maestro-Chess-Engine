@@ -14,6 +14,7 @@ namespace Maestro {
 
 enum GenStage {
   // Generate main search moves
+  MAIN_TT,
   CAPTURE_INIT,
   GOOD_CAPTURE,
   QUIET_INIT,
@@ -21,10 +22,12 @@ enum GenStage {
   BAD_CAPTURE,
 
   // Generate qsearch moves
+  Q_TT,
   QCAPTURE_INIT,
   QCAPTURE,
 
   // Probe cut search
+  PROBCUT_TT,
   PROBCUT_INIT,
   PROBCUT,
 };
@@ -54,8 +57,11 @@ class MovePicker {
 public:
   // Main Move Picker constructor
   MovePicker(const Position &, const Move, const Depth, const int,
-             const HistoryTable &, const KillerTable &,
-             const CaptureHistoryTable &);
+             HistoryTable &, KillerTable &, CaptureHistoryTable &);
+
+  // Probe Cut Move Picker Constructor
+  MovePicker(const Position &, const Move, CaptureHistoryTable &,
+             int threshold);
 
   // Get the next move (After move ordering)
   Move next();
@@ -69,13 +75,13 @@ private:
   template <GenType T> void score();
 
   size_t argMax();
+  bool goodCaptureFilter();
 
   // Return best move based on move ordering score
   Move best(std::function<bool()> predicate);
 
-  const KillerTable *_killer;
-  const HistoryTable *_history;
-  const CaptureHistoryTable *_captureHistory;
+  HistoryTable *_ht;
+  CaptureHistoryTable *_cht;
 
   const Position &_pos;
 

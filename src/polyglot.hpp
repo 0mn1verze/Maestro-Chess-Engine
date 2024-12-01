@@ -16,7 +16,7 @@ public:
   void init(const std::string_view &path);
   void clear();
 
-  Move probe(const Position &pos, Key key) const;
+  Move probe(const Position &pos) const;
 
 private:
   Key polyKey(const Position &pos) const;

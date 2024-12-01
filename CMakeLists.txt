@@ -12,6 +12,8 @@ set(SOURCES src/bitboard.cpp
             src/perft.cpp
             src/hash.cpp
             src/search.cpp
+            src/nnue.cpp
+            src/misc.cpp
             src/thread.cpp
             src/eval.cpp
             src/engine.cpp
@@ -30,6 +32,8 @@ set(HEADERS src/defs.hpp
             src/hash.hpp
             src/perft.hpp
             src/search.hpp
+            src/nnue.hpp
+            src/misc.hpp
             src/thread.hpp
             src/eval.hpp
             src/engine.hpp
