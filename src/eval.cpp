@@ -100,7 +100,7 @@ Value evaluate(const Position &pos) {
   // Adjust score
   Value v = (mgPhase * psq.first + egPhase * psq.second) / 24;
 
-  return v;
+  return pos.sideToMove() == WHITE ? v : -v;
 }
 
 } // namespace Maestro::Eval

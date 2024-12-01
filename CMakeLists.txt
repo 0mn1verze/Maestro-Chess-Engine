@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SOURCES src/bitboard.cpp
             src/position.cpp
             src/movegen.cpp
+            src/movepicker.cpp
+            src/history.cpp
             src/perft.cpp
             src/hash.cpp
             src/search.cpp
@@ -23,6 +25,8 @@ set(HEADERS src/defs.hpp
             src/position.hpp
             src/movegen.hpp
             src/move.hpp
+            src/movepicker.hpp
+            src/history.hpp
             src/hash.hpp
             src/perft.hpp
             src/search.hpp

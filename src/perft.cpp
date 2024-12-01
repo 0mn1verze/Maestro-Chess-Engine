@@ -7,12 +7,18 @@
 #include <vector>
 
 #include "defs.hpp"
+#include "history.hpp"
 #include "movegen.hpp"
+#include "movepicker.hpp"
 #include "perft.hpp"
 #include "position.hpp"
 #include "utils.hpp"
 
 namespace Maestro {
+
+KillerTable kt;
+HistoryTable ht;
+CaptureHistoryTable cht;
 
 U64 perftDriver(Position &pos, int depth) {
   // Generate all moves
@@ -25,7 +31,7 @@ U64 perftDriver(Position &pos, int depth) {
   U64 nodes = 0;
   BoardState st{};
 
-  // // Loop through all moves
+  // Loop through all moves
   for (Move move : moves) {
 
     pos.makeMove(move, st);

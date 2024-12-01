@@ -76,7 +76,7 @@ void Engine::go(Limits &limits) {
   threads.startThinking(pos, states, limits);
 }
 
-void Engine::stop() {}
+void Engine::stop() { threads.stop = threads.abortedSearch = true; }
 
 void Engine::clear() { waitForSearchFinish(); }
 

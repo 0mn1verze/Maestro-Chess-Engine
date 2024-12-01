@@ -1,4 +1,5 @@
 #ifndef POLYGLOT_HPP
+#pragma once
 #define POLYGLOT_HPP
 
 #include <string>

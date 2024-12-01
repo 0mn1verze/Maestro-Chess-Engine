@@ -25,8 +25,8 @@ constexpr std::string_view BENCH_FILE = "bench.csv";
 constexpr std::string_view BOOK_FILE = "OPTIMUS2403.bin";
 
 constexpr size_t HASH_SIZE = 64;
-constexpr size_t THREADS = 12;
-constexpr bool USE_BOOK = true;
+constexpr size_t THREADS = 3;
+constexpr bool USE_BOOK = false;
 constexpr int MOVE_OVERHEAD = 300;
 
 /******************************************\
@@ -64,7 +64,7 @@ public:
   // Print current move
   static void uciReportCurrentMove(Depth depth, Move move, int currmove);
   // Print search node count, hash full and nps
-  static void uciReportNodes(U64 nodes, int hashFull, TimePt elapsed);
+  static void uciReportNodes(ThreadPool &threads, int hashFull, TimePt elapsed);
 
   // UCI helper functions
 

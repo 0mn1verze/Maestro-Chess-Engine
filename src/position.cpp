@@ -169,6 +169,9 @@ void Position::print() const {
   // Print hash key
   std::cout << "Hash Key: " << std::hex << st->key << std::dec << std::endl;
 
+  // Print eval
+  std::cout << "Eval: " << Eval::evaluate(*this) << std::endl;
+
   // Print fen
   std::cout << "Fen string: " << fen() << std::endl;
 }
@@ -269,14 +272,14 @@ void Position::setState() const {
 
   st->pawnKey = initPawnKey();
 
-  // auto [whiteNPM, blackNPM] = initNonPawnMaterial();
+  auto [whiteNPM, blackNPM] = initNonPawnMaterial();
 
-  // st->nonPawnMaterial[WHITE] = whiteNPM;
-  // st->nonPawnMaterial[BLACK] = blackNPM;
+  st->nonPawnMaterial[WHITE] = whiteNPM;
+  st->nonPawnMaterial[BLACK] = blackNPM;
 
-  // st->psq = initPSQT();
+  st->psq = initPSQT();
 
-  // st->gamePhase = initGamePhase();
+  st->gamePhase = initGamePhase();
 
   Bitboard pawns = pieces(~_sideToMove, PAWN);
   Bitboard knights = pieces(~_sideToMove, KNIGHT);
@@ -590,7 +593,7 @@ void Position::makeMove(Move move, BoardState &state) {
     hashKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
     if (pieceTypeOf(cap) != PAWN)
-      st->nonPawnMaterial[enemy] -= Eval::pieceValue[cap];
+      st->nonPawnMaterial[enemy] -= Eval::pieceValue[pieceTypeOf(cap)];
     else
       pawnKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
@@ -655,7 +658,7 @@ void Position::makeMove(Move move, BoardState &state) {
 
       pawnKey ^= Zobrist::pieceSquareKeys[piece][to];
 
-      st->nonPawnMaterial[side] += Eval::pieceValue[promotedTo];
+      st->nonPawnMaterial[side] += Eval::pieceValue[pieceTypeOf(promotedTo)];
     }
     // Update fifty move rule
     st->fiftyMove = 0;

@@ -247,7 +247,12 @@ inline TimePt getTimeMs() {
 
 template <typename T, size_t N, size_t... M>
 struct Array : public std::array<Array<T, M...>, N> {
-  using stats = Array<T, N, M...>;
+  using SubArray = Array<T, N, M...>;
+
+  void fill(const T &value) {
+    T *begin = reinterpret_cast<T *>(this);
+    std::fill(begin, begin + sizeof(*this) / sizeof(T), value);
+  }
 };
 
 template <typename T, size_t N> struct Array<T, N> : public std::array<T, N> {};

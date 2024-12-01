@@ -157,7 +157,8 @@ void UCI::uciReportCurrentMove(Depth depth, Move move, int currmove) {
             << " currmovenumber " << currmove << std::endl;
 }
 
-void UCI::uciReportNodes(U64 nodes, int hashFull, TimePt elapsed) {
+void UCI::uciReportNodes(ThreadPool &threads, int hashFull, TimePt elapsed) {
+  U64 nodes = threads.nodesSearched();
   std::cout << "info nodes " << nodes << " nps " << nodes * 1000 / elapsed
             << " hashfull " << hashFull << std::endl;
 }

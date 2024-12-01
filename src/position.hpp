@@ -1,4 +1,5 @@
 #ifndef POSITION_HPP
+#pragma once
 #define POSITION_HPP
 
 #include <deque>
@@ -106,6 +107,7 @@ public:
   Key pawnKey() const;
   Score psq() const;
   int gamePhase() const;
+  Bitboard attacked() const;
   template <Colour us> Bitboard pinners() const;
   Bitboard pinners(Colour us) const;
   template <Colour us> Bitboard pinned() const;
@@ -122,7 +124,7 @@ public:
   bool isCapture(Move move) const;
 
   // Move helper functions
-  PieceType captured(Move move) const;
+  PieceType capturedPiece(Move move) const;
   PieceType movedPieceType(Move move) const;
 
   // Board piece bitboard getters
@@ -290,6 +292,9 @@ inline void Position::castleRook(Square from, Square to, Square &rookFrom,
 // State getter
 inline BoardState *Position::state() const { return st; }
 
+// Get attacked squares
+inline Bitboard Position::attacked() const { return st->attacked; }
+
 // Get squares of a piece type
 inline const Square *Position::squares(Colour c, PieceType pt) const {
   return _pieceList[toPiece(c, pt)];
@@ -312,10 +317,10 @@ inline bool Position::isInCheck() const { return (st->checkMask != FULLBB); }
 
 // Check if move is capture
 inline bool Position::isCapture(Move move) const {
-  return move and pieceOn(move.to());
+  return move && (move.is<EN_PASSANT>() || pieceOn(move.to()));
 }
 
-inline PieceType Position::captured(Move move) const {
+inline PieceType Position::capturedPiece(Move move) const {
   return move.is<NORMAL>() ? pieceTypeOn(move.to()) : PAWN;
 }
 

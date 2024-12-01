@@ -6,9 +6,9 @@
 #include <condition_variable>
 #include <mutex>
 
-
 #include "defs.hpp"
 #include "hash.hpp"
+#include "history.hpp"
 #include "move.hpp"
 #include "position.hpp"
 #include "utils.hpp"
@@ -66,6 +66,7 @@ private:
 // Root Move, used to store information about the root move and its PV
 struct RootMove {
   explicit RootMove(Move m) : pv(1, m) {}
+  // Used for comparison
   bool operator==(const Move &m) const { return pv[0] == m; }
   // Used for sorting
   bool operator<(const RootMove &m) const {
@@ -117,13 +118,13 @@ struct SearchState {
   TTable &tt;
 };
 
-enum NodeType { PV, NON_PV, ROOT };
-
 /******************************************\
 |==========================================|
 |              Search Worker               |
 |==========================================|
 \******************************************/
+
+enum NodeType { PV, NON_PV, ROOT };
 
 class SearchWorker {
 public:
@@ -142,12 +143,20 @@ public:
 
   TimeManager tm;
 
+  KillerTable kt;
+  HistoryTable ht;
+  CaptureHistoryTable cht;
+
 private:
   void iterativeDeepening();
   void searchPosition(SearchStack *ss, Value &bestValue);
 
   void getPV(SearchWorker &best, Depth depth) const;
   void updatePV(Move *pv, Move best, const Move *childPv) const;
+
+  bool checkTM(Depth &lastBestMoveDepth, int &pvStability,
+               int &bestValue) const;
+  void checkTime() const;
 
   template <NodeType nodeType>
   Value search(Position &pos, SearchStack *ss, Depth depth, Value alpha,
@@ -163,7 +172,6 @@ private:
   ThreadPool &threads;
   TTable &tt;
 
-  size_t pvIdx, pvLast;
   int selDepth, completedDepth;
   std::atomic<U64> nodes;
 

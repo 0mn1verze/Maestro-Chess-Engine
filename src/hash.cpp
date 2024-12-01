@@ -45,6 +45,14 @@ void init() {
 
 /******************************************\
 |==========================================|
+|               Memory utils               |
+|==========================================|
+\******************************************/
+
+void TTable::prefetch(const void *addr) { __builtin_prefetch(addr); }
+
+/******************************************\
+|==========================================|
 |           Interface functions            |
 |==========================================|
 \******************************************/
@@ -147,20 +155,24 @@ void TTable::resize(size_t mb, ThreadPool &threads) {
   constexpr size_t MB = 1ULL << 20;
   U64 keySize = 16ULL;
 
+  if (_buckets.capacity() > 0) {
+    _buckets.clear();
+    _buckets.shrink_to_fit();
+  }
+
   while ((1ULL << keySize) * sizeof(Bucket) <= mb * MB / 2)
     ++keySize;
 
   _count = (1ULL << keySize);
 
-  // std::cout << "info string Resizing hash table to " << _count << " entries"
-  //           << std::endl;
+  std::cout << "info string Resizing hash table to " << _count << " entries"
+            << std::endl;
 
-  // std::cout << "info string Hash table size: " << _count * sizeof(Bucket) /
-  // MB
-  //           << " MB" << std::endl;
+  std::cout << "info string Hash table size: " << _count * sizeof(Bucket) / MB
+            << " MB" << std::endl;
 
-  // std::cout << "info string Hash table bucket size: " << sizeof(Bucket)
-  //           << " Bytes" << std::endl;
+  std::cout << "info string Hash table bucket size: " << sizeof(Bucket)
+            << " Bytes" << std::endl;
 
   _buckets.reserve(_count);
 

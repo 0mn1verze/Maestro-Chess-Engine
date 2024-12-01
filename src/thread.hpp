@@ -1,4 +1,5 @@
 #ifndef THREAD_HPP
+#pragma once
 #define THREAD_HPP
 
 #include <atomic>
