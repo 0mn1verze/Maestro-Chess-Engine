@@ -34,15 +34,6 @@ U64 perftDriver(Position &pos, int depth) {
   // Loop through all moves
   for (Move move : moves) {
 
-    if (!pos.isLegal(move)) {
-      pos.print();
-      Bitboards::print(pos.attacked());
-
-      std::cout << " Is Legal: " << pos.isLegal(move) << std::endl;
-      std::cout << " Is Pseudo Legal: " << pos.isPseudoLegal(move) << std::endl;
-      throw std::runtime_error("Illegal move: " + move2Str(move));
-    }
-
     pos.makeMove(move, st);
     // Recurse if depth > 1
     nodes += perftDriver(pos, depth - 1);

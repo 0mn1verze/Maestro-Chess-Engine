@@ -921,7 +921,7 @@ bool Position::SEE(Move move, int threshold) const {
     if ((bb = stmAttackers & pieces(PAWN))) {
       if ((swap = Eval::pawnScore.first - swap) < res)
         break;
-      occ ^= getLSB(bb);
+      occ ^= lsbBB(bb);
 
       attackers |= attacksBB<BISHOP>(to, occ) & pieces(BISHOP, QUEEN);
     }
@@ -929,13 +929,13 @@ bool Position::SEE(Move move, int threshold) const {
     else if ((bb = stmAttackers & pieces(KNIGHT))) {
       if ((swap = Eval::knightScore.first - swap) < res)
         break;
-      occ ^= getLSB(bb);
+      occ ^= lsbBB(bb);
     }
 
     else if ((bb = stmAttackers & pieces(BISHOP))) {
       if ((swap = Eval::bishopScore.first - swap) < res)
         break;
-      occ ^= getLSB(bb);
+      occ ^= lsbBB(bb);
 
       attackers |= attacksBB<BISHOP>(to, occ) & pieces(BISHOP, QUEEN);
     }
@@ -943,7 +943,7 @@ bool Position::SEE(Move move, int threshold) const {
     else if ((bb = stmAttackers & pieces(ROOK))) {
       if ((swap = Eval::rookScore.first - swap) < res)
         break;
-      occ ^= getLSB(bb);
+      occ ^= lsbBB(bb);
 
       attackers |= attacksBB<ROOK>(to, occ) & pieces(ROOK, QUEEN);
     }
@@ -951,7 +951,7 @@ bool Position::SEE(Move move, int threshold) const {
     else if ((bb = stmAttackers & pieces(QUEEN))) {
       if ((swap = Eval::queenScore.first - swap) < res)
         break;
-      occ ^= getLSB(bb);
+      occ ^= lsbBB(bb);
 
       attackers |= (attacksBB<BISHOP>(to, occ) & pieces(BISHOP, QUEEN)) |
                    (attacksBB<ROOK>(to, occ) & pieces(ROOK, QUEEN));

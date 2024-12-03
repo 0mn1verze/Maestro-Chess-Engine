@@ -376,9 +376,11 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
   // Futility pruning (If eval is well enough, assume the eval will hold above
   // beta or cause a cutoff)
-  if (!pvNode && !excludedMove && !ss->inCheck && depth <= 8 &&
-      ss->staticEval - 70 * std::max(0, depth - improving) >= beta)
-    return ss->staticEval;
+  if (!ss->ttPV && depth < 14 &&
+      ss->staticEval - 150 * std::max(0, depth - improving) >= beta &&
+      ss->staticEval >= beta && (!ttData.move || ttCapture) &&
+      beta > -VAL_MATE_BOUND && ss->staticEval < VAL_MATE_BOUND)
+    return beta + (ss->staticEval - beta) / 3;
 
   // Null Move Pruning
   if (cutNode && (ss - 1)->currentMove != Move::null() && depth >= 2 &&
@@ -496,6 +498,9 @@ moves_loop:
 
     R = 1 + (moveCount >= 6) * depth / 3;
 
+    // Update node count
+    nodes.fetch_add(1, std::memory_order_relaxed);
+
     if (!isCapture && bestValue > -VAL_MATE_BOUND) {
       Depth lmrDepth = std::max(0, depth - R);
 
@@ -574,8 +579,7 @@ moves_loop:
     newDepth += extensions;
 
     ss->currentMove = move;
-    // Update node count
-    nodes.fetch_add(1, std::memory_order_relaxed);
+
     U64 nodeCount = rootNode ? U64(nodes) : 0;
 
     // Make the move

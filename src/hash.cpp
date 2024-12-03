@@ -24,21 +24,24 @@ Key sideKey{};
 
 // Initialize zobrist keys
 void init() {
+
+  PRNG rng;
+
   // Initialize piece square keys
   for (Piece pce : {wP, wN, wB, wR, wQ, wK, bP, bN, bB, bR, bR, bQ, bK})
     for (Square sq = A1; sq <= H8; ++sq)
-      Zobrist::pieceSquareKeys[pce][sq] = PRNG::getRandom<Key>();
+      Zobrist::pieceSquareKeys[pce][sq] = rng.getRandom<Key>();
 
   // Initialize enpassant keys
   for (File file = FILE_A; file <= FILE_H; ++file)
-    Zobrist::enPassantKeys[file] = PRNG::getRandom<Key>();
+    Zobrist::enPassantKeys[file] = rng.getRandom<Key>();
 
   // Initialize castling keys
   for (Castling c = NO_CASTLE; c <= ANY_SIDE; ++c)
-    Zobrist::castlingKeys[c] = PRNG::getRandom<Key>();
+    Zobrist::castlingKeys[c] = rng.getRandom<Key>();
 
   // Initialize side key
-  Zobrist::sideKey = PRNG::getRandom<Key>();
+  Zobrist::sideKey = rng.getRandom<Key>();
 }
 
 } // namespace Zobrist

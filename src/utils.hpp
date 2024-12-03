@@ -18,31 +18,40 @@ namespace Maestro {
 |==========================================|
 \******************************************/
 
-namespace PRNG {
+class PRNG {
 
-// Seeds for the random number generator
-static Bitboard seed[2] = {0xF623FE116AC4D75CULL, 0x9DA07E6D9CD459C4ULL};
-// Rotate bits left
-static inline Bitboard rotl(const Bitboard x, int k) {
-  return (x << k) | (x >> (64 - k));
-}
-// Implementation of Xorshiro128+ from
-// https://prng.di.unimi.it/xoroshiro128plus.c This is a fast, high-quality PRNG
-static inline Bitboard getRandomU64() {
-  const Bitboard s0 = seed[0];
-  Bitboard s1 = seed[1];
-  const Bitboard result = s0 + s1;
+public:
+  // Default constructor
+  PRNG() : _seed{0xF623FE116AC4D75CULL, 0x9DA07E6D9CD459C4ULL} {}
+  // Constructor
+  PRNG(std::pair<Bitboard, Bitboard> seed) : _seed{seed.first, seed.second} {}
+  // Rotate bits left
+  static inline Bitboard rotl(const Bitboard x, int k) {
+    return (x << k) | (x >> (64 - k));
+  }
+  // Implementation of Xorshiro128+ from
+  // https://prng.di.unimi.it/xoroshiro128plus.c This is a fast, high-quality
+  // PRNG
+  inline Bitboard getRandomU64() {
+    const Bitboard s0 = _seed[0];
+    Bitboard s1 = _seed[1];
+    const Bitboard result = s0 + s1;
 
-  s1 ^= s0;
-  seed[0] = rotl(s0, 24) ^ s1 ^ (s1 << 16);
-  seed[1] = rotl(s1, 37);
+    s1 ^= s0;
+    _seed[0] = rotl(s0, 24) ^ s1 ^ (s1 << 16);
+    _seed[1] = rotl(s1, 37);
 
-  return result;
-}
-// Get random number of specific type
-template <typename T> inline T getRandom() { return T(getRandomU64()); }
+    return result;
+  }
+  // Get random number of specific type
+  template <typename T> inline T getRandom() { return T(getRandomU64()); }
 
-} // namespace PRNG
+  template <typename T> inline T getSparseRandom() {
+    return T(getRandomU64() & getRandomU64() & getRandomU64());
+  }
+
+  Bitboard _seed[2];
+};
 
 /******************************************\
 |==========================================|

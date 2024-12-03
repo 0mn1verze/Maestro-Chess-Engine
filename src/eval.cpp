@@ -150,32 +150,15 @@ inline Value evaluate_nnue(const Position &pos) {
 // Evaluate the position
 Value evaluate(const Position &pos) {
 
-  // Get the piece square table score
-  Score psq = pos.psq();
+  Value nnue = evaluate_nnue(pos);
 
-  // Get the game phase
-  int mgPhase = std::min(pos.gamePhase(), 24);
-  int egPhase = 24 - mgPhase;
+  Value v = nnue * 5 / 4 + 28;
 
-  // Adjust score
-  Value v = (mgPhase * psq.first + egPhase * psq.second) / 24;
+  v = v * (100 - pos.fiftyMove()) / 100;
 
-  if (abs(v) > 800)
-    return pos.sideToMove() == WHITE ? v : -v;
+  v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
 
-  if constexpr (USE_NNUE) {
-
-    Value nnue = evaluate_nnue(pos);
-
-    v = nnue * 5 / 4 + 28;
-
-    v = v * (100 - pos.fiftyMove()) / 100;
-
-    v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
-
-    return v;
-  } else
-    return pos.sideToMove() == WHITE ? v : -v;
+  return v;
 }
 
 } // namespace Maestro::Eval

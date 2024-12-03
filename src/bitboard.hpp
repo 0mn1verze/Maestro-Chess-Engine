@@ -1,8 +1,13 @@
 #ifndef BITBOARD_HPP
-
+#pragma once
 #define BITBOARD_HPP
 
+// #define USE_PEXT 1
+
+#ifdef USE_PEXT
 #include <immintrin.h>
+#endif
+
 #include <vector>
 
 #include "defs.hpp"
@@ -27,25 +32,30 @@ void print(Bitboard bb);
 } // namespace Bitboards
 
 // U32 the number of set bits in a bitboard
-inline int countBits(Bitboard bb) { return _mm_popcnt_u64(bb); }
+inline int countBits(Bitboard bb) { return __builtin_popcountll(bb); }
 
-// Get the least significant bit from a bitboard
-inline Square getLSB(Bitboard bb) { return (Square)_tzcnt_u64(bb); }
+// Get the least significant bit from a nonzero bitboard
+inline Square getLSB(Bitboard bb) { return (Square)__builtin_ctzll(bb); }
 
-// Get the most significant bit from a bitboard
-inline Square getMSB(Bitboard bb) { return (Square)(63 ^ _lzcnt_u64(bb)); }
+// Get the most significant bit from a nonzero  bitboard
+inline Square getMSB(Bitboard bb) { return (Square)(63 ^ __builtin_clzll(bb)); }
 
-// Pop the least significant bit from a bitboard
+// Pop the least significant bit from a nonzero  bitboard
 inline Square popLSB(Bitboard &bb) {
   Square lsb = getLSB(bb);
-  bb = _blsr_u64(bb);
+  bb &= bb - 1;
   return lsb;
 }
 
+// Get the least significant bit from a nonzero bitboard (return Bitboard)
+inline Bitboard lsbBB(Bitboard bb) { return bb & -bb; }
+
+#ifdef USE_PEXT
 // Parallel bit extraction
 inline Square pext(Bitboard bb, Bitboard mask) {
   return (Square)_pext_u64(bb, mask);
 }
+#endif
 
 // More than one bit set
 inline bool moreThanOne(Bitboard bb) { return bb & (bb - 1); }
@@ -158,8 +168,20 @@ struct Magic {
   Bitboard *attacks;
   // Attack mask for slider piece on a particular square
   Bitboard mask;
+#ifndef USE_PEXT
+  // Magic number
+  Bitboard magic;
+  // Magic shift
+  unsigned shift;
+#endif
   // Calculate index in attacks table
-  unsigned int index(Bitboard occupied) { return pext(occupied, mask); }
+  unsigned int index(Bitboard occupied) {
+#ifdef USE_PEXT
+    return pext(occupied, mask);
+#else
+    return unsigned(((occupied & mask) * magic) >> shift);
+#endif
+  }
   // Get attacks bitboard for a particular occupancy
   Bitboard operator[](Bitboard occupied) { return attacks[index(occupied)]; }
 };

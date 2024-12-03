@@ -81,7 +81,7 @@ void refreshMasks(const Position &pos) {
   Square sq = NO_SQ;
   const Colour us = pos.sideToMove();
   const Colour them = ~us;
-  const Square kingSquare = getLSB(pos.pieces(us, KING));
+  const Square kingSquare = pos.square<KING>(us);
   BoardState *st = pos.state();
 
   // Define king attacks bitboard
@@ -165,10 +165,9 @@ void refreshEPPin(const Position &pos) {
 \******************************************/
 
 // Add pawn promotions
-inline Move *addPawnPromotions(Move *moves, Bitboard bb, const Direction dir) {
-  Square origin;
+inline Move *addPawnPromotions(Move *moves, Bitboard bb, Direction dir) {
   while (bb) {
-    origin = popLSB(bb);
+    const Square origin = popLSB(bb);
     for (PieceType pt : {KNIGHT, BISHOP, ROOK, QUEEN})
       *moves++ = Move::encode<PROMOTION>(origin, origin + dir, pt);
   }
@@ -176,19 +175,20 @@ inline Move *addPawnPromotions(Move *moves, Bitboard bb, const Direction dir) {
 }
 
 // Add pawn moves
-inline Move *addPawnMoves(Move *moves, Bitboard bb, const Direction dir) {
-  Square origin;
+inline Move *addPawnMoves(Move *moves, Bitboard bb, Direction dir) {
   while (bb) {
-    origin = popLSB(bb);
+    const Square origin = popLSB(bb);
     *moves++ = Move::encode(origin, origin + dir);
   }
   return moves;
 }
 
 // Add piece moves
-inline Move *addPieceMoves(Move *moves, Bitboard bb, const Square origin) {
-  while (bb)
-    *moves++ = Move::encode(origin, popLSB(bb));
+inline Move *addPieceMoves(Move *moves, Bitboard bb, Square origin) {
+  while (bb) {
+    const Square destination = popLSB(bb);
+    *moves++ = Move::encode(origin, destination);
+  }
   return moves;
 }
 
@@ -258,20 +258,20 @@ inline Move *generatePawnMoves(Move *moves, const Position &pos) {
     if (st->enPassant != NO_SQ && !st->enPassantPin) {
       const Bitboard enPassantTarget = squareBB(pos.enPassantTarget(them));
       // Left capture enpassant pawn
-      Square pawnEPL =
-          getLSB(pawnsLR & shift<EPLeft>(checkMask & enPassantTarget) &
-                 (shift<-left>(bishopPin) | ~bishopPin));
+      Bitboard pawnEPL = pawnsLR & shift<EPLeft>(checkMask & enPassantTarget) &
+                         (shift<-left>(bishopPin) | ~bishopPin);
       // Right capture enpassant pawn
-      Square pawnEPR =
-          getLSB(pawnsLR & shift<EPRight>(checkMask & enPassantTarget) &
-                 (shift<-right>(bishopPin) | ~bishopPin));
+      Bitboard pawnEPR = pawnsLR & shift<EPRight>(checkMask & enPassantTarget) &
+                         (shift<-right>(bishopPin) | ~bishopPin);
 
-      if (pawnEPL != NO_SQ)
+      if (pawnEPL)
         // Add en passant move
-        *moves++ = Move::encode<EN_PASSANT>(pawnEPL, pawnEPL + left);
-      if (pawnEPR != NO_SQ)
+        *moves++ =
+            Move::encode<EN_PASSANT>(getLSB(pawnEPL), getLSB(pawnEPL) + left);
+      if (pawnEPR)
         // Add en passant move
-        *moves++ = Move::encode<EN_PASSANT>(pawnEPR, pawnEPR + right);
+        *moves++ =
+            Move::encode<EN_PASSANT>(getLSB(pawnEPR), getLSB(pawnEPR) + right);
     }
 
     if ((pawnL | pawnR) & promotionRank) {
@@ -422,7 +422,7 @@ Move *generateKingMoves(Move *moves, const Position &pos) {
   BoardState *st = pos.state();
   // King attacks
   Bitboard kingAttacks = st->kingAttacks;
-  Square origin = getLSB(pos.pieces(us, KING));
+  Square origin = pos.square<KING>(us);
   bool noCheck = (st->checkMask == FULLBB);
 
   if constexpr (gt == CAPTURES)
