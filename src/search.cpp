@@ -376,11 +376,11 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
   // Futility pruning (If eval is well enough, assume the eval will hold above
   // beta or cause a cutoff)
-  if (!ss->ttPV && depth < 14 &&
-      ss->staticEval - 150 * std::max(0, depth - improving) >= beta &&
+  if (!pvNode && !ss->ttPV && depth <= 8 && !excludedMove &&
+      ss->staticEval - 70 * std::max(0, depth - improving) >= beta &&
       ss->staticEval >= beta && (!ttData.move || ttCapture) &&
       beta > -VAL_MATE_BOUND && ss->staticEval < VAL_MATE_BOUND)
-    return beta + (ss->staticEval - beta) / 3;
+    return ss->staticEval;
 
   // Null Move Pruning
   if (cutNode && (ss - 1)->currentMove != Move::null() && depth >= 2 &&
@@ -496,34 +496,10 @@ moves_loop:
         mp.skipQuietMoves();
     }
 
-    R = 1 + (moveCount >= 6) * depth / 3;
+    R = 1 + (moveCount > 6) * depth / 3;
 
     // Update node count
     nodes.fetch_add(1, std::memory_order_relaxed);
-
-    if (!isCapture && bestValue > -VAL_MATE_BOUND) {
-      Depth lmrDepth = std::max(0, depth - R);
-
-      Value fmpMargin = 77 + 52 * lmrDepth;
-
-      // Futility Pruning. Don't expect anything from a move that is
-      // significantly worse than alpha (With history)
-      if (!ss->inCheck && lmrDepth <= 8 &&
-          ss->staticEval + fmpMargin <= alpha &&
-          hist < (improving ? 14000 : 6000))
-        mp.skipQuietMoves();
-
-      // Futility Pruning. Don't expect anything from a move that is
-      // significantly worse than alpha (Without history)
-      if (!ss->inCheck && lmrDepth <= 8 &&
-          ss->staticEval + fmpMargin + 165 <= alpha)
-        mp.skipQuietMoves();
-
-      // Continuation Pruning
-      if (mp.stage() > QUIET_INIT && lmrDepth <= (improving ? 3 : 2) &&
-          hist < (improving ? -1000 : -2500))
-        continue;
-    }
 
     // Static Exchanege Evaluation Pruning. Prune moves that are unlikely to be
     // good

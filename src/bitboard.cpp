@@ -64,7 +64,7 @@ void Bitboards::print(Bitboard bb) {
   std::cout << "       A   B   C   D   E   F   G   H\n\n";
 
   // Print bitboard representations
-  std::cout << std::format("Bitboard: {:#x}", bb) << std::endl;
+  std::cout << "Bitboard: " << std::hex << "0x" << bb << std::dec << std::endl;
 }
 
 /******************************************\
