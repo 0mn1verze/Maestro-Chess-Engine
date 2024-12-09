@@ -150,25 +150,25 @@ inline Value evaluate_nnue(const Position &pos) {
 // Evaluate the position
 Value evaluate(const Position &pos) {
 
-  // Value nnue = evaluate_nnue(pos);
+  Value nnue = evaluate_nnue(pos);
 
-  // Value v = nnue * 5 / 4 + 28;
+  Value v = nnue * 5 / 4 + 28;
 
-  // v = v * (100 - pos.fiftyMove()) / 100;
+  v = v * (100 - pos.fiftyMove()) / 100;
 
-  // v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
+  v = std::clamp(v, -VAL_MATE_BOUND + 1, VAL_MATE_BOUND - 1);
 
-  // return v;
+  return v;
 
-  Score psq = pos.psq();
+  // Score psq = pos.psq();
 
-  int mgPhase = std::min(pos.gamePhase(), 24);
+  // int mgPhase = std::min(pos.gamePhase(), 24);
 
-  int egPhase = 24 - mgPhase;
+  // int egPhase = 24 - mgPhase;
 
-  Value v = (psq.first * mgPhase + psq.second * egPhase) / 24;
+  // Value v = (psq.first * mgPhase + psq.second * egPhase) / 24;
 
-  return pos.sideToMove() == WHITE ? v : -v;
+  // return pos.sideToMove() == WHITE ? v : -v;
 }
 
 } // namespace Maestro::Eval
