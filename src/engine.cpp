@@ -33,9 +33,10 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   // Initialize polyglot book
   if (USE_BOOK)
     book.init(BOOK_FILE);
-  // Initialize nnue
+  // // Initialize nnue
+  //   nnue_init(NNUE_FILE.data());
   if (USE_NNUE)
-    nnue_init(NNUE_FILE.data());
+  nnue_init(); // added for emdedded net - JA
 }
 
 // Wait for search to finish

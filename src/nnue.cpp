@@ -1290,9 +1290,98 @@ static bool load_eval_file(const char *evalFile) {
   return success;
 }
 
+///////////  added for emdedded net - JA   ////////////////
+
+#include "incbin/incbin.hpp"
+
+INCBIN(EmbeddedNNUE, "../bin/nn-eba324f53044.nnue");
+
+static bool load_eval_data(const unsigned char *evalData, size_t size) {
+  bool success = verify_net(evalData, size);
+  if (success)
+    init_weights(evalData);
+  return success;
+}
+
+void nnue_init() {
+  wprintf(L"Loading NNUE from embedded data\n");
+  fflush(stdout);
+
+  if (load_eval_data(gEmbeddedNNUEData, gEmbeddedNNUESize)) {
+    printf("NNUE loaded!\n");
+    fflush(stdout);
+    return;
+  }
+
+  printf("NNUE data not valid!\n");
+  fflush(stdout);
+}
+
+int nnue_evaluate(int player, int *pieces, int *squares) {
+  NNUEdata nnue;
+  nnue.accumulator.computedAccumulation = 0;
+
+  Board pos;
+  pos.nnue[0] = &nnue;
+  pos.nnue[1] = 0;
+  pos.nnue[2] = 0;
+  pos.player = player;
+  pos.pieces = pieces;
+  pos.squares = squares;
+  return nnue_evaluate_pos(&pos);
+}
+
+int nnue_evaluate_incremental(int player, int *pieces, int *squares,
+                              NNUEdata *data[]) {
+  assert(data[0] && (uint64_t)(&data[0]->accumulator) % 64 == 0);
+
+  Board pos;
+  pos.nnue[0] = data[0];
+  pos.nnue[1] = data[1];
+  pos.nnue[2] = data[2];
+  pos.player = player;
+  pos.pieces = pieces;
+  pos.squares = squares;
+  return nnue_evaluate_pos(&pos);
+}
+
+int nnue_evaluate_fen(const char *fen) {
+  int pieces[33], squares[33], player, castle, fifty, move_number;
+  decode_fen((char *)fen, &player, &castle, &fifty, &move_number, pieces,
+             squares);
+  return nnue_evaluate(player, pieces, squares);
+}
+
+///////////////////////////////////////////////////////////
+
+/*
+
+static bool load_eval_file(const char *evalFile) {
+  const void *evalData;
+  map_t mapping;
+  size_t size;
+
+  {
+    FD fd = open_file(evalFile);
+    if (fd == FD_ERR)
+      return false;
+    evalData = map_file(fd, &mapping);
+    size = file_size(fd);
+    close_file(fd);
+  }
+
+  bool success = verify_net(evalData, size);
+  if (success)
+    init_weights(evalData);
+  if (mapping)
+    unmap_file(evalData, mapping);
+  return success;
+}
+
 /*
 Interfaces
 */
+/*
 void nnue_init(const char *evalFile) {
   wprintf(L"Loading NNUE : %s\n", evalFile);
   fflush(stdout);
@@ -1342,3 +1431,4 @@ int nnue_evaluate_fen(const char *fen) {
   ;
   return nnue_evaluate(player, pieces, squares);
 }
+*/

@@ -107,8 +107,12 @@ int nnue_evaluate_pos(Board *pos);
 /**
  * Load NNUE file
  */
-void nnue_init(const char *evalFile /** Path to NNUE file */
-);
+ 
+ void nnue_init();  // added for emdedded net - ja
+ 
+ 
+//static void nnue_init(const char *evalFile /** Path to NNUE file */
+//);
 
 /**
  * Evaluate on FEN string
