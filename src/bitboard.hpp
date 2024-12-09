@@ -381,7 +381,7 @@ constexpr bool aligned(Square sq1, Square sq2, Square sq3) {
 }
 
 // Get front most square
-constexpr Square frontMostSquare(Colour c, Bitboard bb) {
+inline Square frontMostSquare(Colour c, Bitboard bb) {
   return (c == WHITE) ? getMSB(bb) : getLSB(bb);
 }
 
