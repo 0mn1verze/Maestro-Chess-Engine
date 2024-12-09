@@ -1304,7 +1304,7 @@ static bool load_eval_data(const unsigned char *evalData, size_t size) {
 }
 
 void nnue_init() {
-  wprintf(L"Loading NNUE from embedded data\n");
+  printf("Loading NNUE from embedded data\n");
   fflush(stdout);
 
   if (load_eval_data(gEmbeddedNNUEData, gEmbeddedNNUESize)) {
