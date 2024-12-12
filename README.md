@@ -3,33 +3,50 @@ A chess engine project for learning c++. It has a decent search speed (Average o
 
 > [!IMPORTANT]
 > * This engine uses ideas from different open source chess engines (Stockfish, Ethreal, etc) so it is not fully original
-> * For example, it uses tuned paramters from Ethreal Chess Engine for dynamic depth reductions and it also uses a NNUE network from Stockfish.
-> * Credits to Daniel Shawul for his NNUE probe library.
 > * Credits to Maksim Korzh and BluefeverSoft for their amazing videos on chess engines.
-> * Credits to JA for his contributions to the engine (Adding support for embedded net).
 
 ## Demo
 ![alt text](https://github.com/0mn1verze/Maestro-Chess-Engine/blob/942e85bddfd8f62b51647bf0183ab3c3778e2357/demo.png)
 [Website](https://0mn1verze.pythonanywhere.com/)
 
 ## Performance
-* Rough estimate of 2900 - 3000 elo
+* Rough estimate of 2800 elo
 
 ## Features
-* Fast move generator (200Mnps on an i7-10750H) (Following Gigantua move generator)
-* Move ordering (SEE, MVV-LVA, killer moves, Piece to history, Capture history)
-* Negamax with alpha beta pruning
-* Principal variation search
-* Null move pruning
-* Late move reduction (From Ethreal)
-* Late move pruning (From Ethreal)
-* Futility Pruning
-* Reverse futility pruning
-* Prob cut pruning
-* Dynamic search reduction
-* Transposition table with buckets
-* Polyglot book
-* Stockfish NNUE evaluation (Incremental update)
-* Daniel Shawul's NNUE probe library
-* Time control based on search stability
-* UCI protocol compatible
+### Move generation
+* Magic Bitboards ([wiki](https://www.chessprogramming.org/Magic_Bitboards))
+  * PEXT intrinsics (Optional) ([wiki](https://www.chessprogramming.org/BMI2#PEXTBitboards))
+  * Fancy Magic Bitboards ([wiki](https://www.chessprogramming.org/Magic_Bitboards))
+* Fully Legal and Fast Move Generator
+  * Keep tracks of pins and checks etc
+  * Generation speeds up to 400Mnps on a i7-10750H with Turbo boost
+### Move ordering
+* Capture History Table
+* Killer Move Heuristics
+* History Table ([wiki](https://www.chessprogramming.org/History_Heuristic))
+* Continuation History Table
+* MVV-LVA ([wiki](https://www.chessprogramming.org/MVV-LVA))
+* Staged Move Generation
+* Static Exchange Evaluation ([wiki](https://www.chessprogramming.org/Static_Exchange_Evaluation))
+### Search
+* Iterative Deepening ([wiki](https://www.chessprogramming.org/Iterative_Deepening))
+* Classic Alpha Beta Search ([wiki](https://www.chessprogramming.org/Alpha-Beta))
+  * Negamax
+* Quiescence Search ([wiki](https://www.chessprogramming.org/Quiescence_Search))
+* Transposition Table ([wiki](https://www.chessprogramming.org/Transposition_Table))
+  * Dynamic allocation
+  * Buckets
+* Futility Pruning ([wiki](https://www.chessprogramming.org/Futility_Pruning))
+* Reverse Futility Pruning
+* Null Move Pruning ([wiki](https://www.chessprogramming.org/Null_Move_Pruning))
+* Internal Iterative Deepening/Reductions ([wiki](https://www.chessprogramming.org/Internal_Iterative_Deepening))
+* Prob Cut Pruning ([wiki](https://www.chessprogramming.org/ProbCut))
+* Razoring ([wiki](https://www.chessprogramming.org/Razoring))
+* Late Move Reductions ([wiki](https://www.chessprogramming.org/Late_Move_Reductions))
+* Static Exchange Evaluation Pruning 
+* Singular Extension Search ([wiki](https://www.chessprogramming.org/Singular_Extensions))
+* Multicut Pruning
+* Late Move Pruning 
+* Principal variation search ([wiki](https://www.chessprogramming.org/Principal_Variation_Search))
+### Evaluation
+* PeSTO tables ([wiki](https://www.chessprogramming.org/PeSTO))
