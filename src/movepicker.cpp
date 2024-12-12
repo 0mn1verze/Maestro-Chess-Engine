@@ -14,9 +14,10 @@ namespace Maestro {
 // Main Move Picker constructor
 MovePicker::MovePicker(const Position &pos, const Move ttMove,
                        const Depth depth, const int ply, HistoryTable &ht,
-                       KillerTable &kt, CaptureHistoryTable &cht)
+                       KillerTable &kt, CaptureHistoryTable &cht,
+                       Continuation **ch)
     : _pos(pos), _ttMove(ttMove), _depth(depth), _ht(&ht), _cht(&cht),
-      _skipQuiets(depth == DEPTH_QS), _ply(ply), _cur(0), _end(0) {
+      _skipQuiets(depth == DEPTH_QS), _ply(ply), _cur(0), _end(0), _ch(ch) {
   _killer1 = kt.probe(ply, 0);
   _killer2 = kt.probe(ply, 1);
 
@@ -49,11 +50,16 @@ template <GenType Type> void MovePicker::score() {
     if constexpr (Type == QUIETS) {
 
       if (m == _killer1)
-        _values[i] = 10000;
+        _values[i] = 64000;
       else if (m == _killer2)
-        _values[i] = 9000;
-      else
+        _values[i] = 63000;
+      else {
         _values[i] = _ht->probe(_pos, m);
+        _values[i] += _ch[0]->probe(_pos, m);
+        _values[i] += _ch[1]->probe(_pos, m);
+        _values[i] += _ch[2]->probe(_pos, m);
+        _values[i] += _ch[3]->probe(_pos, m);
+      }
     }
   }
 }

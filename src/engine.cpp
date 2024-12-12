@@ -6,7 +6,6 @@
 #include "eval.hpp"
 #include "hash.hpp"
 #include "movegen.hpp"
-#include "nnue.hpp"
 #include "perft.hpp"
 #include "polyglot.hpp"
 #include "position.hpp"
@@ -30,13 +29,9 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
   tt.resize(HASH_SIZE, threads);
   // Set starting position
   pos.set(startPos.data(), states->back());
-  // Initialize polyglot book
+  // Initialize book
   if (USE_BOOK)
-    book.init(BOOK_FILE);
-  // // Initialize nnue
-  //   nnue_init(NNUE_FILE.data());
-  if (USE_NNUE)
-  nnue_init(); // added for emdedded net - JA
+    book.init(BOOK_FILE.data());
 }
 
 // Wait for search to finish

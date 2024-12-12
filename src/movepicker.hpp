@@ -34,30 +34,11 @@ enum GenStage {
 
 // Move Picker class
 class MovePicker {
-  // Move Score structure used for move ordering
-  struct MoveScore {
-    Move move;
-    Value score;
-
-    MoveScore(const Move m) : move(m), score(0) {}
-    MoveScore(const Move m, const Value s) : move(m), score(s) {}
-
-    MoveScore() : move(Move::none()), score(0) {}
-
-    bool operator<(const MoveScore &rhs) const { return score < rhs.score; }
-    bool operator>(const MoveScore &rhs) const { return score > rhs.score; }
-    bool operator==(const MoveScore &rhs) const { return score == rhs.score; }
-    bool operator!=(const MoveScore &rhs) const { return score != rhs.score; }
-    bool operator>=(const MoveScore &rhs) const { return score >= rhs.score; }
-    bool operator<=(const MoveScore &rhs) const { return score <= rhs.score; }
-
-    operator Move() const { return move; }
-  };
-
 public:
   // Main Move Picker constructor
   MovePicker(const Position &, const Move, const Depth, const int,
-             HistoryTable &, KillerTable &, CaptureHistoryTable &);
+             HistoryTable &, KillerTable &, CaptureHistoryTable &,
+             Continuation **);
 
   // Probe Cut Move Picker Constructor
   MovePicker(const Position &, const Move, CaptureHistoryTable &,
@@ -82,6 +63,7 @@ private:
 
   HistoryTable *_ht;
   CaptureHistoryTable *_cht;
+  Continuation **_ch;
 
   const Position &_pos;
 

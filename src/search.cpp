@@ -128,6 +128,7 @@ void SearchWorker::clear() {
   kt.clear();
   ht.clear();
   cht.clear();
+  ct.clear();
 }
 
 void SearchWorker::startSearch() {
@@ -185,8 +186,14 @@ void SearchWorker::iterativeDeepening() {
   ttCutOff = 0;
 
   // Allocate search stack
-  SearchStack stack[MAX_PLY + 1] = {};
-  SearchStack *ss = stack;
+  constexpr int EXTENSION = 4;
+  SearchStack stack[MAX_PLY + EXTENSION + 1] = {};
+  SearchStack *ss = stack + EXTENSION;
+
+  for (int i = EXTENSION; i > 0; i--) {
+    (ss - i)->ch = &ct.table[0][0][NO_PIECE][A1];
+    (ss - i)->staticEval = VAL_NONE;
+  }
 
   for (int i = 0; i <= MAX_PLY; i++)
     (ss + i)->ply = i;
@@ -236,9 +243,10 @@ void SearchWorker::searchPosition(SearchStack *ss, Value &bestValue) {
 
   failHigh = failHighFirst = 0;
 
-  // aspirationWindows(ss, bestValue);
-  bestValue =
-      search<ROOT>(rootPos, ss, rootDepth, -VAL_INFINITE, VAL_INFINITE, false);
+  aspirationWindows(ss, bestValue);
+
+  std::cout << "info move ordering "
+            << failHighFirst * 1000 / std::max(failHigh, 1) << std::endl;
 
   std::stable_sort(rootMoves.begin(), rootMoves.end());
 
@@ -248,6 +256,37 @@ void SearchWorker::searchPosition(SearchStack *ss, Value &bestValue) {
   if (isMainThread() &&
       !(threads.abortedSearch && rootMoves[0].score <= VAL_MATE_BOUND))
     getPV(*this, rootDepth);
+}
+
+void SearchWorker::aspirationWindows(SearchStack *ss, Value &bestValue) {
+  Value alpha = -VAL_INFINITE, beta = VAL_INFINITE, delta = 10;
+
+  Depth depth = rootDepth;
+
+  if (depth >= 4) {
+    alpha = std::max(rootMoves[0].score - delta, -VAL_INFINITE);
+    beta = std::min(rootMoves[0].score + delta, VAL_INFINITE);
+  }
+
+  while (true) {
+    bestValue = search<ROOT>(rootPos, ss, std::max(1, depth), -VAL_INFINITE,
+                             VAL_INFINITE, false);
+
+    std::stable_sort(rootMoves.begin(), rootMoves.end());
+
+    // If search failed low, adjust window and reset depth
+    if (bestValue <= alpha) {
+      beta = (alpha + beta) / 2;
+      alpha = std::max(alpha - delta, -VAL_INFINITE);
+      depth = rootDepth;
+    } else if (bestValue >= beta) {
+      beta = std::min(beta + delta, VAL_INFINITE);
+      depth -= (abs(bestValue) <= VAL_MATE_BOUND / 2);
+    } else
+      break;
+
+    delta += delta / 3;
+  }
 }
 
 template <NodeType nodeType>
@@ -261,6 +300,9 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // Quiescence search
   if (depth <= 0)
     return qSearch < pvNode ? PV : NON_PV > (pos, ss, alpha, beta);
+
+  // Update node count
+  nodes.fetch_add(1, std::memory_order_relaxed);
 
   // Limit search depth to prevent search explosion
   depth = std::min(depth, MAX_PLY - 1);
@@ -285,6 +327,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   ss->inCheck = pos.isInCheck();
   bestValue = -VAL_INFINITE;
   bestMove = Move::none();
+  Square prevSq = (ss - 1)->currentMove ? (ss - 1)->currentMove.to() : NO_SQ;
 
   // Check for remaining time
   if (isMainThread())
@@ -340,11 +383,19 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
       (ttData.flag & (ttData.value >= beta ? FLAG_LOWER : FLAG_UPPER)) &&
       (cutNode == (ttData.value >= beta) || depth > 8)) {
 
-    if (ttData.move && ttData.value >= beta && !ttCapture)
-      ht.update(pos, ttData.move, statBonus(depth));
+    // If ttMove is quiet update the move sorting heuristics on TT hit
+    if (ttData.move && ttData.value >= beta) {
+      // Bonus for a quiet ttMove that fails high
+      if (!ttCapture)
+        ht.update(pos, ttData.move, statBonus(depth));
+
+      // Extra penalty for early quiet moves of the previous ply
+      if (prevSq != NO_SQ && (ss - 1)->moveCount <= 2 && !pos.captured())
+        updateContinuations(ss - 1, pos, (ss - 1)->currentMove,
+                            -statBonus(depth + 1));
+    }
 
     if (pos.fiftyMove() < 90) {
-      ttCutOff++;
       return ttData.value;
     }
   }
@@ -374,12 +425,17 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   seeMargin[0] = -20 * depth * depth;
   seeMargin[1] = -64 * depth;
 
-  // Futility pruning (If eval is well enough, assume the eval will hold above
-  // beta or cause a cutoff)
+  // Reverse Futility pruning (If eval is well enough, assume the eval will hold
+  // above beta or cause a cutoff)
   if (!pvNode && !ss->ttPV && depth <= 8 && !excludedMove &&
       ss->staticEval - 70 * std::max(0, depth - improving) >= beta &&
       ss->staticEval >= beta && (!ttData.move || ttCapture) &&
       beta > -VAL_MATE_BOUND && ss->staticEval < VAL_MATE_BOUND)
+    return ss->staticEval;
+
+  // Futility Pruning
+  if (!pvNode && !ss->ttPV && depth <= 4 && !excludedMove &&
+      ss->staticEval + 3000 <= alpha)
     return ss->staticEval;
 
   // Null Move Pruning
@@ -387,9 +443,11 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
       ss->staticEval >= beta - 25 * depth + 400 && !excludedMove &&
       pos.nonPawnMaterial(us) && beta > VAL_MATE_BOUND) {
 
-    R = std::min((ss->staticEval - beta) / 200, 6) + depth / 3 + 5;
+    R = std::min((ss->staticEval - beta) / 200, 6) + depth / 3 + 4 +
+        bool(pos.captured());
 
     ss->currentMove = Move::null();
+    ss->ch = &ct.table[0][0][NO_PIECE][A1];
 
     pos.makeNullMove(st);
     // Prefetch the next entry in the TT
@@ -432,8 +490,11 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
         continue;
 
       ss->currentMove = move;
+      ss->ch = &ct.table[ss->inCheck][true][pos.movedPiece(move)][move.to()];
 
       pos.makeMove(move, st);
+      // Prefetch the next entry in the TT
+      TTable::prefetch(tt.firstEntry(pos.key()));
 
       // Perform a preliminary qsearch to verify that the move holds
       value = -qSearch<NON_PV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
@@ -457,11 +518,22 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
     }
   }
 
+  // Razoring
+  // If eval is really really low check with qsearch to see if it can exceed
+  // alpha, if it can't there is probably no way for the engine to gain a good
+  // enough position, so we prune the branch
+  if (ss->staticEval < alpha - 500 - 300 * depth * depth) {
+    value = qSearch<NON_PV>(pos, ss, alpha - 1, alpha);
+
+    if (value < alpha && std::abs(value) < VAL_MATE_BOUND)
+      return value;
+  }
+
 moves_loop:
 
-  Square prevSq = (ss - 1)->currentMove ? (ss - 1)->currentMove.to() : NO_SQ;
+  Continuation *ch[] = {(ss - 1)->ch, (ss - 2)->ch, (ss - 3)->ch, (ss - 4)->ch};
 
-  MovePicker mp(pos, ttData.move, depth, ss->ply, ht, kt, cht);
+  MovePicker mp(pos, ttData.move, depth, ss->ply, ht, kt, cht, ch);
 
   while ((move = mp.next()) != Move::none()) {
 
@@ -486,6 +558,7 @@ moves_loop:
 
     // Set variables
     ss->moveCount = moveCount++;
+    // Set move flags
     isCapture = pos.isCapture(move);
     givesCheck = pos.givesCheck(move);
     hist = isCapture ? cht.probe(pos, move) : ht.probe(pos, move);
@@ -497,9 +570,6 @@ moves_loop:
     }
 
     R = 1 + (moveCount > 6) * depth / 3;
-
-    // Update node count
-    nodes.fetch_add(1, std::memory_order_relaxed);
 
     // Static Exchanege Evaluation Pruning. Prune moves that are unlikely to be
     // good
@@ -555,18 +625,18 @@ moves_loop:
     newDepth += extensions;
 
     ss->currentMove = move;
+    ss->ch = &ct.table[ss->inCheck][isCapture][pos.movedPiece(move)][move.to()];
 
     U64 nodeCount = rootNode ? U64(nodes) : 0;
-
     // Make the move
     pos.makeMove(move, st);
     // Prefetch the next entry in the TT
     TTable::prefetch(tt.firstEntry(pos.key()));
 
     if (depth >= 2 && moveCount > 1 && !isCapture) {
+
       // Don't go below depth 1
       Depth d = std::max(1, newDepth - R);
-
       // Late move reductions
       value = -search<NON_PV>(pos, ss + 1, d, -alpha - 1, -alpha, true);
 
@@ -650,7 +720,10 @@ moves_loop:
                 : ss->inCheck ? matedIn(ss->ply)
                               : VAL_ZERO;
   else if (bestMove)
-    updateAllStats(pos, bestMove, captures, quiets, depth, ss->ply);
+    updateAllStats(ss, pos, bestMove, prevSq, captures, quiets, depth, ss->ply);
+  else if (!pos.captured() && prevSq != NO_SQ)
+    updateContinuations(ss - 1, pos, (ss - 1)->currentMove,
+                        -statBonus(depth + 1));
 
   // Write to TT, save static eval
   if (!excludedMove && !rootNode)
@@ -691,6 +764,9 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
   ss->moveCount = moveCount = 0;
   ss->inCheck = pos.isInCheck();
   bestMove = Move::none();
+
+  // Update node count
+  nodes.fetch_add(1, std::memory_order_relaxed);
 
   // Update seldepth to sent to GUI
   if (pvNode)
@@ -743,14 +819,11 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
 
   Square prevSq = (ss - 1)->currentMove ? (ss - 1)->currentMove.to() : NO_SQ;
 
-  MovePicker mp(pos, ttData.move, DEPTH_QS, ss->ply, ht, kt, cht);
+  MovePicker mp(pos, ttData.move, DEPTH_QS, ss->ply, ht, kt, cht, nullptr);
 
   while ((move = mp.next()) != Move::none()) {
 
     ss->moveCount = moveCount++;
-
-    // Update node count
-    nodes.fetch_add(1, std::memory_order_relaxed);
 
     givesCheck = pos.givesCheck(move);
 
@@ -783,6 +856,9 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
       if (!pos.SEE(move, -100))
         continue;
     }
+
+    ss->currentMove = move;
+    ss->ch = &ct.table[ss->inCheck][true][pos.movedPiece(move)][move.to()];
 
     // Make the move
     pos.makeMove(move, st);
@@ -821,24 +897,53 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
   return bestValue;
 }
 
-void SearchWorker::updateAllStats(const Position &pos, Move bestMove,
+void SearchWorker::updateContinuations(SearchStack *ss, const Position &pos,
+                                       Move move, Value bonus) {
+  for (int i : {1, 2, 3, 4}) {
+    if (ss->inCheck && i > 2) // Only update the first 2 entries if we are in
+                              // check, as the continuation might be broken
+      break;
+
+    if ((ss - i)->currentMove)
+      // Update continuation histories for the last 4 plies
+      (ss - i)->ch->probe(pos, move) << bonus;
+  }
+}
+
+void SearchWorker::updateAllStats(SearchStack *ss, const Position &pos,
+                                  Move bestMove, Square prevSq,
                                   MoveArray &captures, MoveArray &quiets,
                                   Depth depth, int ply) {
 
   int bonus = statBonus(depth);
 
   if (!pos.isCapture(bestMove)) {
+    // Update history table (Best move should receive a bonus)
     ht.update(pos, bestMove, bonus);
+    // Update continuations (Best move should all receive a bonus)
+    updateContinuations(ss, pos, bestMove, bonus);
+    // Update killer table
+    kt.update(ply, bestMove);
 
-    kt.update(bestMove, ply);
-
-    for (Move m : quiets)
+    for (Move m : quiets) {
+      // Update history table (Non best moves should all receive a penalty)
       ht.update(pos, m, -bonus);
+      // Update continuations (Non best moves should all receive a
+      // penalty)
+      updateContinuations(ss, pos, m, -bonus);
+    }
 
   } else
+    // Update history table (Best move should receive a bonus)
     cht.update(pos, bestMove, bonus);
 
+  if (prevSq != NO_SQ && ((ss - 1)->moveCount == 1 + (ss - 1)->ttHit) &&
+      !pos.captured())
+    // Update history table (Non best moves should all receive a penalty)
+    updateContinuations(ss - 1, pos, bestMove, -bonus);
+
   for (Move m : captures)
+    // Update history table (Captures should receive a bonus)
     cht.update(pos, m, -bonus);
 }
 

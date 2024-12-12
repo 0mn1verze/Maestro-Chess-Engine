@@ -12,12 +12,5 @@ int main() {
 
   uci.loop();
 
-  // Position pos;
-  // BoardState st{};
-  // const std::string fen(trickyPos);
-  // pos.set(fen, st);
-
-  // perftTest(pos, 6);
-
   return 0;
 }

@@ -2,6 +2,8 @@
 #pragma once
 #define HISTORY_HPP
 
+#include <cstring>
+
 #include "defs.hpp"
 #include "move.hpp"
 #include "position.hpp"
@@ -11,22 +13,25 @@ namespace Maestro {
 
 /******************************************\
 |==========================================|
-|       Template for Heuristics tables     |
+|         Template for Heuristics          |
 |==========================================|
 \******************************************/
 
-template <typename T, int D, int... N> class Heuristic {
-public:
-  void clear(T value) { _table.fill(value); }
+namespace Heuristic {
 
-  void update(T &entry, T bonus) {
+template <typename T, int D> class Entry {
+public:
+  T entry;
+
+  operator const T &() const { return entry; }
+
+  void operator<<(int bonus) {
     bonus = std::clamp(bonus, -D, D);
     entry += bonus - entry * abs(bonus) / D;
   }
-
-protected:
-  Array<T, N...> _table;
 };
+
+} // namespace Heuristic
 
 enum {
   NOT_USED = 0,
@@ -39,6 +44,9 @@ enum {
 |==========================================|
 \******************************************/
 
+using Killer = Heuristic::Entry<Move, NOT_USED>;
+using History = Heuristic::Entry<Value, HISTORY>;
+
 // Killer moves table
 // https://www.chessprogramming.org/Killer_Heuristic
 // A move ordering technique for quiet moves that stores moves that caused a
@@ -48,16 +56,15 @@ enum {
 // when the sibling nodes are searched, therefore the engine knows to evaluate
 // the possible mate first, as it is likely a good move.
 
-struct KillerTable : public Heuristic<Move, NOT_USED, MAX_PLY + 1, 2> {
+// Killer moves table [ply][move number]
+struct KillerTable {
 
-  // Update killer moves
-  void update(Move move, int ply);
+  void clear() { memset(table, 0, sizeof(table)); }
+  Move &probe(int ply, int moveNumber) { return table[ply][moveNumber].entry; }
+  void update(int ply, Move move);
 
-  // Clear killer moves table
-  void clear() { Heuristic::clear(Move::none()); }
-
-  // Get killer move entry (const)
-  Move &probe(int ply, int moveN) { return _table[ply][moveN]; }
+private:
+  Killer table[MAX_PLY + 1][2];
 };
 
 // History table
@@ -70,34 +77,70 @@ struct KillerTable : public Heuristic<Move, NOT_USED, MAX_PLY + 1, 2> {
 // the opponent, if so the move will make its way up to move list hiearchy as
 // the search realises the move is a better than the others.
 
-struct HistoryTable
-    : public Heuristic<Value, HISTORY, COLOUR_N, 2, 2, SQ_N, SQ_N> {
+// History table [piece][to]
 
-  // Update history table entry
-  void update(const Position &pos, Move move, Value value);
+struct HistoryTable {
 
-  // Clear history table
-  void clear() { Heuristic::clear(0); }
+  void clear() { memset(table, 0, sizeof(table)); }
 
-  // Probe history table
-  Value &probe(const Position &pos, Move move);
+  History &probe(const Position &pos, Move move);
+
+  void update(const Position &pos, Move move, Value bonus) {
+    probe(pos, move) << bonus;
+  }
+
+private:
+  History table[2][2][PIECE_N][SQ_N];
 };
 
 // Capture history table
 // https://www.chessprogramming.org/Capture_Heuristic
 // Same as history table but for captures instead
 
-struct CaptureHistoryTable : public Heuristic<Value, HISTORY, PIECE_TYPE_N, 2,
-                                              2, SQ_N, PIECE_TYPE_N - 1> {
-public:
-  // Update capture history table entry
-  void update(const Position &pos, Move move, Value value);
+// Capture history table [piece][evade threat][enters threat][to][captured]
+struct CaptureHistoryTable {
+  void clear() { memset(table, 0, sizeof(table)); }
 
-  // Clear capture history table
-  void clear() { Heuristic::clear(0); }
+  History &probe(const Position &pos, Move move);
 
-  // Probe capture history table
-  Value &probe(const Position &pos, Move move);
+  void update(const Position &pos, Move move, Value bonus) {
+    probe(pos, move) << bonus;
+  }
+
+private:
+  History table[PIECE_N][2][2][SQ_N][PIECE_N];
+};
+
+// Continuation history table
+// https://www.chessprogramming.org/Continuation_Heuristic
+// A move ordering technique for quiet moves that stores how good a move is with
+// respect to a particular root move A different table is assign to each node
+// according to the piece moved and the destination square, then it stores the
+// relative value of the move with respect to the sequence of moves before it.
+
+// The current implementation uses a 4 ply history tree, so there is a 4 ply
+// sequence of moves that the continution history stores.
+
+// Continuation history [piece][to]
+struct Continuation {
+  void clear() { memset(table, 0, sizeof(table)); }
+
+  History &probe(const Position &pos, Move move);
+
+  void update(const Position &pos, Move move, Value bonus) {
+    probe(pos, move) << bonus;
+  }
+
+private:
+  History table[PIECE_N][SQ_N];
+};
+
+// Continuation history table [inCheck][isCapture][piece][to]
+struct ContinuationHistoryTable {
+
+  void clear();
+
+  Continuation table[2][2][PIECE_N][SQ_N];
 };
 
 } // namespace Maestro

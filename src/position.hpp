@@ -8,7 +8,6 @@
 
 #include "bitboard.hpp"
 #include "defs.hpp"
-#include "nnue.hpp"
 
 namespace Maestro {
 
@@ -61,8 +60,6 @@ struct BoardState {
       pinned[COLOUR_N], pinners[COLOUR_N];
   bool enPassantPin = false;
 
-  // NNUE data
-  NNUEdata nnueData;
   // Previous Board state
   BoardState *previous;
 };
@@ -130,6 +127,7 @@ public:
   // Move helper functions
   PieceType capturedPiece(Move move) const;
   PieceType movedPieceType(Move move) const;
+  Piece movedPiece(Move move) const;
 
   // Board piece bitboard getters
   Bitboard pieces(PieceType pt) const;
@@ -326,6 +324,10 @@ inline bool Position::isCapture(Move move) const {
 
 inline PieceType Position::capturedPiece(Move move) const {
   return move.is<NORMAL>() ? pieceTypeOn(move.to()) : PAWN;
+}
+
+inline Piece Position::movedPiece(Move move) const {
+  return pieceOn(move.from());
 }
 
 inline PieceType Position::movedPieceType(Move move) const {

@@ -92,6 +92,7 @@ using RootMoves = std::vector<RootMove>;
 // remembering the information in parent nodes
 struct SearchStack {
   Move *pv;
+  Continuation *ch;
   int ply = 0;
   Move currentMove = Move::none();
   Move excludedMove = Move::none();
@@ -100,7 +101,6 @@ struct SearchStack {
   bool inCheck = false;
   bool ttPV = false;
   bool ttHit = false;
-  int cutOffCnt = 0;
 };
 
 /******************************************\
@@ -156,10 +156,12 @@ public:
   KillerTable kt;
   HistoryTable ht;
   CaptureHistoryTable cht;
+  ContinuationHistoryTable ct;
 
 private:
   void iterativeDeepening();
   void searchPosition(SearchStack *ss, Value &bestValue);
+  void aspirationWindows(SearchStack *ss, Value &bestValue);
 
   void getPV(SearchWorker &best, Depth depth) const;
   void updatePV(Move *pv, Move best, const Move *childPv) const;
@@ -175,8 +177,11 @@ private:
   template <NodeType nodeType>
   Value qSearch(Position &pos, SearchStack *ss, Value alpha, Value beta);
 
-  void updateAllStats(const Position &pos, Move bestMove, MoveArray &captures,
-                      MoveArray &quiets, Depth depth, int ply);
+  void updateAllStats(SearchStack *ss, const Position &pos, Move bestMove,
+                      Square prevSq, MoveArray &captures, MoveArray &quiets,
+                      Depth depth, int ply);
+  void updateContinuations(SearchStack *ss, const Position &pos, Move move,
+                           Value bonus);
 
   size_t threadId;
   SearchState &sharedState;
@@ -192,7 +197,6 @@ private:
   BoardState rootState;
   RootMoves rootMoves;
   Depth rootDepth;
-  Value rootDelta;
 
   Value bestPreviousScore, bestPreviousAvgScore;
 

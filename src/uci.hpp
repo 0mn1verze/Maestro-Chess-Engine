@@ -21,14 +21,12 @@ namespace Maestro {
 constexpr std::string_view NAME = "Maestro";
 constexpr std::string_view AUTHOR = "Evan Fung";
 constexpr std::string_view VERSION = "1.2";
-constexpr std::string_view BENCH_FILE = "bench.csv";
 constexpr std::string_view BOOK_FILE = "OPTIMUS2403.bin";
-constexpr std::string_view NNUE_FILE = "nn-eba324f53044.nnue";
+constexpr std::string_view BENCH_FILE = "bench.csv";
 
-constexpr size_t HASH_SIZE = 64;
+constexpr size_t HASH_SIZE = 32;
 constexpr size_t THREADS = 1;
-constexpr bool USE_NNUE = true;
-constexpr bool USE_BOOK = false;
+constexpr bool USE_BOOK = true;
 constexpr int MOVE_OVERHEAD = 600;
 
 /******************************************\
