@@ -23,6 +23,7 @@ namespace Maestro {
 class Engine {
 public:
   Engine();
+  ~Engine();
 
   void waitForSearchFinish();
   void setPosition(const std::string fen,
@@ -32,6 +33,7 @@ public:
   void bench();
   void go(Limits &limits);
   void stop();
+  bool stopped() const { return threads.stop; }
   void clear();
 
   std::string fen() const;

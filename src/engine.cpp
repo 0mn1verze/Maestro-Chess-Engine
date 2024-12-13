@@ -34,8 +34,14 @@ Engine::Engine() : states(new std::deque<BoardState>(1)) {
     book.init(BOOK_FILE.data());
 }
 
+// Engine destructor
+Engine::~Engine() { waitForSearchFinish(); }
+
 // Wait for search to finish
-void Engine::waitForSearchFinish() {}
+void Engine::waitForSearchFinish() {
+  threads.main()->waitForThread();
+  threads.waitForThreads();
+}
 
 std::string Engine::fen() const { return pos.fen(); }
 
@@ -71,9 +77,10 @@ void Engine::setOption(const std::string &name, const std::string &value) {
 
 void Engine::perft(Limits &limits) { perftTest(pos, limits.depth); }
 
-void Engine::bench() { perftBench(BENCH_FILE.data()); }
+void Engine::bench() { perftBench(BENCH_FILE.data(), threads); }
 
 void Engine::go(Limits &limits) {
+
   threads.stop = threads.abortedSearch = false;
 
   if constexpr (USE_BOOK) {

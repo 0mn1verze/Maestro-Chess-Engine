@@ -73,6 +73,8 @@ using StateListPtr = std::unique_ptr<std::deque<BoardState>>;
 |==========================================|
 \******************************************/
 
+class Thread;
+
 class Position {
 public:
   Position() = default;
@@ -114,6 +116,9 @@ public:
   template <Colour us> Bitboard pinned() const;
   Bitboard pinned(Colour us) const;
 
+  // Get Thread
+  Thread *thread() const;
+
   // Position getters
   int gamePlies() const;
 
@@ -142,6 +147,7 @@ public:
   template <PieceType pt> Square square(Colour us) const;
   template <PieceType pt> const Square *squares(Colour us) const;
   const Square *squares(Colour us, PieceType pt) const;
+  bool isOnSemiOpenFile(Colour us, Square sq) const;
 
   // Piece count
   template <Piece pc> int count() const;
@@ -193,6 +199,9 @@ private:
   std::pair<int, int> initNonPawnMaterial() const;
   Score initPSQT() const;
   int initGamePhase() const;
+
+  // Thread
+  Thread *_thread;
   // Piece list
   Piece _board[SQ_N];
   int _pieceCount[PIECE_N];
@@ -302,6 +311,9 @@ inline const Square *Position::squares(Colour c, PieceType pt) const {
   return _pieceList[toPiece(c, pt)];
 }
 
+// Get the thread
+inline Thread *Position::thread() const { return _thread; }
+
 // Get previously captured piece
 inline Piece Position::captured() const { return st->captured; }
 
@@ -343,6 +355,11 @@ inline Piece Position::pieceOn(Square sq) const { return _board[sq]; }
 // Returns piece type on square
 inline PieceType Position::pieceTypeOn(Square sq) const {
   return pieceTypeOf(_board[sq]);
+}
+
+// Check if piece is on semi open file
+inline bool Position::isOnSemiOpenFile(Colour us, Square sq) const {
+  return !(pieces(us, PAWN) & fileBB(sq));
 }
 
 // Returns the number of plies from the start

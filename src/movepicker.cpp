@@ -21,9 +21,9 @@ MovePicker::MovePicker(const Position &pos, const Move ttMove,
   _killer1 = kt.probe(ply, 0);
   _killer2 = kt.probe(ply, 1);
 
-  if (pos.isCapture(_killer1))
+  if (pos.isCapture(_killer1) || !_pos.isLegal(_killer1))
     _killer1 = Move::none();
-  if (pos.isCapture(_killer2))
+  if (pos.isCapture(_killer2) || !_pos.isLegal(_killer2))
     _killer2 = Move::none();
 
   _stage = (depth > DEPTH_QS ? MAIN_TT : Q_TT) +
@@ -43,28 +43,20 @@ template <GenType Type> void MovePicker::score() {
     Move m = _moves[i];
 
     if constexpr (Type == CAPTURES) {
-      _values[i] =
-          7 * Eval::pieceValue[_pos.capturedPiece(m)] + _cht->probe(_pos, m);
+      _values[i] = 7 * PieceValue[_pos.capturedPiece(m)] + _cht->probe(_pos, m);
     }
 
     if constexpr (Type == QUIETS) {
-
-      if (m == _killer1)
-        _values[i] = 64000;
-      else if (m == _killer2)
-        _values[i] = 63000;
-      else {
-        _values[i] = _ht->probe(_pos, m);
-        _values[i] += _ch[0]->probe(_pos, m);
-        _values[i] += _ch[1]->probe(_pos, m);
-        _values[i] += _ch[2]->probe(_pos, m);
-        _values[i] += _ch[3]->probe(_pos, m);
-      }
+      _values[i] = _ht->probe(_pos, m);
+      _values[i] += _ch[0]->probe(_pos, m);
+      _values[i] += _ch[1]->probe(_pos, m);
+      _values[i] += _ch[2]->probe(_pos, m);
+      _values[i] += _ch[3]->probe(_pos, m);
     }
   }
 }
 
-size_t MovePicker::argMax() {
+size_t MovePicker::bestIndex() {
   return std::distance(_values,
                        std::max_element(&_values[_cur], &_values[_end]));
 }
@@ -73,17 +65,14 @@ size_t MovePicker::argMax() {
 // with the best score
 Move MovePicker::best(std::function<bool()> predicate) {
 
-  while (_cur < _end) {
-    size_t best = argMax();
-
+  for (; _cur < _end; ++_cur) {
+    size_t best = bestIndex();
     // Insertion sort step
     std::swap(_values[best], _values[_cur]);
     std::swap(_moves[best], _moves[_cur]);
 
     if (_moves[_cur] != _ttMove && predicate())
       return _moves[_cur++];
-
-    _cur++;
   }
 
   return Move::none();
@@ -96,6 +85,10 @@ bool MovePicker::goodCaptureFilter() {
     return false;
   }
   return true;
+}
+
+bool MovePicker::quietFilter() {
+  return _moves[_cur] != _killer1 && _moves[_cur] != _killer2;
 }
 
 Move MovePicker::next() {
@@ -121,19 +114,37 @@ Move MovePicker::next() {
       return _moves[_cur - 1];
     _stage++;
     [[fallthrough]];
+  // Killer move stage (Killer 1)
+  case KILLER1:
+    _stage++;
+    if (_killer1 && _killer1 != _ttMove)
+      return _killer1;
+    [[fallthrough]];
+  // Killer move stage (Killer 2)
+  case KILLER2:
+    _stage++;
+    if (_killer2 && _killer2 != _ttMove)
+      return _killer2;
+    [[fallthrough]];
   // Quiet generation stage
   case QUIET_INIT:
     if (!_skipQuiets) {
       _cur = _endBadCap;
-      _end = std::distance(_moves, generateMoves<QUIETS>(_moves + _cur, _pos));
+      _end = _beginBadQuiets = _endBadQuiets =
+          std::distance(_moves, generateMoves<QUIETS>(_moves + _cur, _pos));
       score<QUIETS>();
     }
     _stage++;
     [[fallthrough]];
   // Quiet move stage
-  case QUIET:
-    if (!_skipQuiets && best([&]() { return true; }))
-      return _moves[_cur - 1];
+  case GOOD_QUIET:
+    if (!_skipQuiets && best([&]() { return quietFilter(); })) {
+
+      if ((_values[_cur - 1] > -2000))
+        return _moves[_cur - 1];
+
+      _beginBadQuiets = _cur - 1;
+    }
     _cur = 0;
     _end = _endBadCap;
     _stage++;
@@ -141,6 +152,14 @@ Move MovePicker::next() {
   // Bad capture stage
   case BAD_CAPTURE:
     if (best([&]() { return true; }))
+      return _moves[_cur - 1];
+    _cur = _beginBadQuiets;
+    _end = _endBadQuiets;
+    _stage++;
+    [[fallthrough]];
+  // Bad quiet stage
+  case BAD_QUIET:
+    if (!_skipQuiets && best([&]() { return quietFilter(); }))
       return _moves[_cur - 1];
     return Move::none();
   // Quiescence capture stage

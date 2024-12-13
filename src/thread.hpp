@@ -10,6 +10,7 @@
 
 #include "defs.hpp"
 #include "move.hpp"
+
 #include "position.hpp"
 #include "search.hpp"
 #include "utils.hpp"

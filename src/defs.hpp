@@ -114,6 +114,15 @@ enum : int {
     DEPTH_ENTRY_OFFSET = -3
 };
 
+// clang-format on
+
+// Piece value for move ordering, SEE etc.
+constexpr Value PieceValue[PIECE_N] = {VAL_ZERO, 100, 300,         300,
+                                       500,      900, VAL_INFINITE};
+
+// Game Phase Increment for different piece typess
+constexpr int GamePhaseInc[PIECE_TYPE_N] = {0, 0, 1, 1, 2, 4, 0, 0};
+
 /******************************************\
 |==========================================|
 |           Board Enum Operators           |
@@ -121,57 +130,95 @@ enum : int {
 \******************************************/
 
 // Add direction to square
-constexpr Square operator+(Square sq, Direction d) { return static_cast<Square>(static_cast<int>(sq) + static_cast<int>(d)); }
+constexpr Square operator+(Square sq, Direction d) {
+  return static_cast<Square>(static_cast<int>(sq) + static_cast<int>(d));
+}
 // Subtract direction from square
-constexpr Square operator-(Square sq, Direction d) { return static_cast<Square>(static_cast<int>(sq) - static_cast<int>(d)); }
+constexpr Square operator-(Square sq, Direction d) {
+  return static_cast<Square>(static_cast<int>(sq) - static_cast<int>(d));
+}
 // Increment Square operator
-constexpr Square &operator++(Square &d) { return d = static_cast<Square>(d + 1); }
+constexpr Square &operator++(Square &d) {
+  return d = static_cast<Square>(d + 1);
+}
 // Decrement Square operator
-constexpr Square &operator--(Square &d) { return d = static_cast<Square>(d - 1); }
+constexpr Square &operator--(Square &d) {
+  return d = static_cast<Square>(d - 1);
+}
 // Add direction to square
 constexpr Square &operator+=(Square &sq, Direction d) { return sq = sq + d; }
 // Add direction to square
 constexpr Square &operator-=(Square &sq, Direction d) { return sq = sq - d; }
 // File Add operator
-constexpr File operator+(File f1, File f2) { return static_cast<File>(static_cast<int>(f1) + static_cast<int>(f2)); }
+constexpr File operator+(File f1, File f2) {
+  return static_cast<File>(static_cast<int>(f1) + static_cast<int>(f2));
+}
 // File Subtract operator
-constexpr File operator-(File f1, File f2) { return static_cast<File>(static_cast<int>(f1) - static_cast<int>(f2)); }
+constexpr File operator-(File f1, File f2) {
+  return static_cast<File>(static_cast<int>(f1) - static_cast<int>(f2));
+}
 // Increment File operator
 constexpr File &operator++(File &d) { return d = static_cast<File>(d + 1); }
 // Decrement File operator
 constexpr File &operator--(File &d) { return d = static_cast<File>(d - 1); }
 // Rank Add operator
-constexpr Rank operator+(Rank r1, Rank r2) { return static_cast<Rank>(static_cast<int>(r1) + static_cast<int>(r2)); }
+constexpr Rank operator+(Rank r1, Rank r2) {
+  return static_cast<Rank>(static_cast<int>(r1) + static_cast<int>(r2));
+}
 // Rank Subtract operator
-constexpr Rank operator-(Rank r1, Rank r2) { return static_cast<Rank>(static_cast<int>(r1) - static_cast<int>(r2)); }
+constexpr Rank operator-(Rank r1, Rank r2) {
+  return static_cast<Rank>(static_cast<int>(r1) - static_cast<int>(r2));
+}
 // Increment Rank operator
 constexpr Rank &operator++(Rank &d) { return d = static_cast<Rank>(d + 1); }
 // Decrement Rank operator
 constexpr Rank &operator--(Rank &d) { return d = static_cast<Rank>(d - 1); }
 // Piece values
-constexpr PieceType &operator++(PieceType &d) { return d = static_cast<PieceType>(d + 1); }
+constexpr PieceType &operator++(PieceType &d) {
+  return d = static_cast<PieceType>(d + 1);
+}
 // Unary operator direction
-constexpr Direction operator-(Direction d) { return static_cast<Direction>(-static_cast<int>(d)); }
+constexpr Direction operator-(Direction d) {
+  return static_cast<Direction>(-static_cast<int>(d));
+}
 // Multiply direction
-constexpr Direction operator*(Direction d, int n) { return static_cast<Direction>(static_cast<int>(d) * n); }
+constexpr Direction operator*(Direction d, int n) {
+  return static_cast<Direction>(static_cast<int>(d) * n);
+}
 // Flip side
-constexpr Colour operator~(Colour s) { return static_cast<Colour>(static_cast<int>(s) ^ 1); }
+constexpr Colour operator~(Colour s) {
+  return static_cast<Colour>(static_cast<int>(s) ^ 1);
+}
 // Bitwise AND operation on Castling Rights
-constexpr Castling operator&(Castling c1, Castling c2) { return static_cast<Castling>(static_cast<int>(c1) & static_cast<int>(c2)); }
+constexpr Castling operator&(Castling c1, Castling c2) {
+  return static_cast<Castling>(static_cast<int>(c1) & static_cast<int>(c2));
+}
 // Bitwise OR operation on Castling Rights
-constexpr Castling operator|(Castling c1, Castling c2) { return static_cast<Castling>(static_cast<int>(c1) | static_cast<int>(c2)); }
+constexpr Castling operator|(Castling c1, Castling c2) {
+  return static_cast<Castling>(static_cast<int>(c1) | static_cast<int>(c2));
+}
 // Bitwise XOR operation on Castling Rights
-constexpr Castling operator^(Castling c1, Castling c2) { return static_cast<Castling>(static_cast<int>(c1) ^ static_cast<int>(c2)); }
+constexpr Castling operator^(Castling c1, Castling c2) {
+  return static_cast<Castling>(static_cast<int>(c1) ^ static_cast<int>(c2));
+}
 // Bitwise assignment AND operator on Castling Rights
-constexpr Castling &operator&=(Castling &c1, Castling c2) { return c1 = c1 & c2; }
+constexpr Castling &operator&=(Castling &c1, Castling c2) {
+  return c1 = c1 & c2;
+}
 // Bitwise assignment OR operation on Castling Rights
-constexpr Castling &operator|=(Castling &c1, Castling c2) { return c1 = c1 | c2; }
+constexpr Castling &operator|=(Castling &c1, Castling c2) {
+  return c1 = c1 | c2;
+}
 // Bitwise assignment XOR operation on Castling Rights
-constexpr Castling &operator^=(Castling &c1, Castling c2) { return c1 = c1 ^ c2; }
+constexpr Castling &operator^=(Castling &c1, Castling c2) {
+  return c1 = c1 ^ c2;
+}
 // Bitwise NOT operation on Castling Rights
 constexpr Castling operator~(Castling c) { return c ^ ANY_SIDE; }
 // Increment Castling Rights operator
-constexpr Castling &operator++(Castling &c) { return c = static_cast<Castling>(static_cast<int>(c) + 1); }
+constexpr Castling &operator++(Castling &c) {
+  return c = static_cast<Castling>(static_cast<int>(c) + 1);
+}
 // clang-format on
 
 /******************************************\

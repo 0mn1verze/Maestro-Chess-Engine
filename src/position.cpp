@@ -53,7 +53,7 @@ void Position::putPiece(Piece piece, Square sq) {
   _index[sq] = _pieceCount[piece]++;
   _pieceList[piece][_index[sq]] = sq;
   // Update game phase
-  st->gamePhase += Eval::gamePhaseInc[pieceTypeOf(piece)];
+  st->gamePhase += GamePhaseInc[pieceTypeOf(piece)];
   // Update psq score
   st->psq += Eval::psqt[piece][sq];
 }
@@ -76,7 +76,7 @@ void Position::popPiece(Square sq) {
   _pieceList[pc][_index[lastSq]] = lastSq;
   _pieceList[pc][_pieceCount[pc]] = NO_SQ;
   // Update game phase
-  st->gamePhase -= Eval::gamePhaseInc[pieceTypeOf(pc)];
+  st->gamePhase -= GamePhaseInc[pieceTypeOf(pc)];
   // Update psq score
   st->psq -= Eval::psqt[pc][sq];
 }
@@ -170,7 +170,7 @@ void Position::print() const {
   std::cout << "Hash Key: " << std::hex << st->key << std::dec << std::endl;
 
   // Print eval
-  std::cout << "Eval: " << Eval::evaluate(*this) << std::endl;
+  std::cout << "PSQ: " << score2Str(st->psq) << std::endl;
 
   // Print fen
   std::cout << "Fen string: " << fen() << std::endl;
@@ -406,8 +406,8 @@ std::pair<int, int> Position::initNonPawnMaterial() const {
   // Loop through all pieces
   for (PieceType pt = KNIGHT; pt <= KING; ++pt) {
     // Update non pawn material
-    whiteNPM += Eval::pieceValue[pt] * count(toPiece(WHITE, pt));
-    blackNPM += Eval::pieceValue[pt] * count(toPiece(BLACK, pt));
+    whiteNPM += PieceValue[pt] * count(toPiece(WHITE, pt));
+    blackNPM += PieceValue[pt] * count(toPiece(BLACK, pt));
   }
 
   return {whiteNPM, blackNPM};
@@ -435,7 +435,7 @@ int Position::initGamePhase() const {
   // Loop through all pieces
   for (PieceType pt = KNIGHT; pt <= KING; ++pt)
     // Update game phase
-    gamePhase += Eval::gamePhaseInc[pt] * count(pt);
+    gamePhase += GamePhaseInc[pt] * count(pt);
 
   return gamePhase;
 }
@@ -583,7 +583,7 @@ void Position::makeMove(Move move, BoardState &state) {
     hashKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
     if (pieceTypeOf(cap) != PAWN)
-      st->nonPawnMaterial[enemy] -= Eval::pieceValue[pieceTypeOf(cap)];
+      st->nonPawnMaterial[enemy] -= PieceValue[pieceTypeOf(cap)];
     else
       pawnKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
@@ -633,7 +633,7 @@ void Position::makeMove(Move move, BoardState &state) {
 
       pawnKey ^= Zobrist::pieceSquareKeys[piece][to];
 
-      st->nonPawnMaterial[side] += Eval::pieceValue[pieceTypeOf(promotedTo)];
+      st->nonPawnMaterial[side] += PieceValue[pieceTypeOf(promotedTo)];
     }
     // Update fifty move rule
     st->fiftyMove = 0;
@@ -857,13 +857,13 @@ bool Position::SEE(Move move, int threshold) const {
   Square from = move.from();
   Square to = move.to();
 
-  int swap = Eval::pieceValue[pieceTypeOn(to)] - threshold;
+  int swap = PieceValue[pieceTypeOn(to)] - threshold;
 
   // If capturing enemy piece does not go beyond the threshold, the give up
   if (swap < 0)
     return false;
 
-  swap = Eval::pieceValue[pieceTypeOn(from)] - swap;
+  swap = PieceValue[pieceTypeOn(from)] - swap;
   if (swap <= 0)
     return true;
 

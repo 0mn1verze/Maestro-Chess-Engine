@@ -185,6 +185,7 @@ void TTable::resize(size_t mb, ThreadPool &threads) {
 
   clear(threads);
 }
+
 // Clear the transposition table
 void TTable::clear(ThreadPool &threads) {
   _gen = 0;

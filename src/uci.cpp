@@ -31,7 +31,6 @@ void UCI::loop() {
       // Communicate supported options
       std::cout << "option Hash type spin default 64 min 1 max 256\n";
       std::cout << "option Threads type spin default 1 min 1 max 12\n";
-
     } else if (token == "isready") {
       std::cout << "readyok" << std::endl;
     } else if (token == "quit" || token == "stop") {
@@ -89,6 +88,8 @@ Limits UCI::parseLimits(std::istringstream &is) {
 void UCI::go(std::istringstream &is) {
 
   Limits limits = parseLimits(is);
+
+  std::cout << "info string Searching depth " << limits.depth << std::endl;
 
   if (limits.perft)
     engine.perft(limits);

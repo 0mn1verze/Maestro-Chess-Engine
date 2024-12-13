@@ -12,13 +12,10 @@
 #include "movepicker.hpp"
 #include "perft.hpp"
 #include "position.hpp"
+#include "thread.hpp"
 #include "utils.hpp"
 
 namespace Maestro {
-
-KillerTable kt;
-HistoryTable ht;
-CaptureHistoryTable cht;
 
 U64 perftDriver(Position &pos, int depth) {
   // Generate all moves
@@ -127,7 +124,7 @@ std::vector<PerftPosition> readBenchFile(std::string filePath) {
   return positions;
 }
 
-void perftBench(std::string filePath) {
+void perftBench(std::string filePath, ThreadPool &threads) {
   // Read bench file
   std::vector<PerftPosition> positions = readBenchFile(filePath);
   // Init position and nodes variable

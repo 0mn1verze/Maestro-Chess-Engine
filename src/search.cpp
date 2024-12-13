@@ -246,7 +246,7 @@ void SearchWorker::searchPosition(SearchStack *ss, Value &bestValue) {
   aspirationWindows(ss, bestValue);
 
   std::cout << "info move ordering "
-            << failHighFirst * 1000 / std::max(failHigh, 1) << std::endl;
+            << failHighFirst * 1000 / std::max(failHigh, 1ULL) << std::endl;
 
   std::stable_sort(rootMoves.begin(), rootMoves.end());
 
@@ -835,7 +835,7 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
           continue;
 
         Value futilityValue =
-            futilityBase + Eval::pieceValue[pos.capturedPiece(move)];
+            futilityBase + PieceValue[pos.capturedPiece(move)];
 
         // If static eval + value of the piece is much lower than alpha, then
         // the move is not beneficial

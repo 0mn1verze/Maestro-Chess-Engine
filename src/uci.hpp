@@ -26,7 +26,7 @@ constexpr std::string_view BENCH_FILE = "bench.csv";
 
 constexpr size_t HASH_SIZE = 32;
 constexpr size_t THREADS = 1;
-constexpr bool USE_BOOK = true;
+constexpr bool USE_BOOK = false;
 constexpr int MOVE_OVERHEAD = 600;
 
 /******************************************\
@@ -57,6 +57,20 @@ public:
   // Main loop of the chess engine
   void loop();
 
+  // UCI command parsing
+
+  // Parse the UCI go command
+  void go(std::istringstream &is);
+  // Parse the UCI position command
+  void pos(std::istringstream &is);
+
+  // UCI helper functions
+
+  // Parse go time controls
+  Limits parseLimits(std::istringstream &is);
+  // Parse move
+  static Move toMove(const Position &pos, const std::string &move);
+
   // Engine output functions
 
   // Print UCI info
@@ -66,20 +80,9 @@ public:
   // Print search node count, hash full and nps
   static void uciReportNodes(ThreadPool &threads, int hashFull, TimePt elapsed);
 
-  // UCI helper functions
-
-  // Parse go time controls
-  Limits parseLimits(std::istringstream &is);
-  // Parse move
-  static Move toMove(const Position &pos, const std::string &move);
-
 private:
   // UCI command parsing
 
-  // Parse the UCI go command
-  void go(std::istringstream &is);
-  // Parse the UCI position command
-  void pos(std::istringstream &is);
   // Parse the UCI setoption command
   void setOption(std::istringstream &is);
 

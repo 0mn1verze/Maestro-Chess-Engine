@@ -118,6 +118,7 @@ void ThreadPool::set(size_t n, SearchState &sharedState) {
   clear();
 
   main()->waitForThread(); // Wait for main thread to finish
+  waitForThreads();        // Wait for all threads to finish
 }
 
 void ThreadPool::clear() {
@@ -180,8 +181,6 @@ void ThreadPool::startThinking(Position &pos, StateListPtr &s, Limits limits) {
 
   if (s.get())
     states = std::move(s);
-
-  std::cout << states->back().plies << std::endl;
 
   for (auto &&th : threads) {
     th->startJob([&] {

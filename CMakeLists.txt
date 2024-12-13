@@ -35,7 +35,6 @@ set(HEADERS src/defs.hpp
             src/engine.hpp
             src/polyglot.hpp
             src/uci.hpp
-            src/incbin.hpp
             )
 
 set(USER_FLAGS "-g -Ofast -flto -pthread")

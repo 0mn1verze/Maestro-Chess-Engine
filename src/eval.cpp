@@ -10,7 +10,26 @@
 
 namespace Maestro::Eval {
 
+/******************************************\
+|==========================================|
+|           Piece Square tables            |
+|==========================================|
+\******************************************/
+
+// Piece square tables
 Score psqt[PIECE_N][SQ_N];
+
+// Piece scores
+constexpr Score pawnScore = _S(82, 94);
+constexpr Score knightScore = _S(337, 281);
+constexpr Score bishopScore = _S(365, 297);
+constexpr Score rookScore = _S(477, 512);
+constexpr Score queenScore = _S(1025, 936);
+
+// Piece bonuses
+constexpr Score pieceBonus[PIECE_TYPE_N] = {SCORE_ZERO,  pawnScore, knightScore,
+                                            bishopScore, rookScore, queenScore,
+                                            SCORE_ZERO,  SCORE_ZERO};
 
 // clang-format off
 constexpr Score bonus[PIECE_TYPE_N][SQ_N] = {
@@ -89,25 +108,18 @@ void initEval() {
   }
 }
 
-/******************************************\
-|==========================================|
-|              NNUE Evaluation             |
-|             (Stockfish NNUE)             |
-|==========================================|
-\******************************************/
-
 // Evaluate the position
 Value evaluate(const Position &pos) {
-
-  Score psq = pos.psq();
+  Score score = pos.psq();
 
   int mgPhase = std::min(pos.gamePhase(), 24);
-
   int egPhase = 24 - mgPhase;
 
-  Value v = (psq.first * mgPhase + psq.second * egPhase) / 24;
+  Value mg = score.first, eg = score.second;
 
-  return pos.sideToMove() == WHITE ? v : -v;
+  Value v = (mg * mgPhase + eg * egPhase) / 24;
+
+  return (pos.sideToMove() == WHITE) ? v : -v;
 }
 
 } // namespace Maestro::Eval

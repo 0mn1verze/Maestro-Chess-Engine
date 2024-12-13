@@ -6,7 +6,9 @@
 
 #include "defs.hpp"
 #include "position.hpp"
+#include "thread.hpp"
 #include "utils.hpp"
+
 
 namespace Maestro {
 
@@ -20,7 +22,7 @@ struct PerftPosition {
 // and Performance Information)
 void perftTest(Position &pos, int depth);
 // Function to test multiple position from bench.csv
-void perftBench(std::string filePath);
+void perftBench(std::string filePath, ThreadPool &threads);
 
 } // namespace Maestro
 

@@ -10,6 +10,7 @@
 #include "hash.hpp"
 #include "history.hpp"
 #include "move.hpp"
+
 #include "position.hpp"
 #include "utils.hpp"
 
@@ -200,7 +201,7 @@ private:
 
   Value bestPreviousScore, bestPreviousAvgScore;
 
-  int failHigh, failHighFirst, ttCutOff;
+  U64 failHigh, failHighFirst, ttCutOff;
 
   friend class ThreadPool;
 };

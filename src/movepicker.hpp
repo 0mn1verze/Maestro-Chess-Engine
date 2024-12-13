@@ -17,9 +17,12 @@ enum GenStage {
   MAIN_TT,
   CAPTURE_INIT,
   GOOD_CAPTURE,
+  KILLER1,
+  KILLER2,
   QUIET_INIT,
-  QUIET,
+  GOOD_QUIET,
   BAD_CAPTURE,
+  BAD_QUIET,
 
   // Generate qsearch moves
   Q_TT,
@@ -54,9 +57,9 @@ public:
 private:
   // Score the moves
   template <GenType T> void score();
-
-  size_t argMax();
+  size_t bestIndex();
   bool goodCaptureFilter();
+  bool quietFilter();
 
   // Return best move based on move ordering score
   Move best(std::function<bool()> predicate);
@@ -70,7 +73,7 @@ private:
   int _stage;
 
   Move _ttMove, _killer1, _killer2;
-  size_t _cur, _endBadCap, _end;
+  size_t _cur, _endBadCap, _end, _beginBadQuiets, _endBadQuiets;
 
   int _threshold;
   Depth _depth;
