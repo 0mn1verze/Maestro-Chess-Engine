@@ -4,6 +4,7 @@
 
 #include "defs.hpp"
 #include "eval.hpp"
+
 #include "position.hpp"
 #include "uci.hpp"
 #include "utils.hpp"
@@ -115,9 +116,7 @@ Value evaluate(const Position &pos) {
   int mgPhase = std::min(pos.gamePhase(), 24);
   int egPhase = 24 - mgPhase;
 
-  Value mg = score.first, eg = score.second;
-
-  Value v = (mg * mgPhase + eg * egPhase) / 24;
+  Value v = (score.first * mgPhase + score.second * egPhase) / 24;
 
   return (pos.sideToMove() == WHITE) ? v : -v;
 }

@@ -289,6 +289,8 @@ void SearchWorker::aspirationWindows(SearchStack *ss, Value &bestValue) {
   }
 }
 
+Value SearchWorker::evaluate(Position &pos) { return Eval::evaluate(pos); }
+
 template <NodeType nodeType>
 Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
                            Value alpha, Value beta, bool cutNode) {
@@ -346,7 +348,7 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
     if (pos.isDraw(ss->ply) || threads.stop.load(std::memory_order_relaxed) ||
         ss->ply >= MAX_PLY)
-      return (ss->ply >= MAX_PLY && !ss->inCheck) ? Eval::evaluate(pos)
+      return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos)
                                                   : valueDraw(nodes);
 
     // The worst we can do is get mated in the current ply, so the worst score
@@ -408,10 +410,9 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   } else if (excludedMove) {
 
   } else if (ss->ttHit) {
-    ss->staticEval =
-        ttData.eval != VAL_NONE ? ttData.eval : Eval::evaluate(pos);
+    ss->staticEval = ttData.eval != VAL_NONE ? ttData.eval : evaluate(pos);
   } else {
-    ss->staticEval = Eval::evaluate(pos);
+    ss->staticEval = evaluate(pos);
 
     ttWriter.write(hashKey, VAL_NONE, ss->ttPV, FLAG_NONE, DEPTH_UNSEARCHED,
                    Move::none(), ss->staticEval, tt._gen);
@@ -774,7 +775,7 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
 
   // Check for draws and max ply
   if (pos.isDraw(ss->ply) || ss->ply >= MAX_PLY)
-    return (ss->ply >= MAX_PLY && !ss->inCheck) ? Eval::evaluate(pos)
+    return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos)
                                                 : valueDraw(nodes);
 
   // Transposition Table Lookup
@@ -795,13 +796,13 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
 
   if (ss->ttHit) {
     ss->staticEval = bestValue =
-        ttData.eval != VAL_NONE ? ttData.eval : Eval::evaluate(pos);
+        ttData.eval != VAL_NONE ? ttData.eval : evaluate(pos);
   } else {
     // In case of null move search, use previous static eval with opposite
     // sign, as the side to move has changed and the static evaluation could
     // change drastically
     ss->staticEval = bestValue = (ss - 1)->currentMove != Move::null()
-                                     ? Eval::evaluate(pos)
+                                     ? evaluate(pos)
                                      : -(ss - 1)->staticEval;
   }
 

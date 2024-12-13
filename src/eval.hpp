@@ -3,6 +3,7 @@
 #define EVAL_HPP
 
 #include "defs.hpp"
+
 #include "position.hpp"
 
 namespace Maestro {

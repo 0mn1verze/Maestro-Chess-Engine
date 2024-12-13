@@ -893,7 +893,7 @@ bool Position::SEE(Move move, int threshold) const {
     // Locate and remove the next least valuable attacker, and add to
     // the bitboard 'attackers' any X-ray attackers behind it.
     if ((bb = stmAttackers & pieces(PAWN))) {
-      if ((swap = Eval::pawnScore.first - swap) < res)
+      if ((swap = PieceValue[PAWN] - swap) < res)
         break;
       occ ^= lsbBB(bb);
 
@@ -901,13 +901,13 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & pieces(KNIGHT))) {
-      if ((swap = Eval::knightScore.first - swap) < res)
+      if ((swap = PieceValue[KNIGHT] - swap) < res)
         break;
       occ ^= lsbBB(bb);
     }
 
     else if ((bb = stmAttackers & pieces(BISHOP))) {
-      if ((swap = Eval::bishopScore.first - swap) < res)
+      if ((swap = PieceValue[BISHOP] - swap) < res)
         break;
       occ ^= lsbBB(bb);
 
@@ -915,7 +915,7 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & pieces(ROOK))) {
-      if ((swap = Eval::rookScore.first - swap) < res)
+      if ((swap = PieceValue[ROOK] - swap) < res)
         break;
       occ ^= lsbBB(bb);
 
@@ -923,7 +923,7 @@ bool Position::SEE(Move move, int threshold) const {
     }
 
     else if ((bb = stmAttackers & pieces(QUEEN))) {
-      if ((swap = Eval::queenScore.first - swap) < res)
+      if ((swap = PieceValue[QUEEN] - swap) < res)
         break;
       occ ^= lsbBB(bb);
 

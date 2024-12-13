@@ -178,6 +178,8 @@ private:
   template <NodeType nodeType>
   Value qSearch(Position &pos, SearchStack *ss, Value alpha, Value beta);
 
+  Value evaluate(Position &pos);
+
   void updateAllStats(SearchStack *ss, const Position &pos, Move bestMove,
                       Square prevSq, MoveArray &captures, MoveArray &quiets,
                       Depth depth, int ply);
