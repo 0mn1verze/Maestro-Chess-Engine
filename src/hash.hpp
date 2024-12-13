@@ -112,6 +112,7 @@ struct TTEntry {
   bool isOccupied() const;
 
 private:
+  friend class TTable;
   // Key
   U16 _key;
   Move _move;

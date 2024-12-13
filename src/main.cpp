@@ -11,10 +11,15 @@ int main() {
 
   UCI uci;
 
-  uci.loop();
+  // uci.loop();
 
-  // std::istringstream is("go depth 20");
-  // uci.go(is);
+  std::istringstream pos(
+      "position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w "
+      "KQkq - 0 1 ");
+  uci.pos(pos);
+
+  std::istringstream go("go depth 20");
+  uci.go(go);
 
   return 0;
 }

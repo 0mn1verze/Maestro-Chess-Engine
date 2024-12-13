@@ -108,14 +108,14 @@ std::tuple<bool, TTData, TTWriter> TTable::probe(Key key) {
   const U16 k16 = key >> 48;
 
   for (int i = 0; i < TT_BUCKET_N; ++i)
-    if (entry[i].key() == k16)
+    if (entry[i]._key == k16)
       return {entry[i].isOccupied(), entry[i].read(), TTWriter(&entry[i])};
 
   // Find an entry to be replaced according to the replacement strategy
   TTEntry *replace = entry;
   for (int i = 1; i < TT_BUCKET_N; ++i)
-    if (replace->depth() - replace->relativeAge(_gen) * 2 >
-        entry[i].depth() - entry[i].relativeAge(_gen) * 2)
+    if (replace->_depth - replace->relativeAge(_gen) * 2 >
+        entry[i]._depth - entry[i].relativeAge(_gen) * 2)
       replace = &entry[i];
 
   return {false, TTData(), TTWriter(replace)};
