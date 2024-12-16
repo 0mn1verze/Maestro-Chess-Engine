@@ -117,13 +117,13 @@ Move MovePicker::next() {
   // Killer move stage (Killer 1)
   case KILLER1:
     _stage++;
-    if (_killer1 && _killer1 != _ttMove)
+    if (!_skipQuiets && _killer1 && _killer1 != _ttMove)
       return _killer1;
     [[fallthrough]];
   // Killer move stage (Killer 2)
   case KILLER2:
     _stage++;
-    if (_killer2 && _killer2 != _ttMove)
+    if (!_skipQuiets && _killer2 && _killer2 != _ttMove)
       return _killer2;
     [[fallthrough]];
   // Quiet generation stage

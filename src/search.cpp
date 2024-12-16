@@ -23,12 +23,12 @@ void TimeManager::init(Limits &limits, Colour us, int ply) {
 
   if (limits.movesToGo > 0) {
     // X / Y + Z time management
-    optimumTime = 1.50 * (time - MOVE_OVERHEAD) / mtg + inc;
-    maximumTime = 2.00 * (time - MOVE_OVERHEAD) / mtg + inc;
+    optimumTime = 1.80 * (time - MOVE_OVERHEAD) / mtg + inc;
+    maximumTime = 10.00 * (time - MOVE_OVERHEAD) / mtg + inc;
   } else {
     // X + Y time management
-    optimumTime = 1.50 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
-    maximumTime = 2.00 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
+    optimumTime = 2.50 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
+    maximumTime = 10.00 * (time - MOVE_OVERHEAD + 25 * inc) / 50;
   }
 
   // Cap time allocation using move overhead
@@ -233,7 +233,7 @@ void SearchWorker::iterativeDeepening() {
     if (limits.isUsingTM() && !threads.stop && _completedDepth >= 4 &&
         (checkTM(lastBestMoveDepth, pvStability, bestValue) ||
          tm.elapsed() >= tm.maximum()))
-      threads.stop = threads.abortedSearch = true;
+      threads.stop = true;
   }
 }
 
@@ -241,17 +241,9 @@ void SearchWorker::searchPosition(SearchStack *ss, Value &bestValue) {
   // Reset selDepth
   _selDepth = 0;
 
-  failHigh = failHighFirst = 0;
-
   aspirationWindows(ss, bestValue);
 
-  std::cout << "info move ordering "
-            << failHighFirst * 1000 / std::max(failHigh, 1ULL) << std::endl;
-
   std::stable_sort(rootMoves.begin(), rootMoves.end());
-
-  if (threads.stop)
-    return;
 
   if (isMainThread() &&
       !(threads.abortedSearch && rootMoves[0].score <= VAL_MATE_BOUND))
@@ -269,8 +261,8 @@ void SearchWorker::aspirationWindows(SearchStack *ss, Value &bestValue) {
   }
 
   while (true) {
-    bestValue = search<ROOT>(rootPos, ss, std::max(1, depth), -VAL_INFINITE,
-                             VAL_INFINITE, false);
+    bestValue =
+        search<ROOT>(rootPos, ss, std::max(1, depth), alpha, beta, false);
 
     std::stable_sort(rootMoves.begin(), rootMoves.end());
 
@@ -430,8 +422,8 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
   // above beta or cause a cutoff)
   if (!pvNode && !ss->ttPV && depth <= 8 && !excludedMove &&
       ss->staticEval - 70 * std::max(0, depth - improving) >= beta &&
-      ss->staticEval >= beta && (!ttData.move || ttCapture) &&
-      beta > -VAL_MATE_BOUND && ss->staticEval < VAL_MATE_BOUND)
+      (!ttData.move || ttCapture) && beta > -VAL_MATE_BOUND &&
+      ss->staticEval < VAL_MATE_BOUND)
     return ss->staticEval;
 
   // Futility Pruning
@@ -441,11 +433,10 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
 
   // Null Move Pruning
   if (cutNode && (ss - 1)->currentMove != Move::null() && depth >= 2 &&
-      ss->staticEval >= beta - 25 * depth + 400 && !excludedMove &&
-      pos.nonPawnMaterial(us) && beta > VAL_MATE_BOUND) {
+      ss->staticEval >= beta && !excludedMove && pos.nonPawnMaterial(us) &&
+      beta > VAL_MATE_BOUND) {
 
-    R = std::min((ss->staticEval - beta) / 200, 6) + depth / 3 + 4 +
-        bool(pos.captured());
+    R = std::min((ss->staticEval - beta) / 200, 6) + depth / 3 + 5;
 
     ss->currentMove = Move::null();
     ss->ch = &ct.table[0][0][NO_PIECE][A1];
@@ -568,9 +559,34 @@ moves_loop:
         bestValue >= -VAL_MATE_BOUND) {
       if (moveCount >= (3 + depth * depth) / (2 - improving))
         mp.skipQuietMoves();
-    }
 
-    R = 1 + (moveCount > 6) * depth / 3;
+      if (!isCapture) {
+
+        Depth lmrDepth = std::max(0, depth - (2 + (moveCount > 6) * depth / 3));
+        Depth fmpMargin = 100 + 50 * lmrDepth;
+
+        // Futility Move Pruning with history. If the score is far below alpha
+        // and we don't expect anything from this move, we can skip it
+        // (Introduces search instability but has more benefits than
+        // drawbacks)
+        if (!ss->inCheck && ss->staticEval + fmpMargin <= alpha &&
+            lmrDepth <= 8 && hist < (improving ? 10000 : 5000))
+          mp.skipQuietMoves();
+
+        // Futility Move Pruning. If the score is far below alpha and we don't
+        // expect anything from this move, we can skip it (Introduces search
+        // instability but has more benefits than drawbacks)
+        if (!ss->inCheck && ss->staticEval + fmpMargin + 200 <= alpha &&
+            lmrDepth <= 8)
+          mp.skipQuietMoves();
+
+        // Continuation pruning. Prune moves with poor continuation histories as
+        // the moves are not likely to be good.
+        if (mp.stage() > QUIET_INIT && lmrDepth <= 3 &&
+            ss->ch->probe(pos, move) < -2500)
+          continue;
+      }
+    }
 
     // Static Exchanege Evaluation Pruning. Prune moves that are unlikely to be
     // good
@@ -586,12 +602,11 @@ moves_loop:
     // Singular extension search, if a move seems a lot better than other moves
     // (Only move), then verify it and extend the search accordingly
     if (ss->ply < rootDepth * 2) {
-      if (depth >= 4 - (_completedDepth > 36) + ss->ttPV && !excludedMove &&
-          move == ttData.move && !rootNode && ttData.depth >= depth - 3 &&
+      if (depth >= 4 && !excludedMove && move == ttData.move && !rootNode &&
+          ttData.depth >= depth - 3 &&
           std::abs(ttData.value) < VAL_MATE_BOUND &&
           (ttData.flag & FLAG_LOWER)) {
-        Value singularBeta =
-            ttData.value - (50 + 80 * (ss->ttPV && !pvNode)) * depth / 64;
+        Value singularBeta = std::max(ttData.value - depth, -VAL_MATE);
         Depth singularDepth = newDepth / 2;
 
         ss->excludedMove = move;
@@ -599,25 +614,16 @@ moves_loop:
                                singularBeta, cutNode);
         ss->excludedMove = Move::none();
 
-        if (value < singularBeta) {
-          Value doubleMargin = 250 * pvNode - 200 * !ttCapture;
-          Value tripleMargin =
-              100 + 300 * pvNode - 250 * !ttCapture + 100 * ss->ttPV;
-
-          extensions = 1 + (value < singularBeta - doubleMargin) +
-                       (value < singularBeta - tripleMargin);
-
-          depth += (!pvNode && depth < 14);
-        }
-        // Multi cut pruning (From stockfish)
-        // Prune the whole subtree when the tt move is not singular
-        else if (value >= beta && abs(value) < VAL_MATE_BOUND)
+        if (value >= beta)
           return value;
-        // Negative extensions (From stockfish)
-        else if (ttData.value >= beta)
-          extensions = -3;
-        else if (cutNode)
-          extensions = -2;
+
+        extensions = (value < singularBeta - 50)   ? 3
+                     : (value < singularBeta - 25) ? 2
+                     : value < singularBeta        ? 1
+                     : ttData.value >= beta        ? -3
+                     : cutNode                     ? -2
+                     : ttData.value <= value       ? -1
+                                                   : 0;
       } else if (pvNode && move.to() == prevSq && cht.probe(pos, move) > 4000)
         extensions = 1;
     }
@@ -634,10 +640,20 @@ moves_loop:
     // Prefetch the next entry in the TT
     TTable::prefetch(tt.firstEntry(pos.key()));
 
-    if (depth >= 2 && moveCount > 1 && !isCapture) {
+    if (depth >= 2 && moveCount > 1) {
+      // Late move reductions
+      if (!isCapture) {
+        R = 1 + (moveCount > 6) * depth / 3;
 
+        // R += !pvNode + !improving;
+
+        // R += ss->inCheck && pos.movedPieceType(move) == KING;
+
+        // R -= mp.stage() < QUIET_INIT;
+      } else
+        R = 2 - givesCheck;
       // Don't go below depth 1
-      Depth d = std::max(1, newDepth - R);
+      Depth d = std::max(1, std::min(newDepth - R, newDepth));
       // Late move reductions
       value = -search<NON_PV>(pos, ss + 1, d, -alpha - 1, -alpha, true);
 
@@ -696,12 +712,8 @@ moves_loop:
         if (pvNode && !rootNode)
           updatePV(ss->pv, move, (ss + 1)->pv);
 
-        if (value >= beta) {
-          if (moveCount == 1)
-            failHighFirst++;
-          failHigh++;
+        if (value >= beta)
           break;
-        }
 
         alpha = value;
       }
@@ -879,12 +891,8 @@ Value SearchWorker::qSearch(Position &pos, SearchStack *ss, Value alpha,
         if (pvNode)
           updatePV(ss->pv, move, (ss + 1)->pv);
 
-        if (value >= beta) {
-          if (moveCount == 1)
-            failHighFirst++;
-          failHigh++;
+        if (value >= beta)
           break;
-        }
 
         alpha = value;
       }

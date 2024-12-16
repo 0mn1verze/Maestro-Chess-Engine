@@ -11,6 +11,8 @@ set(SOURCES src/bitboard.cpp
             src/history.cpp
             src/perft.cpp
             src/hash.cpp
+            src/nnue.cpp
+            src/misc.cpp
             src/search.cpp
             src/thread.cpp
             src/eval.cpp
@@ -20,6 +22,7 @@ set(SOURCES src/bitboard.cpp
             src/main.cpp
             )
 set(HEADERS src/defs.hpp
+            src/incbin.hpp
             src/bitboard.hpp
             src/utils.hpp
             src/position.hpp
@@ -28,6 +31,8 @@ set(HEADERS src/defs.hpp
             src/movepicker.hpp
             src/history.hpp
             src/hash.hpp
+            src/nnue.hpp
+            src/misc.hpp
             src/perft.hpp
             src/search.hpp
             src/thread.hpp
@@ -37,7 +42,7 @@ set(HEADERS src/defs.hpp
             src/uci.hpp
             )
 
-set(USER_FLAGS "-g -Ofast -flto -pthread")
+set(USER_FLAGS "-g -Ofast -flto -pthread -DUSE_AVX2 -mavx2")
 
 set(EXECUTABLE_OUTPUT_PATH ../bin)
 

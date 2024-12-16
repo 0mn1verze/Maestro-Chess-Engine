@@ -89,8 +89,6 @@ void UCI::go(std::istringstream &is) {
 
   Limits limits = parseLimits(is);
 
-  std::cout << "info string Searching depth " << limits.depth << std::endl;
-
   if (limits.perft)
     engine.perft(limits);
   else
