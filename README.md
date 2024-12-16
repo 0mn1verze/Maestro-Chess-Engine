@@ -4,6 +4,9 @@ A chess engine project for learning c++. It has a decent search speed (Average o
 > [!IMPORTANT]
 > * This engine uses ideas from different open source chess engines (Stockfish, Ethreal, etc) so it is not fully original
 > * Credits to Maksim Korzh and BluefeverSoft for their amazing videos on chess engines.
+> * Uses a NNUE network from Stockfish.
+> * Credits to Daniel Shawul for his NNUE probe library.
+> * Credits to JA for his contributions to embedded NNUE nets
 
 ## Demo
 ![alt text](https://github.com/0mn1verze/Maestro-Chess-Engine/blob/942e85bddfd8f62b51647bf0183ab3c3778e2357/demo.png)
