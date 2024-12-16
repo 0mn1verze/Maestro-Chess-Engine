@@ -389,9 +389,8 @@ Value SearchWorker::search(Position &pos, SearchStack *ss, Depth depth,
                             -statBonus(depth + 1));
     }
 
-    if (pos.fiftyMove() < 90) {
+    if (pos.fiftyMove() < 90)
       return ttData.value;
-    }
   }
 
   // Static Evaluation
@@ -640,18 +639,9 @@ moves_loop:
     // Prefetch the next entry in the TT
     TTable::prefetch(tt.firstEntry(pos.key()));
 
-    if (depth >= 2 && moveCount > 1) {
+    if (depth >= 2 && moveCount > 1 && !isCapture) {
       // Late move reductions
-      if (!isCapture) {
-        R = 1 + (moveCount > 6) * depth / 3;
-
-        // R += !pvNode + !improving;
-
-        // R += ss->inCheck && pos.movedPieceType(move) == KING;
-
-        // R -= mp.stage() < QUIET_INIT;
-      } else
-        R = 2 - givesCheck;
+      R = 1 + (moveCount > 6) * depth / 3;
       // Don't go below depth 1
       Depth d = std::max(1, std::min(newDepth - R, newDepth));
       // Late move reductions
@@ -661,7 +651,7 @@ moves_loop:
       if (value > alpha)
         value = -search<NON_PV>(pos, ss + 1, newDepth, -alpha - 1, -alpha,
                                 !cutNode);
-    } else if (!pvNode || moveCount > 1)
+    } else if (!pvNode || moveCount > 1 || isCapture)
       value =
           -search<NON_PV>(pos, ss + 1, newDepth, -alpha - 1, -alpha, !cutNode);
 
