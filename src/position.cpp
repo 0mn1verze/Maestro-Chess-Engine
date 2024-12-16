@@ -544,10 +544,6 @@ void Position::makeMove(Move move, BoardState &state) {
   state.previous = st;
   st = &state;
 
-  st->nnueData.accumulator.computedAccumulation = false;
-  auto &dp = st->nnueData.dirtyPiece;
-  dp.dirtyNum = 1;
-
   ++st->fiftyMove;
   ++st->plies;
   ++_gamePlies;
@@ -566,12 +562,6 @@ void Position::makeMove(Move move, BoardState &state) {
     Square rookFrom, rookTo;
     Piece rook = toPiece(side, ROOK);
     castleRook<true>(from, to, rookFrom, rookTo);
-
-    auto &dp = st->nnueData.dirtyPiece;
-    dp.pc[1] = Eval::toNNUEPiece(toPiece(side, ROOK));
-    dp.from[1] = rookFrom;
-    dp.to[1] = rookTo;
-    dp.dirtyNum = 2;
 
     // Update hash key
     hashKey ^= Zobrist::pieceSquareKeys[rook][rookFrom] ^
@@ -597,11 +587,6 @@ void Position::makeMove(Move move, BoardState &state) {
     else
       pawnKey ^= Zobrist::pieceSquareKeys[cap][capSq];
 
-    dp.dirtyNum = 2; // 1 piece moved, 1 piece captured
-    dp.pc[1] = Eval::toNNUEPiece(cap);
-    dp.from[1] = capSq;
-    dp.to[1] = NO_SQ;
-
     st->fiftyMove = 0;
 
     // Update board state to undo move
@@ -623,10 +608,6 @@ void Position::makeMove(Move move, BoardState &state) {
     hashKey ^= Zobrist::enPassantKeys[fileOf(st->enPassant)];
   }
 
-  dp.pc[0] = Eval::toNNUEPiece(piece);
-  dp.from[0] = from;
-  dp.to[0] = to;
-
   // Update board by moving piece to the destination
   movePiece(from, to);
   // Update hash key
@@ -645,12 +626,6 @@ void Position::makeMove(Move move, BoardState &state) {
       if (pieceTypeOf(promotedTo) == KNIGHT &&
           attacksBB<KNIGHT>(to, EMPTYBB) & pieces(enemy, KING))
         st->checkMask = squareBB(to);
-
-      dp.to[0] = NO_SQ;
-      dp.pc[dp.dirtyNum] = Eval::toNNUEPiece(promotedTo);
-      dp.from[dp.dirtyNum] = NO_SQ;
-      dp.to[dp.dirtyNum] = to;
-      dp.dirtyNum++;
 
       // Update hash key
       hashKey ^= Zobrist::pieceSquareKeys[piece][to] ^
