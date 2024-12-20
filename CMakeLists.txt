@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.29.0)
+cmake_minimum_required(VERSION 3.16.3)
 
 project(Maestro)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SOURCES src/bitboard.cpp
             src/position.cpp
