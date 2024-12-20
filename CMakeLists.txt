@@ -42,7 +42,7 @@ set(HEADERS src/defs.hpp
             src/uci.hpp
             )
 
-set(USER_FLAGS "-g -Ofast -march=native -lpthread -DUSE_AVX -mavx2 -DUSE-MMX -mavx -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse")
+set(USER_FLAGS "-g -Ofast -pthread -DUSE_AVX -mavx2 -DUSE-MMX -mavx -DUSE-SSE41 -msse4.1 -DUSE_SSSE3 -mssse3 -DUSE_SSE2 -msse2 -DUSE_SSE -msse")
 
 set(EXECUTABLE_OUTPUT_PATH ../bin)
 
