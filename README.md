@@ -10,7 +10,8 @@ A chess engine project for learning c++. It has a decent search speed (Average o
 
 ## Demo
 ![alt text](https://github.com/0mn1verze/Maestro-Chess-Engine/blob/942e85bddfd8f62b51647bf0183ab3c3778e2357/demo.png)
-[Website](https://0mn1verze.pythonanywhere.com/)
+* [link1](https://0mn1verze.pythonanywhere.com/)  (Faster engine speeds but website could be down)
+* [link2](https://react-chess-gui.onrender.com/index.html) (More reliable but 7x slower)
 
 ## Performance
 * Rough estimate of 2800 elo
