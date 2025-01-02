@@ -8,6 +8,7 @@
 #include "uci.hpp"
 #include "utils.hpp"
 
+
 namespace Maestro::Eval {
 
 /******************************************\
@@ -111,15 +112,13 @@ void initEval() {
 // Evaluate the position
 Value evaluate(const Position &pos) {
 
-  Score score = pos.psq();
+  Score psq = pos.psq();
 
   int mgPhase = std::min(pos.gamePhase(), 24);
   int egPhase = 24 - mgPhase;
 
-  // Evaluate position
-  Value v = (score.first * mgPhase + score.second * egPhase) / 24;
+  Value v = (psq.first * mgPhase + psq.second * egPhase) / 24 + 20;
 
-  // Return the evaluation
   return (pos.sideToMove() == WHITE) ? v : -v;
 }
 

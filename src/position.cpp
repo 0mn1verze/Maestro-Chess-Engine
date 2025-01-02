@@ -562,7 +562,6 @@ void Position::makeMove(Move move, BoardState &state) {
     Square rookFrom, rookTo;
     Piece rook = toPiece(side, ROOK);
     castleRook<true>(from, to, rookFrom, rookTo);
-
     // Update hash key
     hashKey ^= Zobrist::pieceSquareKeys[rook][rookFrom] ^
                Zobrist::pieceSquareKeys[rook][rookTo];
